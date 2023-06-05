@@ -1,6 +1,6 @@
-# my_time_manager
+# My Time Manager
 
-A new Flutter project.
+A powerful application to manage your time
 
 ## Getting Started
 

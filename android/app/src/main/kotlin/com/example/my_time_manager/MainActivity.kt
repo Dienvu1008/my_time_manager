@@ -1,4 +1,4 @@
-package com.example.my_time_manager
+package com.dienvu.mytimemanager
 
 import io.flutter.embedding.android.FlutterActivity
 
