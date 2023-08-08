@@ -4,8 +4,8 @@
 
 import 'package:flutter/material.dart';
 
-class ElevationScreen extends StatelessWidget {
-  const ElevationScreen({super.key});
+class ElevationPage extends StatelessWidget {
+  const ElevationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
