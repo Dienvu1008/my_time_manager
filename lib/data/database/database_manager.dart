@@ -43,7 +43,7 @@ class DatabaseManager {
       '''
       CREATE TABLE tasklists(
         id TEXT PRIMARY KEY, 
-        title TEXT, 
+        title TEXT,
         description TEXT)
       ''',
     );
@@ -60,6 +60,43 @@ class DatabaseManager {
         FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE SET NULL)
       ''',
     );
+    _addSampleData();
+  }
+
+  Future<void> _addSampleData() async {
+    final db = await _initDatabase();
+
+    await db.insert(
+      'tasklists',
+      {'id': 'a', 'title': 'work', 'description': ''},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    await db.insert(
+      'tasklists',
+      {'id': 'b', 'title': 'habit tracking', 'description': ''},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    for (int i = 1; i <= 100; i++) {
+      await db.insert(
+        'tasks',
+        {
+          'id': 'a$i',
+          'title': 'Task $i',
+          'description': 'Description for task $i',
+          'color': 0xFF0000FF,
+          'isCompleted': 0,
+          'taskListId': 'a',
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  }
+
+  Future<void> deleteDatabase() async {
+    final databasePath = await getDatabasesPath();
+    final path = join(databasePath, 'app_database.db');
+    await databaseFactory.deleteDatabase(path);
   }
 
   // Define a function that inserts task lists into the database
@@ -106,6 +143,16 @@ class DatabaseManager {
     return TaskList.fromMap(maps[0]);
   }
 
+  Future<List<Task>> tasksOfTaskList(String taskListId) async {
+    final db = await _databaseManager.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'tasks',
+      where: 'taskListId = ?',
+      whereArgs: [taskListId],
+    );
+    return List.generate(maps.length, (index) => Task.fromMap(maps[index]));
+  }
+
   Future<List<Task>> tasks() async {
     final db = await _databaseManager.database;
     final List<Map<String, dynamic>> maps = await db.query('tasks');
@@ -130,8 +177,12 @@ class DatabaseManager {
 
   Future<void> updateTask(Task task) async {
     final db = await _databaseManager.database;
-    await db
-        .update('tasks', task.toMap(), where: 'id = ?', whereArgs: [task.id]);
+    await db.update(
+      'tasks',
+      task.toMap(),
+      where: 'id = ?',
+      whereArgs: [task.id],
+    );
   }
 
   // A method that deletes a task list data from the tasklists table.

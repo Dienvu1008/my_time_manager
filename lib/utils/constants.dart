@@ -55,7 +55,8 @@ enum ColorSeed {
   red("Red", Colors.red),
   grey("Grey", Colors.grey),
   brown("Brown", Colors.brown),
-  black("Black", Colors.black);
+  black("Black", Colors.black),
+  white("White", Colors.white);
   // baseColor('M3 Baseline', Color(0xff6750a4)),
   // indigo('Indigo', Colors.indigo),
   // blue('Blue', Colors.blue),

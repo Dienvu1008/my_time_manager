@@ -1,199 +1,29 @@
-// class MyHomePage extends StatelessWidget {
-//   final String title;
-
-//   MyHomePage({Key? key, required this.title}) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final localizations = AppLocalizations.of(context);
-//     return Scaffold(
-//       appBar: AppBar(title: Text(localizations?.title ?? title)),
-//       body: Center(
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: <Widget>[
-//             const Text('Select a language:'),
-//             const SizedBox(height: 16),
-//             ElevatedButton(
-//               onPressed: () => context
-//                   .read<AppBloc>()
-//                   .add(SelectLanguageEvent(AppLanguage.english)),
-//               child: Text(localizations!.english),
-//             ),
-//             const SizedBox(height: 8),
-//             ElevatedButton(
-//               onPressed: () => context
-//                   .read<AppBloc>()
-//                   .add(SelectLanguageEvent(AppLanguage.vietnamese)),
-//               child: Text(localizations.vietnamese),
-//             ),
-//             const SizedBox(height: 8),
-//             ElevatedButton(
-//               onPressed: () => context
-//                   .read<AppBloc>()
-//                   .add(SelectLanguageEvent(AppLanguage.german)),
-//               child: Text(localizations.german),
-//             ),
-//             Text('This app has been launched:'),
-//             SizedBox(height: 16),
-//             BlocBuilder<AppBloc, AppState>(
-//               builder: (context, state) {
-//                 return Text(
-//                   '${state.launchCount} times',
-//                   style: Theme.of(context).textTheme.headline4,
-//                 );
-//               },
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// class HomePage extends StatefulWidget {
-//   const HomePage({super.key});
-
-//   @override
-//   _HomePageState createState() => _HomePageState();
-// }
-
-// class _HomePageState extends State<HomePage> {
-//   int _selectedPageIndex = 0;
-
-//   static final List<Widget> _pages = <Widget>[
-//     OverviewPage(),
-//     TimelinePage(),
-//     TimetablePage(),
-//   ];
-
-//   void _onItemTapped(int index) {
-//     setState(() {
-//       _selectedPageIndex = index;
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('Home'),
-//       ),
-//       drawer: Drawer(
-//         child: ListView(
-//           padding: EdgeInsets.zero,
-//           children: <Widget>[
-//             const DrawerHeader(
-//               decoration: BoxDecoration(
-//                 color: Colors.blue,
-//               ),
-//               child: Text('Drawer Header'),
-//             ),
-//             ListTile(
-//               title: const Text('Home'),
-//               onTap: () {
-//                 Navigator.pop(context);
-//               },
-//             ),
-//             ListTile(
-//               title: const Text('Settings'),
-//               onTap: () {
-//                 Navigator.pop(context);
-//                 Navigator.push(
-//                   context,
-//                   MaterialPageRoute(builder: (context) => SettingsPage()),
-//                 );
-//               },
-//             ),
-//             ListTile(
-//               title: const Text('About'),
-//               onTap: () {
-//                 Navigator.pop(context);
-//                 Navigator.push(
-//                   context,
-//                   MaterialPageRoute(builder: (context) => AboutPage()),
-//                 );
-//               },
-//             ),
-//           ],
-//         ),
-//       ),
-//       body: Center(
-//         child: _pages.elementAt(_selectedPageIndex),
-//       ),
-//       bottomNavigationBar: BottomNavigationBar(
-//         items: const <BottomNavigationBarItem>[
-//           BottomNavigationBarItem(
-//             icon: Icon(Icons.home),
-//             label: 'Overview',
-//           ),
-//           BottomNavigationBarItem(
-//             icon: Icon(Icons.timeline),
-//             label: 'Timeline',
-//           ),
-//           BottomNavigationBarItem(
-//             icon: Icon(Icons.schedule),
-//             label: 'Timetable',
-//           ),
-//         ],
-//         currentIndex: _selectedPageIndex,
-//         selectedItemColor: Colors.amber[800],
-//         onTap: _onItemTapped,
-//       ),
-//     );
-//   }
-// }
-
-// class OverviewPage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Text('Overview Page');
-//   }
-// }
-
-// class TimelinePage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Text('Timeline Page');
-//   }
-// }
-
-// class TimetablePage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Text('Timetable Page');
-//   }
-// }
-
-// class SettingsPage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('Settings'),
-//       ),
-//       body: Center(
-//         child: Text('Settings Page'),
-//       ),
-//     );
-//   }
-// }
-
-// class AboutPage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('About'),
-//       ),
-//       body: Center(
-//         child: Text('About Page'),
-//       ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/data/models/models.dart';
+import 'package:path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import '../data/database/database_manager.dart';
+
+// void main() {
+//   sqfliteFfiInit();
+//   databaseFactory = databaseFactoryFfi;
+
+//   runApp(MyApp());
+// }
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'String List',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: MyHomePage(title: 'String List'),
+    );
+  }
+}
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key? key, required this.title}) : super(key: key);
@@ -205,152 +35,545 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _selectedDrawerIndex = 0;
-  int _selectedBottomNavIndex = 0;
+  //late DatabaseManager _databaseManager = DatabaseManager();
+  late Database _database;
+  late SharedPreferences _prefs;
+  List<String>? _strings;
+  //List<TaskList>? _taskLists;
 
-  static final List<Widget> _homePages = <Widget>[
-    OverviewPage(),
-    TimelinePage(),
-    TimetablePage(),
-  ];
-
-  static final List<Widget> _otherPages = <Widget>[
-    SettingsPage(),
-    AboutPage(),
-  ];
-
-  void _onDrawerItemTapped(int index) {
-    setState(() {
-      _selectedDrawerIndex = index;
-      _selectedBottomNavIndex = 0;
-    });
-    Navigator.pop(context);
+  @override
+  void initState() {
+    super.initState();
+    _init();
   }
 
-  void _onBottomNavItemTapped(int index) {
-    setState(() {
-      _selectedBottomNavIndex = index;
-    });
+  Future<void> _init() async {
+    _database = await openDatabase(
+      join(await getDatabasesPath(), 'strings.db'),
+      onCreate: (db, version) {
+        return db.execute(
+          "CREATE TABLE strings(id INTEGER PRIMARY KEY, string TEXT)",
+        );
+      },
+      version: 1,
+    );
+    _prefs = await SharedPreferences.getInstance();
+    final strings = await _getStrings();
+    final order = _prefs.getStringList('stringOrder');
+    if (order != null) {
+      strings.sort((a, b) => order.indexOf(a).compareTo(order.indexOf(b)));
+    }
+    setState(() => _strings = strings);
+  }
+
+  Future<List<String>> _getStrings() async {
+    final List<Map<String, dynamic>> maps =
+        await _database.query('strings', orderBy: 'id');
+    return List.generate(maps.length, (i) => maps[i]['string']);
+  }
+
+  Future<void> _addString(String string) async {
+    await _database.insert('strings', {'string': string});
+    setState(() => _strings!.add(string));
+  }
+
+  Future<void> _removeString(int index) async {
+    await _database
+        .delete('strings', where: 'string = ?', whereArgs: [_strings![index]]);
+    setState(() => _strings!.removeAt(index));
+  }
+
+  void _reorderStrings(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) newIndex -= 1;
+    final string = _strings!.removeAt(oldIndex);
+    setState(() => _strings!.insert(newIndex, string));
+    _prefs.setStringList('stringOrder', _strings!);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_strings == null) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_selectedDrawerIndex == 0
-            ? 'Home'
-            : _selectedDrawerIndex == 1
-                ? 'Others'
-                : 'Upgrade'),
+      appBar: AppBar(title: Text(widget.title)),
+      body: StringsHolder(
+        strings: _strings!,
+        onReorder: _reorderStrings,
+        onRemove: _removeString,
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            DrawerHeader(
-              child: Text('Drawer Header'),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
-            ),
-            ListTile(
-              title: Text('Home'),
-              selected: _selectedDrawerIndex == 0,
-              onTap: () => _onDrawerItemTapped(0),
-            ),
-            ListTile(
-              title: Text('Others'),
-              selected: _selectedDrawerIndex == 1,
-              onTap: () => _onDrawerItemTapped(1),
-            ),
-            ListTile(
-              title: Text('Upgrade to pro version'),
-              onTap: () => _onDrawerItemTapped(2),
-            ),
-          ],
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final string = await showDialog<String>(
+            context: context,
+            builder: (context) => AddStringDialog(),
+          );
+          if (string != null && string.isNotEmpty) {
+            await _addString(string);
+          }
+        },
+        tooltip: 'Add String',
+        child: Icon(Icons.add),
       ),
-      body: //Center(
-          //child:
-          _selectedDrawerIndex == 0
-              ? _homePages.elementAt(_selectedBottomNavIndex)
-              : _selectedDrawerIndex == 1
-                  ? _otherPages.elementAt(_selectedBottomNavIndex)
-                  : UpgradePage(),
-      //),
-      bottomNavigationBar: _selectedDrawerIndex == 2
-          ? null
-          : BottomNavigationBar(
-              items: _selectedDrawerIndex == 0
-                  ? const <BottomNavigationBarItem>[
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.home),
-                        label: 'Overview',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.timeline),
-                        label: 'Timeline',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.table_chart),
-                        label: 'Timetable',
-                      ),
-                    ]
-                  : const <BottomNavigationBarItem>[
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.settings),
-                        label: 'Settings',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.info),
-                        label: 'About',
-                      ),
-                    ],
-              currentIndex: _selectedBottomNavIndex,
-              onTap: _onBottomNavItemTapped,
-            ),
     );
   }
 }
 
-class OverviewPage extends StatelessWidget {
+class StringsHolder extends StatefulWidget {
+  final List<String> strings;
+  final Function(int, int) onReorder;
+  final Function(int) onRemove;
+
+  const StringsHolder({
+    Key? key,
+    required this.strings,
+    required this.onReorder,
+    required this.onRemove,
+  }) : super(key: key);
+
+  @override
+  _StringsHolderState createState() => _StringsHolderState();
+}
+
+class _StringsHolderState extends State<StringsHolder> {
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('Overview Page'));
+    return ReorderableListView(
+      onReorder: widget.onReorder,
+      children: [
+        for (var i = 0; i < widget.strings.length; i++)
+          ListTile(
+            key: ValueKey(widget.strings[i]),
+            title: Text(widget.strings[i]),
+            trailing: IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () => widget.onRemove(i),
+            ),
+          ),
+      ],
+    );
   }
 }
 
-class TimelinePage extends StatelessWidget {
+class AddStringDialog extends StatefulWidget {
+  @override
+  _AddStringDialogState createState() => _AddStringDialogState();
+}
+
+class _AddStringDialogState extends State<AddStringDialog> {
+  final TextEditingController _controller = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('Timeline Page'));
+    return AlertDialog(
+      title: Text('Add String'),
+      content: TextField(
+        controller: _controller,
+        decoration: InputDecoration(hintText: 'Enter string'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: Text('Add'),
+        ),
+      ],
+    );
   }
 }
 
-class TimetablePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text('Timetable Page'));
-  }
-}
+// import 'package:flutter/material.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 
-class SettingsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text('Settings Page'));
-  }
-}
+//void main() => runApp(MyApp());
 
-class AboutPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text('About Page'));
-  }
-}
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//         title: 'Flutter Demo',
+//         theme: ThemeData(primarySwatch: Colors.blue),
+//         home: MyHomePage(title: 'Nested Draggable List'));
+//   }
+// }
 
-class UpgradePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text('Upgrade Page'));
-  }
-}
+// class MyHomePage extends StatefulWidget {
+//   MyHomePage({Key? key, required this.title}) : super(key: key);
+
+//   final String title;
+
+//   @override
+//   _MyHomePageState createState() => _MyHomePageState();
+// }
+
+// class _MyHomePageState extends State<MyHomePage> {
+//   final List<List<String>> _lists = [
+//     ['A', 'B', 'C'],
+//     ['D', 'E', 'F'],
+//     ['G', 'H', 'I'],
+//   ];
+
+//   void _reorderList(int oldIndex, int newIndex) {
+//     if (oldIndex < newIndex) newIndex -= 1;
+//     final list = _lists.removeAt(oldIndex);
+//     setState(() => _lists.insert(newIndex, list));
+//   }
+
+//   void _reorderItem(int listIndex, int oldIndex, int newIndex) {
+//     if (oldIndex < newIndex) newIndex -= 1;
+//     final item = _lists[listIndex].removeAt(oldIndex);
+//     setState(() => _lists[listIndex].insert(newIndex, item));
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text(widget.title)),
+//       body: ReorderableListView.builder(
+//         itemCount: _lists.length,
+//         itemBuilder: (context, index) {
+//           return Card(
+//             key: ValueKey(_lists[index]),
+//             child: Column(
+//               children: [
+//                 ListTile(title: Text('List $index')),
+//                 ReorderableListView.builder(
+//                   shrinkWrap: true,
+//                   physics: NeverScrollableScrollPhysics(),
+//                   itemCount: _lists[index].length,
+//                   itemBuilder: (context, subIndex) {
+//                     return ListTile(
+//                       key: ValueKey(_lists[index][subIndex]),
+//                       title: Text(_lists[index][subIndex]),
+//                     );
+//                   },
+//                   onReorder: (oldIndex, newIndex) =>
+//                       _reorderItem(index, oldIndex, newIndex),
+//                 ),
+//               ],
+//             ),
+//           );
+//         },
+//         onReorder: _reorderList,
+//       ),
+//     );
+//   }
+// }
+
+// class _MyHomePageState extends State<MyHomePage> {
+//   List<List<String>> _lists = [
+//     ['A', 'B', 'C'],
+//     ['D', 'E', 'F'],
+//     ['G', 'H', 'I'],
+//   ];
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _loadData();
+//   }
+
+//   // Load data from SharedPreferences
+//   void _loadData() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     setState(() {
+//       // Load parent list data
+//       if (prefs.containsKey('parentList')) {
+//         _lists = List<String>.from(prefs.getStringList('parentList')!)
+//             .map((e) => e.split(',').toList())
+//             .toList();
+//       }
+//     });
+//   }
+
+//   // Save data to SharedPreferences
+//   void _saveData() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     // Save parent list data
+//     prefs.setStringList('parentList', _lists.map((e) => e.join(',')).toList());
+//   }
+
+//   void _reorderList(int oldIndex, int newIndex) {
+//     if (oldIndex < newIndex) newIndex -= 1;
+//     final list = _lists.removeAt(oldIndex);
+//     setState(() {
+//       _lists.insert(newIndex, list);
+//       _saveData();
+//     });
+//   }
+
+//   void _reorderItem(int listIndex, int oldIndex, int newIndex) {
+//     if (oldIndex < newIndex) newIndex -= 1;
+//     final item = _lists[listIndex].removeAt(oldIndex);
+//     setState(() {
+//       _lists[listIndex].insert(newIndex, item);
+//       _saveData();
+//     });
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text(widget.title)),
+//       body: ListView.builder(
+//         itemCount: _lists.length,
+//         itemBuilder: (context, index) {
+//           return LongPressDraggable<int>(
+//             data: index,
+//             axis: Axis.vertical,
+//             childWhenDragging: Container(),
+//             feedback: ConstrainedBox(
+//                 constraints: BoxConstraints(maxWidth: 200),
+//                 child: Material(
+//                   child: Card(
+//                     child: Column(
+//                       children: [
+//                         ListTile(title: Text('List $index')),
+//                         ReorderableListView.builder(
+//                           shrinkWrap: true,
+//                           physics: NeverScrollableScrollPhysics(),
+//                           itemCount: _lists[index].length,
+//                           itemBuilder: (context, subIndex) {
+//                             return ListTile(
+//                               key: ValueKey(_lists[index][subIndex]),
+//                               title: Text(_lists[index][subIndex]),
+//                             );
+//                           },
+//                           onReorder: (oldIndex, newIndex) =>
+//                               _reorderItem(index, oldIndex, newIndex),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 )),
+//             child: DragTarget<int>(
+//               onAccept: (data) {
+//                 setState(() {
+//                   // Update the state of the list here
+//                   _reorderList(data, index);
+//                 });
+//               },
+//               // DragTarget<int>(
+//               //   onAccept: (data) => _reorderList(data, index),
+//               builder: (context, candidateData, rejectedData) {
+//                 return Card(
+//                   key: ValueKey(_lists[index]),
+//                   child: Column(
+//                     children: [
+//                       ListTile(title: Text('List $index')),
+//                       ReorderableListView.builder(
+//                         shrinkWrap: true,
+//                         physics: NeverScrollableScrollPhysics(),
+//                         itemCount: _lists[index].length,
+//                         itemBuilder: (context, subIndex) {
+//                           return ListTile(
+//                             key: ValueKey(_lists[index][subIndex]),
+//                             title: Text(_lists[index][subIndex]),
+//                           );
+//                         },
+//                         onReorder: (oldIndex, newIndex) =>
+//                             _reorderItem(index, oldIndex, newIndex),
+//                       ),
+//                     ],
+//                   ),
+//                 );
+//               },
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+// }
+
+
+// class _MyHomePageState extends State<MyHomePage> {
+//   final List<List<String>> _lists = [
+//     ['A', 'B', 'C'],
+//     ['D', 'E', 'F'],
+//     ['G', 'H', 'I'],
+//   ];
+
+//   void _reorderList(int oldIndex, int newIndex) {
+//     if (oldIndex < newIndex) newIndex -= 1;
+//     final list = _lists.removeAt(oldIndex);
+//     setState(() => _lists.insert(newIndex, list));
+//   }
+
+//   void _reorderItem(int listIndex, int oldIndex, int newIndex) {
+//     if (oldIndex < newIndex) newIndex -= 1;
+//     final item = _lists[listIndex].removeAt(oldIndex);
+//     setState(() => _lists[listIndex].insert(newIndex, item));
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text(widget.title)),
+//       body: ListView.builder(
+//         itemCount: _lists.length,
+//         itemBuilder: (context, index) {
+//           return LongPressDraggable<int>(
+//             data: index,
+//             axis: Axis.vertical,
+//             childWhenDragging: Container(),
+//             feedback: ConstrainedBox(
+//                 constraints: BoxConstraints(maxWidth: 200),
+//                 child: Material(
+//                   child: Card(
+//                     child: Column(
+//                       children: [
+//                         ListTile(title: Text('List $index')),
+//                         ReorderableListView.builder(
+//                           shrinkWrap: true,
+//                           physics: NeverScrollableScrollPhysics(),
+//                           itemCount: _lists[index].length,
+//                           itemBuilder: (context, subIndex) {
+//                             return ListTile(
+//                               key: ValueKey(_lists[index][subIndex]),
+//                               title: Text(_lists[index][subIndex]),
+//                             );
+//                           },
+//                           onReorder: (oldIndex, newIndex) =>
+//                               _reorderItem(index, oldIndex, newIndex),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 )),
+//             child: DragTarget<int>(
+//               onAccept: (data) => _reorderList(data, index),
+//               builder: (context, candidateData, rejectedData) {
+//                 return Card(
+//                   key: ValueKey(_lists[index]),
+//                   child: Column(
+//                     children: [
+//                       ListTile(title: Text('List $index')),
+//                       ReorderableListView.builder(
+//                         shrinkWrap: true,
+//                         physics: NeverScrollableScrollPhysics(),
+//                         itemCount: _lists[index].length,
+//                         itemBuilder: (context, subIndex) {
+//                           return ListTile(
+//                             key: ValueKey(_lists[index][subIndex]),
+//                             title: Text(_lists[index][subIndex]),
+//                           );
+//                         },
+//                         onReorder: (oldIndex, newIndex) =>
+//                             _reorderItem(index, oldIndex, newIndex),
+//                       ),
+//                     ],
+//                   ),
+//                 );
+//               },
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+// }
+
+
+// import 'package:flutter/material.dart';
+
+// void main() => runApp(MyApp());
+
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//         title: 'Flutter Demo',
+//         theme: ThemeData(primarySwatch: Colors.blue),
+//         home: MyHomePage(title: 'Nested Draggable List'));
+//   }
+// }
+
+// class MyHomePage extends StatefulWidget {
+//   MyHomePage({Key? key, required this.title}) : super(key: key);
+
+//   final String title;
+
+//   @override
+//   _MyHomePageState createState() => _MyHomePageState();
+// }
+
+// class _MyHomePageState extends State<MyHomePage> {
+//   final List<List<String>> _lists = [
+//     ['A', 'B', 'C'],
+//     ['D', 'E', 'F'],
+//     ['G', 'H', 'I'],
+//   ];
+
+//   void _reorderList(int oldIndex, int newIndex) {
+//     if (oldIndex < newIndex) newIndex -= 1;
+//     final list = _lists.removeAt(oldIndex);
+//     setState(() => _lists.insert(newIndex, list));
+//   }
+
+//   void _reorderItem(int listIndex, int oldIndex, int newIndex) {
+//     if (oldIndex < newIndex) newIndex -= 1;
+//     final item = _lists[listIndex].removeAt(oldIndex);
+//     setState(() => _lists[listIndex].insert(newIndex, item));
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text(widget.title)),
+//       body: ListView.builder(
+//         itemCount: _lists.length,
+//         itemBuilder: (context, index) {
+//           return Card(
+//             child: Column(
+//               children: [
+//                 ListTile(title: Text('List $index')),
+//                 SizedBox(
+//                   height: 200,
+//                   child: ListView.builder(
+//                     itemCount: _lists[index].length,
+//                     itemBuilder: (context, subIndex) {
+//                       return LongPressDraggable<String>(
+//                         data: _lists[index][subIndex],
+//                         childWhenDragging: Container(),
+//                         feedback: ConstrainedBox(
+//                           constraints: BoxConstraints(maxWidth: 200),
+//                           child: Material(
+//                             child: ListTile(
+//                               title: Text(_lists[index][subIndex]),
+//                             ),
+//                           ),
+//                         ),
+//                         child: DragTarget<String>(
+//                           onAccept: (data) {
+//                             setState(() {
+//                               final list =
+//                                   _lists.firstWhere((l) => l.contains(data));
+//                               list.remove(data);
+//                               _lists[index].insert(subIndex, data);
+//                             });
+//                           },
+//                           builder: (context, candidateData, rejectedData) {
+//                             return ListTile(
+//                               title: Text(_lists[index][subIndex]),
+//                             );
+//                           },
+//                         ),
+//                       );
+//                     },
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+// }
+

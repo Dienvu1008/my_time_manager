@@ -75,7 +75,8 @@ class App extends StatelessWidget {
               handleLanguageSelect: (value) => context.read<AppBloc>().add(
                     SelectLanguageEvent(AppLanguage.values[value]),
                   ),
-              colorSelectionMethod: state.colorSelectionMethod,
+              colorSelectionMethod: state.colorSelectionMethod, 
+              launchCount: state.launchCount,
             ),
 
             //home: MyHomePage(title: 'Demo',),

@@ -4,12 +4,14 @@ import '../screen_about_us/about_us_page.dart';
 import '../screen_material_design/color_palettes_page.dart';
 import '../screen_material_design/component_page.dart';
 import '../screen_settings/settings_page.dart';
+import '../screen_tasks/overview_bloc.dart';
 import '../screen_tasks/tasks_overview_page.dart';
 import '../screen_tasks/tasks_timeline_page.dart';
 import '../screen_tasks/tasks_timetable_page.dart';
 import '../utils/constants.dart';
 import '../screen_material_design/elevation_page.dart';
 import '../screen_material_design/typography_page.dart';
+
 
 class Home extends StatefulWidget {
   const Home({
@@ -25,6 +27,7 @@ class Home extends StatefulWidget {
     required this.colorSelectionMethod,
     required this.imageSelected,
     required this.languageSelected,
+    required this.launchCount,
   });
 
   final bool useLightMode;
@@ -33,6 +36,7 @@ class Home extends StatefulWidget {
   final ColorImageProvider imageSelected;
   final ColorSelectionMethod colorSelectionMethod;
   final AppLanguage languageSelected;
+  final int launchCount;
 
   final void Function(bool useLightMode) handleBrightnessChange;
   final void Function() handleMaterialVersionChange;
@@ -56,7 +60,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   int _selectedNavBarItemIndex = 0;
 
   static final List<Widget> _tasksScreen = <Widget>[
-    TasksOverviewPage(),
+    BlocTasksOverviewPage(),
     TasksTimelinePage(),
     TasksTimetablePage(),
   ];
@@ -251,7 +255,20 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     final localizations = AppLocalizations.of(context);
     return AnimatedBuilder(
       animation: controller,
-      builder: (context, child) {
+      builder: (context, child) { 
+        // if (widget.launchCount % 1 == 0 && widget.launchCount != 0) {
+        //   return AlertDialog(
+        //     title: Text('Thông báo'),
+        //     content:
+        //         Text('Bạn đã sử dụng ứng dụng này ${widget.launchCount} lần'),
+        //     actions: [
+        //       TextButton(
+        //         onPressed: () => Navigator.of(context).pop(),
+        //         child: Text('Đóng'),
+        //       ),
+        //     ],
+        //   );
+        // }
         return NavigationTransition(
             scaffoldKey: scaffoldKey,
             animationController: controller,
@@ -385,7 +402,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                           handleColorSelect: widget.handleColorSelect,
                           colorSelectionMethod: widget.colorSelectionMethod,
                           imageSelected: widget.imageSelected,
-                          colorSelected: widget.colorSelected,
+                          colorSelected: widget.colorSelected, 
+                          handleLanguageSelect: widget.handleLanguageSelect, 
+                          languageSelected: widget.languageSelected,
+
                         )
                       : _trailingActions(),
                 ),
@@ -644,13 +664,16 @@ class _ExpandedTrailingActions extends StatelessWidget {
     required this.handleImageSelect,
     required this.imageSelected,
     required this.colorSelected,
-    required this.colorSelectionMethod,
+    required this.colorSelectionMethod, 
+    required this.handleLanguageSelect, 
+    required this.languageSelected,
   });
 
   final void Function(bool) handleBrightnessChange;
   final void Function() handleMaterialVersionChange;
   final void Function(int) handleImageSelect;
   final void Function(int) handleColorSelect;
+  final void Function(int) handleLanguageSelect;
 
   final bool useLightMode;
   final bool useMaterial3;
@@ -658,6 +681,7 @@ class _ExpandedTrailingActions extends StatelessWidget {
   final ColorImageProvider imageSelected;
   final ColorSeed colorSelected;
   final ColorSelectionMethod colorSelectionMethod;
+  final AppLanguage languageSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -705,6 +729,10 @@ class _ExpandedTrailingActions extends StatelessWidget {
             imageSelected: imageSelected,
             colorSelectionMethod: colorSelectionMethod,
           ),
+          const Divider(),
+          _ExpandedLanguageAction(
+            handleLanguageSelect: handleLanguageSelect, 
+            languageSelected: languageSelected)
         ],
       ),
     );
@@ -797,6 +825,54 @@ class _ExpandedImageColorAction extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ExpandedLanguageAction extends StatelessWidget {
+  const _ExpandedLanguageAction({
+    required this.handleLanguageSelect,
+    required this.languageSelected,
+    
+  });
+
+  final void Function(int) handleLanguageSelect;
+  final AppLanguage languageSelected;
+  
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 150.0),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: GridView.count(
+          crossAxisCount: 3,
+          children: List.generate(
+            AppLanguage.values.length,
+            (i) => InkWell(
+              borderRadius: BorderRadius.circular(4.0),
+              onTap: () => handleLanguageSelect(i),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Material(
+                  borderRadius: BorderRadius.circular(4.0),
+                  elevation: languageSelected == AppLanguage.values[i]
+                      ? 3
+                      : 0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4.0),
+                      child: Center(child: Text(AppLanguage.values[i].short_language),),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
   }
 }
 
@@ -1033,33 +1109,35 @@ const List<NavigationDestination> navBarTasksScreenDestinations = [
   ),
 ];
 
+//navBarSettingsScreenDestinations tạo ra hai destinations giả để tránh lỗi 'destinations.length >= 2'
 const List<NavigationDestination> navBarSettingsScreenDestinations = [
   NavigationDestination(
     tooltip: '',
-    icon: Icon(Icons.settings_outlined),
-    label: 'Settings',
-    selectedIcon: Icon(Icons.settings),
+    icon: SizedBox.shrink(), //Icon(Icons.settings_outlined),
+    label: '', //'Settings',
+    selectedIcon: SizedBox.shrink(), //Icon(Icons.settings),
   ),
   NavigationDestination(
     tooltip: '',
-    icon: Icon(Icons.settings_outlined),
-    label: 'Settings',
-    selectedIcon: Icon(Icons.settings),
+    icon: SizedBox.shrink(), //Icon(Icons.settings_outlined),
+    label: '', //'Settings',
+    selectedIcon: SizedBox.shrink(), //Icon(Icons.settings),
   ),
 ];
 
+//navBarAboutUsScreenDestinations tạo ra hai destinations giả để tránh lỗi 'destinations.length >= 2'
 const List<NavigationDestination> navBarAboutUsScreenDestinations = [
   NavigationDestination(
     tooltip: '',
-    icon: Icon(Icons.info_outlined),
-    label: 'Info',
-    selectedIcon: Icon(Icons.info),
+    icon: SizedBox.shrink(), //Icon(Icons.info_outlined),
+    label: '', //'Info',
+    selectedIcon: SizedBox.shrink(), //Icon(Icons.info),
   ),
   NavigationDestination(
     tooltip: '',
-    icon: Icon(Icons.info_outlined),
-    label: 'Info',
-    selectedIcon: Icon(Icons.info),
+    icon: SizedBox.shrink(), //Icon(Icons.info_outlined),
+    label: '', //'Info',
+    selectedIcon: SizedBox.shrink(), //Icon(Icons.info),
   ),
 ];
 
