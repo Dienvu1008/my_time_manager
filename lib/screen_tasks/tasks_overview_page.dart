@@ -576,7 +576,7 @@ class _TaskCardState extends State<TaskCard> {
                 } else if (result == 'option4') {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => TimeIntervalPage()),
+                    MaterialPageRoute(builder: (context) => TimeIntervalPage(task: widget.task)),
                   );
                 }
               },

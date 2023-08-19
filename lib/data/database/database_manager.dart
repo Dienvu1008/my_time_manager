@@ -44,23 +44,96 @@ class DatabaseManager {
       CREATE TABLE tasklists(
         id TEXT PRIMARY KEY, 
         title TEXT,
-        description TEXT)
+        description TEXT,
+        color INTEGER,
+        dataFiles TEXT,
+        updateTimeStamp TEXT
+        )
       ''',
     );
     // Run the CREATE {tasks} TABLE statement on the database.
     await db.execute(
       '''
       CREATE TABLE tasks(
-        id TEXT PRIMARY KEY, 
+        id TEXT PRIMARY KEY,
+        taskListId TEXT,
+        isCompleted INTEGER NOT NULL,  
         title TEXT, 
-        description TEXT, 
+        description TEXT,
+        location TEXT, 
         color INTEGER,
-        isCompleted INTEGER NOT NULL, 
-        taskListId INTEGER, 
+        tags TEXT,
+        dataFiles TEXT,
+        updateTimeStamp TEXT, 
         FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE SET NULL)
       ''',
     );
-    _addSampleData();
+
+    await db.execute(
+      '''
+      CREATE TABLE measurabletasks(
+        id TEXT PRIMARY KEY,
+        taskListId TEXT,
+        isCompleted INTEGER NOT NULL,  
+        title TEXT, 
+        description TEXT,
+        location TEXT, 
+        color INTEGER,
+        target REAL,
+        targetType INTEGER NOT NULL,
+        unit TEXT,
+        tags TEXT,
+        dataFiles TEXT,
+        updateTimeStamp TEXT, 
+        FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE SET NULL)
+      ''',
+    );
+
+    await db.execute(
+      '''
+      CREATE TABLE taskswithsubtasks(
+        id TEXT PRIMARY KEY,
+        taskListId TEXT,
+        title TEXT,
+        description TEXT,
+        location TEXT,
+        isCompleted INTEGER NOT NULL,
+        subtasks TEXT,
+        dataFiles TEXT,
+        updateTimeStamp TEXT,
+        FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE SET NULL)
+      ''',
+    );
+
+    await db.execute(
+      '''
+    CREATE TABLE timeintervals(
+      id TEXT PRIMARY KEY,
+      isCompleted INTEGER NOT NULL,
+      taskId TEXT,
+      measuableTaskId TEXT,
+      taskWithSubtasksId TEXT,
+      location TEXT,
+      notes TEXT,
+      startDate TEXT,
+      endDate TEXT,
+      startTime INTEGER,
+      endTime INTEGER,
+      isStartDateUndefined INTEGER NOT NULL,
+      isEndDateUndefined INTEGER NOT NULL,
+      isStartTimeUndefined INTEGER NOT NULL,
+      isEndTimeUndefined INTEGER NOT NULL,
+      howMuchHasBeenDone REAL,
+      dataFiles TEXT,
+      updateTimeStamp TEXT,
+      timeZone TEXT,
+      FOREIGN KEY (taskId) REFERENCES tasks(id) ON DELETE SET NULL,
+      FOREIGN KEY (measuableTaskId) REFERENCES measurabletasks(id) ON DELETE SET NULL,
+      FOREIGN KEY (taskWithSubtasksId) REFERENCES taskswithsubtasks(id) ON DELETE SET NULL)
+    ''',
+    );
+
+    //_addSampleData();
   }
 
   Future<void> _addSampleData() async {
@@ -68,12 +141,16 @@ class DatabaseManager {
 
     await db.insert(
       'tasklists',
-      {'id': 'a', 'title': 'work', 'description': ''},
+      {'id': 'a', 
+      'title': 'work', 
+      'description': ''},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     await db.insert(
       'tasklists',
-      {'id': 'b', 'title': 'habit tracking', 'description': ''},
+      {'id': 'b', 
+      'title': 'habit tracking', 
+      'description': ''},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
@@ -124,6 +201,15 @@ class DatabaseManager {
     );
   }
 
+  Future<void> insertTimeInterval(TimeInterval timeInterval) async {
+    final db = await _databaseManager.database;
+    await db.insert(
+      'timeintervals',
+      timeInterval.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   // A method that retrieves all the task lists from the tasklists table.
   Future<List<TaskList>> taskLists() async {
     // Get a reference to the database.
@@ -134,6 +220,18 @@ class DatabaseManager {
 
     // Convert the List<Map<String, dynamic> into a List<TaskList>.
     return List.generate(maps.length, (index) => TaskList.fromMap(maps[index]));
+  }
+
+  Future<List<TimeInterval>> timeIntervals() async {
+    // Get a reference to the database.
+    final db = await _databaseManager.database;
+
+    // Query the table for all the time intervals.
+    final List<Map<String, dynamic>> maps = await db.query('timeintervals');
+
+    // Convert the List<Map<String, dynamic> into a List<TaskList>.
+    return List.generate(
+        maps.length, (index) => TimeInterval.fromMap(maps[index]));
   }
 
   Future<TaskList> taskList(String id) async {
@@ -151,6 +249,41 @@ class DatabaseManager {
       whereArgs: [taskListId],
     );
     return List.generate(maps.length, (index) => Task.fromMap(maps[index]));
+  }
+
+  Future<List<TimeInterval>> timeIntervalsOfTask(String taskId) async {
+    final db = await _databaseManager.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'timeintervals',
+      where: 'taskId = ?',
+      whereArgs: [taskId],
+    );
+    return List.generate(
+        maps.length, (index) => TimeInterval.fromMap(maps[index]));
+  }
+
+  Future<List<TimeInterval>> timeIntervalsOfMeasureableTask(
+      String measurableTaskId) async {
+    final db = await _databaseManager.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'timeintervals',
+      where: 'measurableTaskId = ?',
+      whereArgs: [measurableTaskId],
+    );
+    return List.generate(
+        maps.length, (index) => TimeInterval.fromMap(maps[index]));
+  }
+
+  Future<List<TimeInterval>> timeIntervalsOfTaskWithSubtasks(
+      String taskWithSubtasksId) async {
+    final db = await _databaseManager.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'timeintervals',
+      where: 'taskWithSubtasksId = ?',
+      whereArgs: [taskWithSubtasksId],
+    );
+    return List.generate(
+        maps.length, (index) => TimeInterval.fromMap(maps[index]));
   }
 
   Future<List<Task>> tasks() async {
@@ -185,6 +318,16 @@ class DatabaseManager {
     );
   }
 
+  Future<void> updateTimeInterval(TimeInterval timeInterval) async {
+    final db = await _databaseManager.database;
+    await db.update(
+      'timeintervals',
+      timeInterval.toMap(),
+      where: 'id = ?',
+      whereArgs: [timeInterval.id],
+    );
+  }
+
   // A method that deletes a task list data from the tasklists table.
   Future<void> deleteTaskList(String id) async {
     // Get a reference to the database.
@@ -204,4 +347,10 @@ class DatabaseManager {
     final db = await _databaseManager.database;
     await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
+
+  Future<void> deleteTimeInterval(String id) async {
+    final db = await _databaseManager.database;
+    await db.delete('timeintervals', where: 'id = ?', whereArgs: [id]);
+  }
+
 }
