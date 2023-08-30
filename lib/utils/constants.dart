@@ -33,7 +33,7 @@ enum ColorImageProvider {
   const ColorImageProvider(this.label, this.url);
   final String label;
   final String url;
-}  
+}
 
 enum ColorSeed {
   baseColor('M3 Baseline', Color(0xff6750a4)),
@@ -76,7 +76,11 @@ enum ScreenSelected {
   tasksScreen(0),
   settingsScreen(1),
   aboutUsScreen(2),
-  materialDesignScreen(3);
+  materialDesignScreen(3),
+  calendarScreen(4),
+  focusTimerScreen(5),
+  contactsScreen(6),
+  statsScreen(7);
 
   const ScreenSelected(this.value);
   final int value;
@@ -98,12 +102,24 @@ enum PageOfMaterialDesignScreenSelected {
   typography(2),
   elevation(3),
   ;
+
   const PageOfMaterialDesignScreenSelected(this.value);
   final int value;
 }
 
+enum PageOfCalendarScreenSelected {
+  dayPage(0),
+  weekPage(1),
+  monthPage(2),
+  yearPage(3),
+  ;
+
+  const PageOfCalendarScreenSelected(this.value);
+  final int value;
+}
+
 enum AppLanguage {
-  english('english','EN'),
+  english('english', 'EN'),
   vietnamese('vietnamese', 'VI'),
   german('german', 'DE'),
   // french('french', 'FR'),
@@ -118,7 +134,6 @@ enum AppLanguage {
   final String language;
   final String short_language;
 }
-
 
 const double FONT_VERY_SMALL = 4.0;
 const double FONT_SMALL = 8.0;
@@ -143,9 +158,15 @@ class AboutUsKeys {
 }
 
 const String GITHUB_URL = "https://github.com/Dienvu1008";
-const String AUTHOR_FACEBOOK_URL = "https://www.facebook.com/profile.php?id=100074416023246";
-const String PAGE_FACEBOOK_URL = "https://www.facebook.com/profile.php?id=100083919462769";
-const String EMAIL_URL = "mailto:<dienvu1008@gmail.com>?subject=MyTimeManager%20Query&body=Hi";
-const String README_URL ="https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README.md";
-const String PRIVACY_URL = "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/PRIVACY.md";
-const String ISSUE_URL = "https://github.com/Dienvu1008/My-Time-Manager-Infor/issues";
+const String AUTHOR_FACEBOOK_URL =
+    "https://www.facebook.com/profile.php?id=100074416023246";
+const String PAGE_FACEBOOK_URL =
+    "https://www.facebook.com/profile.php?id=100083919462769";
+const String EMAIL_URL =
+    "mailto:<dienvu1008@gmail.com>?subject=MyTimeManager%20Query&body=Hi";
+const String README_URL =
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README.md";
+const String PRIVACY_URL =
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/PRIVACY.md";
+const String ISSUE_URL =
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/issues";

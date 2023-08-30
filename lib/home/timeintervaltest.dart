@@ -22,10 +22,10 @@ class TimeIntervalPage extends StatefulWidget {
   const TimeIntervalPage({
     super.key, 
     this.task, 
-    this.measureableTask, 
+    this.measurableTask, 
     this.taskWithSubtasks});
   final Task? task; 
-  final MeasurableTask? measureableTask;
+  final MeasurableTask? measurableTask;
   final TaskWithSubtasks? taskWithSubtasks;
 
   @override
@@ -299,7 +299,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                               : null;
                           final timeInterval = TimeInterval(
                             taskId: widget.task == null ? '' : widget.task!.id,
-                            measuableTaskId: widget.measureableTask == null ? '' : widget.measureableTask!.id,
+                            measuableTaskId: widget.measurableTask == null ? '' : widget.measurableTask!.id,
                             taskWithSubtasksId: widget.taskWithSubtasks == null ? '' : widget.taskWithSubtasks!.id,
                             startDate: startDate,
                             endDate: endDate,

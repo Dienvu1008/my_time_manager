@@ -14,6 +14,7 @@ class Task extends Equatable {
   final String taskListId;
   final String title;
   final bool isCompleted;
+  final bool isImportant;
   final String description;
   final String location;
   final Color color;
@@ -26,6 +27,7 @@ class Task extends Equatable {
     required this.taskListId,
     required this.title,
     bool? isCompleted,
+    bool? isImportant,
     String? description,
     String? location,
     Color? color,
@@ -38,6 +40,7 @@ class Task extends Equatable {
         ),
         id = id ?? const Uuid().v4(),
         isCompleted = isCompleted ?? false,
+        isImportant = isImportant ?? false,
         description = description ?? '',
         location = location ?? '',
         color = color ?? Colors.white,
@@ -51,6 +54,7 @@ class Task extends Equatable {
       'taskListId': taskListId,
       'title': title,
       'isCompleted': isCompleted ? 1 : 0,
+      'isImportant': isImportant ? 1 : 0,
       'description': description,
       'location': location,
       'color': color.value,
@@ -66,6 +70,7 @@ class Task extends Equatable {
       taskListId: map['taskListId'],
       title: map['title'],
       isCompleted: map['isCompleted'] == 1,
+      isImportant: map['isImportant'] == 1,
       description: map['description'],
       location: map['location'],
       color: Color(map['color']),
@@ -209,7 +214,13 @@ class TimeInterval extends Equatable {
   int? startTimestamp;
   int? endTimestamp;
   //just used for MeasuableTask
+  double targetAtLeast;
+  double targetAtMost;
+  TargetType targetType;
+  String unit;
   double howMuchHasBeenDone;
+  //just used for task with sub tasks
+  List<Subtask> subtasks;
   final List<String> dataFiles;
   final DateTime updateTimeStamp;
   String? timeZone;
@@ -230,6 +241,11 @@ class TimeInterval extends Equatable {
       this.isEndDateUndefined = false,
       this.isStartTimeUndefined = false,
       this.isEndTimeUndefined = false,
+      double? targetAtLeast,
+      double? targetAtMost,
+      TargetType? targetType,
+      String? unit,
+      List<Subtask>? subtasks,
       double? howMuchHasBeenDone,
       List<String>? dataFiles,
       DateTime? updateTimeStamp,
@@ -242,6 +258,11 @@ class TimeInterval extends Equatable {
         isCompleted = isCompleted ?? false,
         location = location ?? '',
         notes = notes ?? '',
+        targetAtLeast = targetAtLeast ?? double.negativeInfinity,
+        targetAtMost = targetAtMost ?? double.infinity,
+        unit = unit ?? '',
+        subtasks = subtasks ?? [],
+        targetType = targetType ?? TargetType.about,
         // isStartDateUndefined = isStartDateUndefined ?? false,
         // isEndDateUndefined = isEndDateUndefined ?? false,
         // isStartTimeUndefined = isStartTimeUndefined ?? false,
@@ -294,6 +315,7 @@ class TimeInterval extends Equatable {
       'taskId': taskId,
       'measuableTaskId': measuableTaskId,
       'taskWithSubtasksId': taskWithSubtasksId,
+
       'startDate': startDate?.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
       'startTime':
@@ -303,7 +325,16 @@ class TimeInterval extends Equatable {
       'isEndDateUndefined': isEndDateUndefined ? 1 : 0,
       'isStartTimeUndefined': isStartTimeUndefined ? 1 : 0,
       'isEndTimeUndefined': isEndTimeUndefined ? 1 : 0,
+
+      'targetAtLeast': targetAtLeast, //REAL
+      'targetAtMost': targetAtMost, //REAL
+      'targetType': targetType.index,
+      'unit': unit,
       'howMuchHasBeenDone': howMuchHasBeenDone,
+
+      'subtasks':
+          jsonEncode(subtasks.map((subtask) => subtask.toMap()).toList()),
+
       'dataFiles': jsonEncode(dataFiles),
       'updateTimeStamp': updateTimeStamp.toIso8601String(),
       'timeZone': timeZone,
@@ -333,9 +364,21 @@ class TimeInterval extends Equatable {
         isEndDateUndefined: map['isEndDateUndefined'] == 1,
         isStartTimeUndefined: map['isStartTimeUndefined'] == 1,
         isEndTimeUndefined: map['isEndTimeUndefined'] == 1,
+        targetAtLeast: map['targetAtLeast'],
+        targetAtMost: map['targetAtMost'],
+        // targetType: map['targetType'] == 0
+        //     ? TargetType.about
+        //     : map['targetType'] == 1
+        //         ? TargetType.atLeast
+        //         : TargetType.atMost,
+        targetType: TargetType.values[map['targetType']],
+        unit: map['unit'],
         howMuchHasBeenDone:
             (map['howMuchHasBeenDone'] as double?)?.toDouble() ??
                 0.0, //(map['howMuchHasBeenDone'] as num).toDouble(),
+
+        subtasks: List<Subtask>.from(jsonDecode(map['subtasks'])
+            .map((subtaskMap) => Subtask.fromMap(subtaskMap))),
         dataFiles: List<String>.from(jsonDecode(map['dataFiles'])),
         updateTimeStamp: DateTime.parse(map['updateTimeStamp']),
         timeZone: map['timeZone']);
@@ -363,7 +406,7 @@ class TimeInterval extends Equatable {
   List<Object?> get props => [id];
 }
 
-enum TargetType { atLeast, atMost }
+enum TargetType { atLeast, atMost, about }
 
 class MeasurableTask {
   final String id;
@@ -372,10 +415,12 @@ class MeasurableTask {
   final String description;
   final String location;
   final Color color;
-  final double target;
+  final double targetAtLeast;
+  final double targetAtMost;
   final TargetType targetType;
   final String unit;
   bool isCompleted;
+  bool isImportant;
   double howMuchHasBeenDone;
   final List<String> dataFiles;
   final DateTime updateTimeStamp;
@@ -387,10 +432,12 @@ class MeasurableTask {
     String? description,
     String? location,
     Color? color,
-    required this.target,
+    required this.targetAtLeast,
+    required this.targetAtMost,
     required this.targetType,
     required this.unit,
     bool? isCompleted,
+    bool? isImportant,
     double? howMuchHasBeenDone,
     List<String>? dataFiles,
     DateTime? updateTimeStamp,
@@ -400,6 +447,7 @@ class MeasurableTask {
         ),
         id = id ?? const Uuid().v4(),
         isCompleted = isCompleted ?? false,
+        isImportant = isImportant ?? false,
         description = description ?? '',
         location = location ?? '',
         color = color ?? Colors.white,
@@ -424,10 +472,12 @@ class MeasurableTask {
       'description': description,
       'location': location,
       'color': color.value,
-      'target': target, //REAL
-      'targetType': targetType,
+      'targetAtLeast': targetAtLeast, //REAL
+      'targetAtMost': targetAtMost, //REAL
+      'targetType': targetType.index,
       'unit': unit,
       'isCompleted': isCompleted ? 1 : 0,
+      'isImportant': isImportant ? 1 : 0,
       'howMuchHasBeenDone': howMuchHasBeenDone, //REAL
       'dataFiles': jsonEncode(dataFiles),
       'updateTimeStamp': updateTimeStamp.toIso8601String(),
@@ -442,13 +492,17 @@ class MeasurableTask {
         description: map['description'],
         location: map['location'],
         color: Color(map['color']),
-        target: map['target'],
-        targetType: map['targetType'] == 0
-            ? TargetType.atLeast
-            : TargetType
-                .atMost, // targetType trong database có kiểu int, nhận giá trị 0, 1
+        targetAtLeast: map['targetAtLeast'],
+        targetAtMost: map['targetAtMost'],
+        // targetType: map['targetType'] == 0
+        //     ? TargetType.about
+        //     : map['targetType'] == 1
+        //         ? TargetType.atLeast
+        //         : TargetType.atMost,
+        targetType: TargetType.values[map['targetType']],
         unit: map['unit'],
         isCompleted: map['isCompleted'] == 1,
+        isImportant: map['isImportant'] == 1,
         howMuchHasBeenDone:
             (map['howMuchHasBeenDone'] as num?)?.toDouble() ?? 0.0,
         dataFiles: map['dataFiles'] != null
@@ -490,7 +544,9 @@ class TaskWithSubtasks {
   final String title;
   final String description;
   final String location;
+  final Color color;
   bool isCompleted;
+  bool isImportant;
   List<Subtask> subtasks;
   final List<String> dataFiles;
   final DateTime updateTimeStamp;
@@ -501,7 +557,9 @@ class TaskWithSubtasks {
     required this.title,
     String? description,
     String? location,
+    Color? color,
     bool? isCompleted,
+    bool? isImportant,
     required this.subtasks,
     List<String>? dataFiles,
     DateTime? updateTimeStamp,
@@ -512,7 +570,9 @@ class TaskWithSubtasks {
         id = id ?? const Uuid().v4(),
         description = description ?? '',
         location = location ?? '',
+        color = color ?? Colors.white,
         isCompleted = isCompleted ?? false,
+        isImportant = isImportant ?? false,
         dataFiles = dataFiles ?? [],
         updateTimeStamp = updateTimeStamp ?? DateTime.now();
 
@@ -527,7 +587,9 @@ class TaskWithSubtasks {
       'title': title,
       'description': description,
       'location': location,
+      'color': color.value,
       'isCompleted': isCompleted ? 1 : 0,
+      'isImportant': isImportant ? 1 : 0,
       'subtasks':
           jsonEncode(subtasks.map((subtask) => subtask.toMap()).toList()),
       'dataFiles': jsonEncode(dataFiles),
@@ -543,7 +605,9 @@ class TaskWithSubtasks {
         title: map['title'],
         description: map['description'],
         location: map['location'],
+        color: Color(map['color']),
         isCompleted: map['isCompleted'] == 1,
+        isImportant: map['isImportant'] == 1,
         subtasks: List<Subtask>.from(jsonDecode(map['subtasks'])
             .map((subtaskMap) => Subtask.fromMap(subtaskMap))),
         dataFiles: List<String>.from(jsonDecode(map['dataFiles'])),
@@ -553,6 +617,95 @@ class TaskWithSubtasks {
         //DateTime.fromMillisecondsSinceEpoch(map['updateTimeStamp']),
         );
   }
+}
+
+class Event extends Equatable {
+  final String id;
+  final String taskListId;
+  final String title;
+  final String description;
+  final String location;
+  final Color color;
+  final DateTime startTimeStamp;
+  final DateTime endTimeStamp;
+  final List<String> tags;
+  final List<String> dataFiles;
+  final DateTime updateTimeStamp;
+
+  Event({
+    String? id,
+    required this.taskListId,
+    required this.title,
+    String? description,
+    String? location,
+    Color? color,
+    required this.startTimeStamp,
+    required this.endTimeStamp,
+    List<String>? tags,
+    List<String>? dataFiles,
+    DateTime? updateTimeStamp,
+  })  : assert(
+          id == null || id.isNotEmpty,
+          'id can not be null and should be empty',
+        ),
+        id = id ?? const Uuid().v4(),
+        description = description ?? '',
+        location = location ?? '',
+        color = color ?? Colors.white,
+        tags = tags ?? [],
+        dataFiles = dataFiles ?? [],
+        updateTimeStamp = updateTimeStamp ?? DateTime.now();
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'taskListId': taskListId,
+      'title': title,
+      'description': description,
+      'location': location,
+      'color': color.value,
+      'startTimeStamp': startTimeStamp.millisecondsSinceEpoch, // INTEGER
+      'endTimeStamp': endTimeStamp.millisecondsSinceEpoch, // INTEGER
+      'tags': jsonEncode(tags),
+      'dataFiles': jsonEncode(dataFiles),
+      'updateTimeStamp': updateTimeStamp.toIso8601String(),
+    };
+  }
+
+  factory Event.fromMap(Map<String, dynamic> map) {
+    return Event(
+      id: map['id'],
+      taskListId: map['taskListId'],
+      title: map['title'],
+      description: map['description'],
+      location: map['location'],
+      color: Color(map['color']),
+      startTimeStamp:
+          DateTime.fromMillisecondsSinceEpoch(map['startTimeStamp']),
+      endTimeStamp: DateTime.fromMillisecondsSinceEpoch(map['endTimeStamp']),
+      tags: List<String>.from(jsonDecode(map['tags'])),
+      dataFiles: List<String>.from(jsonDecode(map['dataFiles'])),
+      updateTimeStamp: DateTime.parse(map['updateTimeStamp']),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+  factory Event.fromJson(String source) => Event.fromMap(json.decode(source));
+  // Implement toString to make it easier to see information about
+  // each task when using the print statement.
+
+  @override
+  String toString() {
+    return '''Task(
+      id: $id, 
+      title: $title, 
+      description: $description, 
+      color: $color, 
+      taskListId: $taskListId)''';
+  }
+
+  @override
+  List<Object?> get props => [id, taskListId, title, description];
 }
 
 class FocusInterval {
@@ -577,6 +730,52 @@ class FocusInterval {
   }
 }
 
+class FocusIntervalsStats {
+  String? id;
+  String? taskId;
+  String? measurableTaskId;
+  String? taskWithSubtasksId;
+  List<FocusInterval> focusIntervals;
+
+  FocusIntervalsStats({
+    String? id,
+    String? taskId,
+    String? measurableTaskId,
+    String? taskWithSubtasksId,
+    List<FocusInterval>? focusIntervals,
+  })  : assert(
+          id == null || id.isNotEmpty,
+          'id can not be null and should be empty',
+        ),
+        id = id ?? const Uuid().v4(),
+        taskId = taskId ?? '',
+        taskWithSubtasksId = taskWithSubtasksId ?? '',
+        measurableTaskId = measurableTaskId ?? '',
+        focusIntervals = focusIntervals ?? [];
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'taskId': taskId,
+      'taskWithSubtasksId': taskWithSubtasksId,
+      'measurableTaskId': measurableTaskId,
+      'focusIntervals': jsonEncode(focusIntervals!
+          .map((focusInterval) => focusInterval.toMap())
+          .toList()),
+    };
+  }
+
+  factory FocusIntervalsStats.fromMap(Map<String, dynamic> map) {
+    return FocusIntervalsStats(
+        id: map['id'],
+        taskId: map['taskId'],
+        taskWithSubtasksId: map['taskWithSubtasksId'],
+        measurableTaskId: map['measurableTaskId'],
+        focusIntervals: List<FocusInterval>.from(
+            jsonDecode(map['focusIntervals']).map((focusIntervalMap) =>
+                FocusInterval.fromMap(focusIntervalMap))));
+  }
+}
 
 /// The type definition for a JSON-serializable [Map].
 typedef JsonMap = Map<String, dynamic>;

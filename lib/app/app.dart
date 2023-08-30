@@ -56,6 +56,12 @@ class App extends StatelessWidget {
             home: Home(
               useLightMode: state.useLightMode,
               useMaterial3: state.useMaterial3,
+              showBrightnessButtonInAppBar: state.showBrightnessButtonInAppBar,
+              showMaterialDesignButtonInAppBar:
+                  state.showMaterialDesignButtonInAppBar,
+              showColorSeedButtonInAppBar: state.showColorSeedButtonInAppBar,
+              showColorImageButtonInAppBar: state.showColorImageButtonInAppBar,
+              showLanguagesButtonInAppBar: state.showLanguagesButtonInAppBar,
               colorSelected: state.colorSelected,
               imageSelected: state.imageSelected,
               languageSelected: state.language,
@@ -66,6 +72,26 @@ class App extends StatelessWidget {
               handleMaterialVersionChange: () => context
                   .read<AppBloc>()
                   .add(ToggleMaterialVersion(state.useMaterial3)),
+              handleDisplayBrightnessButtonInAppBarChange: () => context
+                  .read<AppBloc>()
+                  .add(ToggleDisplayBrightnessButtonInAppBar(
+                      state.showBrightnessButtonInAppBar)),
+              handleDisplayMaterialDesignButtonInAppBarChange: () => context
+                  .read<AppBloc>()
+                  .add(ToggleDisplayMaterialDesignButtonInAppBar(
+                      state.showMaterialDesignButtonInAppBar)),
+              handleDisplayColorSeedButtonInAppBarChange: () => context
+                  .read<AppBloc>()
+                  .add(ToggleDisplayColorSeedButtonInAppBar(
+                      state.showColorSeedButtonInAppBar)),
+              handleDisplayColorImageButtonInAppBarChange: () => context
+                  .read<AppBloc>()
+                  .add(ToggleDisplayColorImageButtonInAppBar(
+                      state.showColorImageButtonInAppBar)),
+              handleDisplayLanguagesButtonInAppBarChange: () => context
+                  .read<AppBloc>()
+                  .add(ToggleDisplayLanguagesButtonInAppBar(
+                      state.showLanguagesButtonInAppBar)),
               handleColorSelect: (value) => context.read<AppBloc>().add(
                     ChangeColor(ColorSeed.values[value]),
                   ),
@@ -75,7 +101,7 @@ class App extends StatelessWidget {
               handleLanguageSelect: (value) => context.read<AppBloc>().add(
                     SelectLanguageEvent(AppLanguage.values[value]),
                   ),
-              colorSelectionMethod: state.colorSelectionMethod, 
+              colorSelectionMethod: state.colorSelectionMethod,
               launchCount: state.launchCount,
             ),
 
@@ -90,7 +116,12 @@ class App extends StatelessWidget {
 class AppBloc extends Bloc<AppEvent, AppState> {
   static const brightnessKey = 'brightness';
   static const colorKey = 'color';
-  static const useDesignVersionKey = 'useMaterial';
+  static const useDesignVersionKey = 'useMaterial3';
+  static const displayBrightnessButtonInAppBar = 'showBrightnessButtonInAppBar';
+  static const displayMaterialDesignButtonInAppBar = 'showMaterialDesignButtonInAppBar';
+  static const displayColorSeedButtonInAppBar = 'showColorSeedButtonInAppBar';
+  static const displayColorImageButtonInAppBar = 'showColorImageButtonInAppBar';
+  static const displayLanguagesButtonInAppBar = 'showLanguagesButtonInAppBar';
   static const languageKey = 'language';
   static const launchCountKey = 'launchCount';
 
@@ -99,6 +130,11 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   AppBloc()
       : super(AppState(
             useMaterial3: true,
+            showBrightnessButtonInAppBar: true,
+            showMaterialDesignButtonInAppBar: true,
+            showColorSeedButtonInAppBar: true,
+            showColorImageButtonInAppBar: true,
+            showLanguagesButtonInAppBar: true,
             themeMode: ThemeMode.system,
             colorSelected: ColorSeed.baseColor,
             imageSelected: ColorImageProvider.leaves,
@@ -123,10 +159,45 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
       add(ToggleMaterialVersion(
         sharedPreferences.getString(useDesignVersionKey) == 'useMaterial3'
-            ? false
-            : true,
+            ? true
+            : false,
       ));
-      
+
+      add(ToggleDisplayBrightnessButtonInAppBar(
+        sharedPreferences.getString(displayBrightnessButtonInAppBar) ==
+                'showBrightnessButtonInAppBar'
+            ? true
+            : false,
+      ));
+
+      add(ToggleDisplayMaterialDesignButtonInAppBar(
+        sharedPreferences.getString(displayMaterialDesignButtonInAppBar) ==
+                'showMaterialDesignButtonInAppBar'
+            ? true
+            : false,
+      ));
+
+      add(ToggleDisplayColorSeedButtonInAppBar(
+        sharedPreferences.getString(displayColorSeedButtonInAppBar) ==
+                'showColorSeedButtonInAppBar'
+            ? true
+            : false,
+      ));
+
+      add(ToggleDisplayColorImageButtonInAppBar(
+        sharedPreferences.getString(displayColorImageButtonInAppBar) ==
+                'showColorImageButtonInAppBar'
+            ? true
+            : false,
+      ));
+
+      add(ToggleDisplayLanguagesButtonInAppBar(
+        sharedPreferences.getString(displayLanguagesButtonInAppBar) ==
+                'showLanguagesButtonInAppBar'
+            ? true
+            : false,
+      ));
+
       if (sharedPreferences.getInt(languageKey) != null) {
         add(SelectLanguageEvent(
             AppLanguage.values[sharedPreferences.getInt(languageKey)!]));
@@ -136,7 +207,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
       add(IncrementLaunchCountEvent());
     });
-    
+
     on<ToggleBrightness>((event, emit) {
       sharedPreferences.setString(
           brightnessKey, event.useLightMode ? 'light' : 'dark');
@@ -147,8 +218,59 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
     on<ToggleMaterialVersion>((event, emit) {
       sharedPreferences.setString(useDesignVersionKey,
-          event.useMaterial3 ? 'useMaterial3' : 'useMaterial2');
-      emit(state.copyWith(useMaterial3: !state.useMaterial3));
+          event.useMaterial3 ?'useMaterial3': 'useMaterial2');
+      emit(state.copyWith(useMaterial3: !event.useMaterial3));
+    });
+
+    on<ToggleDisplayBrightnessButtonInAppBar>((event, emit) {
+      sharedPreferences.setString(
+          displayBrightnessButtonInAppBar,
+          event.showBrightnessButtonInAppBar
+              ? 'showBrightnessButtonInAppBar'
+              : 'hideBrightnessButtonInAppBar');
+      emit(state.copyWith(
+          showBrightnessButtonInAppBar: !event.showBrightnessButtonInAppBar));
+    });
+
+    on<ToggleDisplayMaterialDesignButtonInAppBar>((event, emit) {
+      sharedPreferences.setString(
+          displayMaterialDesignButtonInAppBar,
+          event.showMaterialDesignButtonInAppBar
+              ? 'showMaterialDesignButtonInAppBar'
+              : 'hideMaterialDesignButtonInAppBar');
+      emit(state.copyWith(
+          showMaterialDesignButtonInAppBar:
+              !event.showMaterialDesignButtonInAppBar));
+    });
+
+    on<ToggleDisplayColorSeedButtonInAppBar>((event, emit) {
+      sharedPreferences.setString(
+          displayColorSeedButtonInAppBar,
+          event.showColorSeedButtonInAppBar
+              ? 'showColorSeedButtonInAppBar'
+              : 'hideColorSeedButtonInAppBar');
+      emit(state.copyWith(
+          showColorSeedButtonInAppBar: !event.showColorSeedButtonInAppBar));
+    });
+
+    on<ToggleDisplayColorImageButtonInAppBar>((event, emit) {
+      sharedPreferences.setString(
+          displayColorImageButtonInAppBar,
+          event.showColorImageButtonInAppBar
+              ? 'showColorImageButtonInAppBar'
+              : 'hideColorImageButtonInAppBar');
+      emit(state.copyWith(
+          showColorImageButtonInAppBar: !event.showColorImageButtonInAppBar));
+    });
+
+    on<ToggleDisplayLanguagesButtonInAppBar>((event, emit) {
+      sharedPreferences.setString(
+          displayLanguagesButtonInAppBar,
+          event.showLanguagesButtonInAppBar
+              ? 'showLanguagesButtonInAppBar'
+              : 'hideLanguagesButtonInAppBar');
+      emit(state.copyWith(
+          showLanguagesButtonInAppBar: !event.showLanguagesButtonInAppBar));
     });
 
     on<ChangeColor>((event, emit) {
@@ -192,7 +314,6 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     on<LoadLaunchCountEvent>((event, emit) {
       emit(state.copyWith(launchCount: event.launchCount));
     });
-
   }
 }
 
@@ -210,6 +331,37 @@ class ToggleMaterialVersion extends AppEvent {
   final bool useMaterial3;
 
   ToggleMaterialVersion(this.useMaterial3);
+}
+
+class ToggleDisplayBrightnessButtonInAppBar extends AppEvent {
+  final bool showBrightnessButtonInAppBar;
+
+  ToggleDisplayBrightnessButtonInAppBar(this.showBrightnessButtonInAppBar);
+}
+
+class ToggleDisplayMaterialDesignButtonInAppBar extends AppEvent {
+  final bool showMaterialDesignButtonInAppBar;
+
+  ToggleDisplayMaterialDesignButtonInAppBar(
+      this.showMaterialDesignButtonInAppBar);
+}
+
+class ToggleDisplayColorSeedButtonInAppBar extends AppEvent {
+  final bool showColorSeedButtonInAppBar;
+
+  ToggleDisplayColorSeedButtonInAppBar(this.showColorSeedButtonInAppBar);
+}
+
+class ToggleDisplayColorImageButtonInAppBar extends AppEvent {
+  final bool showColorImageButtonInAppBar;
+
+  ToggleDisplayColorImageButtonInAppBar(this.showColorImageButtonInAppBar);
+}
+
+class ToggleDisplayLanguagesButtonInAppBar extends AppEvent {
+  final bool showLanguagesButtonInAppBar;
+
+  ToggleDisplayLanguagesButtonInAppBar(this.showLanguagesButtonInAppBar);
 }
 
 class ChangeColor extends AppEvent {
@@ -251,12 +403,19 @@ class AppState {
   final ColorSelectionMethod colorSelectionMethod;
   final AppLanguage language;
   final int launchCount;
+  // final bool useNavigationRail;
+  final bool showBrightnessButtonInAppBar;
+  final bool showMaterialDesignButtonInAppBar;
+  final bool showColorSeedButtonInAppBar;
+  final bool showColorImageButtonInAppBar;
+  final bool showLanguagesButtonInAppBar;
 
   bool get useLightMode {
     switch (themeMode) {
       case ThemeMode.system:
         return WidgetsBinding.instance.window.platformBrightness ==
             Brightness.light;
+      //return View.of(context).window.platformBrightness == Brightness.light;
       case ThemeMode.light:
         return true;
       case ThemeMode.dark:
@@ -266,6 +425,11 @@ class AppState {
 
   AppState({
     required this.useMaterial3,
+    required this.showBrightnessButtonInAppBar,
+    required this.showMaterialDesignButtonInAppBar,
+    required this.showColorSeedButtonInAppBar,
+    required this.showColorImageButtonInAppBar,
+    required this.showLanguagesButtonInAppBar,
     required this.themeMode,
     required this.colorSelected,
     required this.imageSelected,
@@ -277,6 +441,11 @@ class AppState {
 
   AppState copyWith({
     bool? useMaterial3,
+    bool? showBrightnessButtonInAppBar,
+    bool? showMaterialDesignButtonInAppBar,
+    bool? showColorSeedButtonInAppBar,
+    bool? showColorImageButtonInAppBar,
+    bool? showLanguagesButtonInAppBar,
     ThemeMode? themeMode,
     ColorSeed? colorSelected,
     ColorImageProvider? imageSelected,
@@ -285,8 +454,39 @@ class AppState {
     AppLanguage? language,
     int? launchCount,
   }) {
-    return AppState(
+    // return AppState(
+    //   useMaterial3: useMaterial3 ?? this.useMaterial3,
+    //   showBrightnessButtonInAppBar:
+    //       showBrightnessButtonInAppBar ?? this.showBrightnessButtonInAppBar,
+    //   showMaterialDesignButtonInAppBar: showMaterialDesignButtonInAppBar ??
+    //       this.showMaterialDesignButtonInAppBar,
+    //   showColorSeedButtonInAppBar:
+    //       showColorSeedButtonInAppBar ?? this.showColorSeedButtonInAppBar,
+    //   showColorImageButtonInAppBar:
+    //       showColorImageButtonInAppBar ?? this.showColorImageButtonInAppBar,
+    //   showLanguagesButtonInAppBar:
+    //       showLanguagesButtonInAppBar ?? this.showLanguagesButtonInAppBar,
+    //   themeMode: themeMode ?? this.themeMode,
+    //   colorSelected: colorSelected ?? this.colorSelected,
+    //   imageSelected: imageSelected ?? this.imageSelected,
+    //   imageColorScheme: imageColorScheme ?? this.imageColorScheme,
+    //   colorSelectionMethod: colorSelectionMethod ?? this.colorSelectionMethod,
+    //   language: language ?? this.language,
+    //   launchCount: launchCount ?? this.launchCount,
+    // );
+
+        return AppState(
       useMaterial3: useMaterial3 ?? this.useMaterial3,
+      showBrightnessButtonInAppBar:
+          showBrightnessButtonInAppBar ?? this.showBrightnessButtonInAppBar,
+      showMaterialDesignButtonInAppBar: showMaterialDesignButtonInAppBar ??
+          this.showMaterialDesignButtonInAppBar,
+      showColorSeedButtonInAppBar:
+          showColorSeedButtonInAppBar ?? this.showColorSeedButtonInAppBar,
+      showColorImageButtonInAppBar:
+          showColorImageButtonInAppBar ?? this.showColorImageButtonInAppBar,
+      showLanguagesButtonInAppBar:
+          showLanguagesButtonInAppBar ?? this.showLanguagesButtonInAppBar,
       themeMode: themeMode ?? this.themeMode,
       colorSelected: colorSelected ?? this.colorSelected,
       imageSelected: imageSelected ?? this.imageSelected,
@@ -316,4 +516,3 @@ class AppState {
   //       selectedLanguage: language,
   //     );
 }
-

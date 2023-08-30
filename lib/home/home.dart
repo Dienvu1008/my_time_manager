@@ -12,15 +12,24 @@ import '../utils/constants.dart';
 import '../screen_material_design/elevation_page.dart';
 import '../screen_material_design/typography_page.dart';
 
-
 class Home extends StatefulWidget {
   const Home({
     super.key,
     required this.useLightMode,
     required this.useMaterial3,
+    required this.showBrightnessButtonInAppBar,
+    required this.showMaterialDesignButtonInAppBar,
+    required this.showColorSeedButtonInAppBar,
+    required this.showColorImageButtonInAppBar,
+    required this.showLanguagesButtonInAppBar,
     required this.colorSelected,
     required this.handleBrightnessChange,
     required this.handleMaterialVersionChange,
+    required this.handleDisplayBrightnessButtonInAppBarChange,
+    required this.handleDisplayMaterialDesignButtonInAppBarChange,
+    required this.handleDisplayColorSeedButtonInAppBarChange,
+    required this.handleDisplayColorImageButtonInAppBarChange,
+    required this.handleDisplayLanguagesButtonInAppBarChange,
     required this.handleColorSelect,
     required this.handleImageSelect,
     required this.handleLanguageSelect,
@@ -32,6 +41,11 @@ class Home extends StatefulWidget {
 
   final bool useLightMode;
   final bool useMaterial3;
+  final bool showBrightnessButtonInAppBar;
+  final bool showMaterialDesignButtonInAppBar;
+  final bool showColorSeedButtonInAppBar;
+  final bool showColorImageButtonInAppBar;
+  final bool showLanguagesButtonInAppBar;
   final ColorSeed colorSelected;
   final ColorImageProvider imageSelected;
   final ColorSelectionMethod colorSelectionMethod;
@@ -40,6 +54,11 @@ class Home extends StatefulWidget {
 
   final void Function(bool useLightMode) handleBrightnessChange;
   final void Function() handleMaterialVersionChange;
+  final void Function() handleDisplayBrightnessButtonInAppBarChange;
+  final void Function() handleDisplayMaterialDesignButtonInAppBarChange;
+  final void Function() handleDisplayColorSeedButtonInAppBarChange;
+  final void Function() handleDisplayColorImageButtonInAppBarChange;
+  final void Function() handleDisplayLanguagesButtonInAppBarChange;
   final void Function(int value) handleColorSelect;
   final void Function(int value) handleImageSelect;
   final void Function(int value) handleLanguageSelect;
@@ -187,26 +206,33 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       title: Text(title),
       actions: !showMediumSizeLayout && !showLargeSizeLayout
           ? [
-              _BrightnessButton(
-                handleBrightnessChange: widget.handleBrightnessChange,
-              ),
-              _Material3Button(
-                handleMaterialVersionChange: widget.handleMaterialVersionChange,
-              ),
-              _ColorSeedButton(
-                handleColorSelect: widget.handleColorSelect,
-                colorSelected: widget.colorSelected,
-                colorSelectionMethod: widget.colorSelectionMethod,
-              ),
-              _ColorImageButton(
-                handleImageSelect: widget.handleImageSelect,
-                imageSelected: widget.imageSelected,
-                colorSelectionMethod: widget.colorSelectionMethod,
-              ),
-              _LanguageButton(
-                handleLanguageSelect: widget.handleLanguageSelect,
-                languageSelected: widget.languageSelected,
-              ),
+              if (widget.showBrightnessButtonInAppBar)
+                _BrightnessButton(
+                  handleBrightnessChange: widget.handleBrightnessChange,
+                ),
+              if (widget.showMaterialDesignButtonInAppBar)
+                _Material3Button(
+                  handleMaterialVersionChange:
+                      widget.handleMaterialVersionChange,
+                ),
+              if (widget.showColorSeedButtonInAppBar)
+                _ColorSeedButton(
+                  handleColorSelect: widget.handleColorSelect,
+                  colorSelected: widget.colorSelected,
+                  colorSelectionMethod: widget.colorSelectionMethod,
+                ),
+              if (widget.showColorImageButtonInAppBar)
+                _ColorImageButton(
+                  handleImageSelect: widget.handleImageSelect,
+                  imageSelected: widget.imageSelected,
+                  colorSelectionMethod: widget.colorSelectionMethod,
+                ),
+              if (widget.showLanguagesButtonInAppBar)
+                _LanguageButton(
+                  handleLanguageSelect: widget.handleLanguageSelect,
+                  languageSelected: widget.languageSelected,
+                ),
+              Container(),
             ]
           : [Container()],
     );
@@ -255,7 +281,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     final localizations = AppLocalizations.of(context);
     return AnimatedBuilder(
       animation: controller,
-      builder: (context, child) { 
+      builder: (context, child) {
         // if (widget.launchCount % 1 == 0 && widget.launchCount != 0) {
         //   return AlertDialog(
         //     title: Text('Thông báo'),
@@ -365,10 +391,45 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
             body: _selectedDrawerItemIndex == ScreenSelected.tasksScreen.value
                 ? createPageForTasksScreen() //_homePages.elementAt(_selectedNavBarItemIndex)
                 : _selectedDrawerItemIndex == ScreenSelected.settingsScreen.value
-                    ? const SettingsPage()
+                    ? SettingsPage(
+                        colorSelected: widget.colorSelected,
+                        colorSelectionMethod: widget.colorSelectionMethod,
+                        handleBrightnessChange: widget.handleBrightnessChange,
+                        handleColorSelect: widget.handleColorSelect,
+                        handleDisplayBrightnessButtonInAppBarChange:
+                            widget.handleDisplayBrightnessButtonInAppBarChange,
+                        handleDisplayColorImageButtonInAppBarChange:
+                            widget.handleDisplayColorImageButtonInAppBarChange,
+                        handleDisplayColorSeedButtonInAppBarChange:
+                            widget.handleDisplayColorSeedButtonInAppBarChange,
+                        handleDisplayLanguagesButtonInAppBarChange:
+                            widget.handleDisplayLanguagesButtonInAppBarChange,
+                        handleDisplayMaterialDesignButtonInAppBarChange: widget
+                            .handleDisplayMaterialDesignButtonInAppBarChange,
+                        handleImageSelect: widget.handleImageSelect,
+                        handleLanguageSelect: widget.handleLanguageSelect,
+                        handleMaterialVersionChange:
+                            widget.handleMaterialVersionChange,
+                        imageSelected: widget.imageSelected,
+                        languageSelected: widget.languageSelected,
+                        launchCount: widget.launchCount,
+                        showBrightnessButtonInAppBar:
+                            widget.showBrightnessButtonInAppBar,
+                        showColorImageButtonInAppBar:
+                            widget.showColorImageButtonInAppBar,
+                        showColorSeedButtonInAppBar:
+                            widget.showColorSeedButtonInAppBar,
+                        showLanguagesButtonInAppBar:
+                            widget.showLanguagesButtonInAppBar,
+                        showMaterialDesignButtonInAppBar:
+                            widget.showMaterialDesignButtonInAppBar,
+                        useLightMode: widget.useLightMode,
+                        useMaterial3: widget.useMaterial3,
+                      )
                     : _selectedDrawerItemIndex == ScreenSelected.aboutUsScreen.value
                         ? AboutUsPage()
-                        : createPageForMaterialDesignScreen(PageOfMaterialDesignScreenSelected.values[_selectedNavBarItemIndex], controller.value == 1),
+                        : createPageForMaterialDesignScreen(
+                          PageOfMaterialDesignScreenSelected.values[_selectedNavBarItemIndex], controller.value == 1),
             navigationRail: NavigationRail(
               extended: showLargeSizeLayout,
               destinations:
@@ -402,10 +463,9 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                           handleColorSelect: widget.handleColorSelect,
                           colorSelectionMethod: widget.colorSelectionMethod,
                           imageSelected: widget.imageSelected,
-                          colorSelected: widget.colorSelected, 
-                          handleLanguageSelect: widget.handleLanguageSelect, 
+                          colorSelected: widget.colorSelected,
+                          handleLanguageSelect: widget.handleLanguageSelect,
                           languageSelected: widget.languageSelected,
-
                         )
                       : _trailingActions(),
                 ),
@@ -465,7 +525,6 @@ class _Material3Button extends StatelessWidget {
   });
 
   final void Function() handleMaterialVersionChange;
-  //final void Function() handleMaterialVersionChange;
   final bool showTooltipBelow;
 
   @override
@@ -664,8 +723,8 @@ class _ExpandedTrailingActions extends StatelessWidget {
     required this.handleImageSelect,
     required this.imageSelected,
     required this.colorSelected,
-    required this.colorSelectionMethod, 
-    required this.handleLanguageSelect, 
+    required this.colorSelectionMethod,
+    required this.handleLanguageSelect,
     required this.languageSelected,
   });
 
@@ -731,8 +790,8 @@ class _ExpandedTrailingActions extends StatelessWidget {
           ),
           const Divider(),
           _ExpandedLanguageAction(
-            handleLanguageSelect: handleLanguageSelect, 
-            languageSelected: languageSelected)
+              handleLanguageSelect: handleLanguageSelect,
+              languageSelected: languageSelected)
         ],
       ),
     );
@@ -832,12 +891,10 @@ class _ExpandedLanguageAction extends StatelessWidget {
   const _ExpandedLanguageAction({
     required this.handleLanguageSelect,
     required this.languageSelected,
-    
   });
 
   final void Function(int) handleLanguageSelect;
   final AppLanguage languageSelected;
-  
 
   @override
   Widget build(BuildContext context) {
@@ -856,14 +913,13 @@ class _ExpandedLanguageAction extends StatelessWidget {
                 padding: const EdgeInsets.all(8.0),
                 child: Material(
                   borderRadius: BorderRadius.circular(4.0),
-                  elevation: languageSelected == AppLanguage.values[i]
-                      ? 3
-                      : 0,
+                  elevation: languageSelected == AppLanguage.values[i] ? 3 : 0,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4.0),
-                      child: Center(child: Text(AppLanguage.values[i].short_language),),
+                      child: Center(
+                        child: Text(AppLanguage.values[i].short_language),
                       ),
                     ),
                   ),
@@ -872,7 +928,8 @@ class _ExpandedLanguageAction extends StatelessWidget {
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 }
 
