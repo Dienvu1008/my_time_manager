@@ -11,5 +11,6 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   }
   runApp(const App());
+  //runApp(App(isProVersion: true));
 }
  
