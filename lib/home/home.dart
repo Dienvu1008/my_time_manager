@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import '../app/app_localizations.dart';
-import '../screen_about_us/about_us_page.dart';
-import '../screen_material_design/color_palettes_page.dart';
-import '../screen_material_design/component_page.dart';
-import '../screen_settings/settings_page.dart';
-import '../screen_tasks/overview_bloc.dart';
-import '../screen_tasks/tasks_overview_page.dart';
-import '../screen_tasks/tasks_timeline_page.dart';
-import '../screen_tasks/tasks_timetable_page.dart';
+import '../screen_about_us/page_about_us.dart';
+import '../screen_material_design/page_color_palettes.dart';
+import '../screen_material_design/page_component.dart';
+import '../screen_settings/page_settings.dart';
+import '../screen_tasks/page_tasks_overview.dart';
+import '../screen_tasks/page_tasks_timeline.dart';
+import '../screen_tasks/page_tasks_timetable.dart';
 import '../utils/constants.dart';
-import '../screen_material_design/elevation_page.dart';
-import '../screen_material_design/typography_page.dart';
+import '../screen_material_design/page_elevation.dart';
+import '../screen_material_design/page_typography.dart';
+import '../utils/utils.dart';
 
 class Home extends StatefulWidget {
   const Home({
@@ -317,7 +317,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                             ? localizations!.settings
                             : (_selectedDrawerItemIndex ==
                                     ScreenSelected.aboutUsScreen.value)
-                                ? localizations!.about
+                                ? localizations!.About
                                 : (_selectedDrawerItemIndex ==
                                             ScreenSelected
                                                 .materialDesignScreen.value &&
@@ -355,12 +355,47 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                   ),
                   ListTile(
                     leading: const Icon(Icons.checklist_outlined),
-                    title: Text(localizations!.tasks),
+                    title: Text(localizations!.tasksAndEvents),
                     selected: _selectedDrawerItemIndex ==
                         ScreenSelected.tasksScreen.value,
                     onTap: () =>
                         _onDrawerItemTapped(ScreenSelected.tasksScreen.value),
                   ),
+                  ListTile(
+                    leading: const Icon(Icons.calendar_month_outlined),
+                    title: Text(localizations.calendar),
+                    selected: _selectedDrawerItemIndex ==
+                        ScreenSelected.calendarScreen.value,
+                    onTap: () => showComingSoonDialog(context),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.timelapse_outlined),
+                    title: Text(localizations.focusTimer),
+                    selected: _selectedDrawerItemIndex ==
+                        ScreenSelected.focusTimerScreen.value,
+                    onTap: () => showComingSoonDialog(context),
+                  ),
+                  // ListTile(
+                  //   leading: const Icon(Icons.notes_outlined),
+                  //   title: Text(localizations.notes),
+                  //   selected: _selectedDrawerItemIndex ==
+                  //       ScreenSelected.notesScreen.value,
+                  //   onTap: () => showComingSoonDialog(context),
+                  // ),
+                  // ListTile(
+                  //   leading: const Icon(Icons.contacts_outlined),
+                  //   title: Text(localizations.myContacts),
+                  //   selected: _selectedDrawerItemIndex ==
+                  //       ScreenSelected.contactsScreen.value,
+                  //   onTap: () => showComingSoonDialog(context),
+                  // ),
+                  // ListTile(
+                  //   leading: const Icon(Icons.query_stats_outlined),
+                  //   title: Text(localizations.myStatistics),
+                  //   selected: _selectedDrawerItemIndex ==
+                  //       ScreenSelected.statsScreen.value,
+                  //   onTap: () => showComingSoonDialog(context),
+                  // ),
                   ListTile(
                     leading: const Icon(Icons.design_services_outlined),
                     title: const Text('Material Design'),
@@ -379,7 +414,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                   ),
                   ListTile(
                     leading: const Icon(Icons.info_outlined),
-                    title: Text(localizations.about),
+                    title: Text(localizations.About),
                     selected: _selectedDrawerItemIndex ==
                         ScreenSelected.aboutUsScreen.value,
                     onTap: () =>

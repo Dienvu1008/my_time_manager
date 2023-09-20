@@ -17,7 +17,7 @@ class App extends StatelessWidget {
         builder: (context, state) {
           return MaterialApp(
             locale: Locale(
-              ['en', 'vi', 'de'][state.language.index],
+              ['de','en', 'vi', ][state.language.index],
             ),
             localizationsDelegates: const [
               AppLocalizationsDelegate(),
@@ -26,9 +26,9 @@ class App extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: const [
+              Locale('de'),
               Locale('en'),
               Locale('vi'),
-              Locale('de'),
             ],
             debugShowCheckedModeBanner: false, // remove debug banner
             title: 'Material 3',

@@ -1,626 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:uuid/uuid.dart';
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'dart:convert';
 
+import '../database/database_manager.dart';
+
 //part 'models.g.dart';
 
-// Model Task
-@JsonSerializable()
-class Task extends Equatable {
-  final String id;
-  final String taskListId;
-  final String title;
-  final bool isCompleted;
-  final bool isImportant;
-  final String description;
-  final String location;
-  final Color color;
-  final List<String> tags;
-  final List<String> dataFiles;
-  final DateTime updateTimeStamp;
 
-  Task({
-    String? id,
-    required this.taskListId,
-    required this.title,
-    bool? isCompleted,
-    bool? isImportant,
-    String? description,
-    String? location,
-    Color? color,
-    List<String>? tags,
-    List<String>? dataFiles,
-    DateTime? updateTimeStamp,
-  })  : assert(
-          id == null || id.isNotEmpty,
-          'id can not be null and should be empty',
-        ),
-        id = id ?? const Uuid().v4(),
-        isCompleted = isCompleted ?? false,
-        isImportant = isImportant ?? false,
-        description = description ?? '',
-        location = location ?? '',
-        color = color ?? Colors.white,
-        tags = tags ?? [],
-        dataFiles = dataFiles ?? [],
-        updateTimeStamp = updateTimeStamp ?? DateTime.now();
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'taskListId': taskListId,
-      'title': title,
-      'isCompleted': isCompleted ? 1 : 0,
-      'isImportant': isImportant ? 1 : 0,
-      'description': description,
-      'location': location,
-      'color': color.value,
-      'tags': jsonEncode(tags),
-      'dataFiles': jsonEncode(dataFiles),
-      'updateTimeStamp': updateTimeStamp.toIso8601String(),
-    };
-  }
 
-  factory Task.fromMap(Map<String, dynamic> map) {
-    return Task(
-      id: map['id'],
-      taskListId: map['taskListId'],
-      title: map['title'],
-      isCompleted: map['isCompleted'] == 1,
-      isImportant: map['isImportant'] == 1,
-      description: map['description'],
-      location: map['location'],
-      color: Color(map['color']),
-      tags: List<String>.from(jsonDecode(map['tags'])),
-      dataFiles: List<String>.from(jsonDecode(map['dataFiles'])),
-      updateTimeStamp: DateTime.parse(map['updateTimeStamp']),
-    );
-  }
 
-  String toJson() => json.encode(toMap());
-  factory Task.fromJson(String source) => Task.fromMap(json.decode(source));
-  // Implement toString to make it easier to see information about
-  // each task when using the print statement.
-
-  @override
-  String toString() {
-    return '''Task(
-      id: $id, 
-      title: $title, 
-      description: $description, 
-      color: $color, 
-      isCompleted : $isCompleted, 
-      taskListId: $taskListId)''';
-  }
-
-  @override
-  List<Object?> get props => [id, taskListId, title, description, isCompleted];
-}
-
-//Model Task List
-@JsonSerializable()
-class TaskList extends Equatable {
-  final String id;
-  final String title;
-  final String description;
-  final Color color;
-  final List<String> dataFiles;
-  final DateTime updateTimeStamp;
-
-  TaskList({
-    String? id,
-    required this.title,
-    String? description,
-    Color? color,
-    List<String>? dataFiles,
-    DateTime? updateTimeStamp,
-  })  : assert(
-          id == null || id.isNotEmpty,
-          'id can not be null and should be empty',
-        ),
-        id = id ?? const Uuid().v4(),
-        description = description ?? '',
-        color = color ?? Colors.white,
-        dataFiles = dataFiles ?? [],
-        updateTimeStamp = updateTimeStamp ?? DateTime.now();
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'color': color.value,
-      'dataFiles': jsonEncode(dataFiles),
-      'updateTimeStamp': updateTimeStamp.toIso8601String(),
-    };
-  }
-
-  factory TaskList.fromMap(Map<String, dynamic> map) {
-    return TaskList(
-      id: map['id'],
-      title: map['title'],
-      description: map['description'],
-      color: Color(map['color']),
-      dataFiles: List<String>.from(jsonDecode(map['dataFiles'])),
-      updateTimeStamp: DateTime.parse(map['updateTimeStamp']),
-    );
-  }
-
-  TaskList copyWith({
-    String? id,
-    String? title,
-    String? description,
-  }) {
-    return TaskList(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        description: description ?? this.description);
-  }
-
-  //static TaskList fromJson(JsonMap json) => _$TaskListFromJson(json);
-
-  //JsonMap toJson() => _$TaskListToJson(this);
-
-  TaskList.create(this.id, this.title, this.description, this.color,
-      this.dataFiles, this.updateTimeStamp);
-
-  TaskList.update(
-      {required this.id,
-      required this.title,
-      required this.description,
-      required this.color,
-      required this.dataFiles,
-      required this.updateTimeStamp});
-
-  String toJson() => json.encode(toMap());
-
-  factory TaskList.fromJson(String source) =>
-      TaskList.fromMap(json.decode(source));
-
-  // Implement toString to make it easier to see information about
-  // each breed when using the print statement.
-  @override
-  String toString() {
-    return '''TaskList(
-      id: $id, 
-      title: $title, 
-      description: $description)''';
-  }
-
-  @override
-  List<Object?> get props => [id, title, description];
-}
-
-@JsonSerializable()
-class TimeInterval extends Equatable {
-  final String id;
-  final String taskId;
-  final String measuableTaskId;
-  final String taskWithSubtasksId;
-  final String location;
-  final String notes;
-  late final bool isCompleted;
-  DateTime? startDate;
-  DateTime? endDate;
-  TimeOfDay? startTime;
-  TimeOfDay? endTime;
-  bool isStartDateUndefined;
-  bool isEndDateUndefined;
-  bool isStartTimeUndefined;
-  bool isEndTimeUndefined;
-  int? startTimestamp;
-  int? endTimestamp;
-  //just used for MeasuableTask
-  double targetAtLeast;
-  double targetAtMost;
-  TargetType targetType;
-  String unit;
-  double howMuchHasBeenDone;
-  //just used for task with sub tasks
-  List<Subtask> subtasks;
-  final List<String> dataFiles;
-  final DateTime updateTimeStamp;
-  String? timeZone;
-
-  TimeInterval(
-      {String? id,
-      required this.taskId,
-      required this.measuableTaskId,
-      required this.taskWithSubtasksId,
-      bool? isCompleted,
-      String? location,
-      String? notes,
-      this.startDate,
-      this.endDate,
-      this.startTime,
-      this.endTime,
-      this.isStartDateUndefined = false,
-      this.isEndDateUndefined = false,
-      this.isStartTimeUndefined = false,
-      this.isEndTimeUndefined = false,
-      double? targetAtLeast,
-      double? targetAtMost,
-      TargetType? targetType,
-      String? unit,
-      List<Subtask>? subtasks,
-      double? howMuchHasBeenDone,
-      List<String>? dataFiles,
-      DateTime? updateTimeStamp,
-      String? timeZone})
-      : assert(
-          id == null || id.isNotEmpty,
-          'id can not be null and should be empty',
-        ),
-        id = id ?? const Uuid().v4(),
-        isCompleted = isCompleted ?? false,
-        location = location ?? '',
-        notes = notes ?? '',
-        targetAtLeast = targetAtLeast ?? double.negativeInfinity,
-        targetAtMost = targetAtMost ?? double.infinity,
-        unit = unit ?? '',
-        subtasks = subtasks ?? [],
-        targetType = targetType ?? TargetType.about,
-        // isStartDateUndefined = isStartDateUndefined ?? false,
-        // isEndDateUndefined = isEndDateUndefined ?? false,
-        // isStartTimeUndefined = isStartTimeUndefined ?? false,
-        // isEndTimeUndefined = isEndTimeUndefined ?? false,
-        howMuchHasBeenDone = howMuchHasBeenDone ?? 0.0,
-        dataFiles = dataFiles ?? [],
-        timeZone = timeZone ?? '', //FlutterNativeTimezone.getLocalTimezone(),
-        updateTimeStamp = updateTimeStamp ?? DateTime.now() {
-    Future<void> getTimeZone() async {
-      timeZone = timeZone ?? await FlutterNativeTimezone.getLocalTimezone();
-    }
-
-    if (isStartDateUndefined) {
-      isStartTimeUndefined = true;
-      startTimestamp = null;
-    } else if (isStartTimeUndefined) {
-      startTimestamp =
-          DateTime(startDate!.year, startDate!.month, startDate!.day)
-              .millisecondsSinceEpoch;
-    } else {
-      startTimestamp = DateTime(startDate!.year, startDate!.month,
-              startDate!.day, startTime!.hour, startTime!.minute)
-          .millisecondsSinceEpoch;
-    }
-
-    if (isEndDateUndefined) {
-      isEndTimeUndefined = true;
-      endTimestamp = null;
-    } else if (isEndTimeUndefined) {
-      endTimestamp =
-          DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59)
-              .millisecondsSinceEpoch;
-    } else {
-      endTimestamp = DateTime(endDate!.year, endDate!.month, endDate!.day,
-              endTime!.hour, endTime!.minute)
-          .millisecondsSinceEpoch;
-    }
-
-    if (startTimestamp != null &&
-        endTimestamp != null &&
-        startTimestamp! > endTimestamp!) {
-      throw ArgumentError('End timestamp must be after start timestamp');
-    }
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'isCompleted': isCompleted ? 1 : 0,
-      'taskId': taskId,
-      'measuableTaskId': measuableTaskId,
-      'taskWithSubtasksId': taskWithSubtasksId,
-
-      'startDate': startDate?.toIso8601String(),
-      'endDate': endDate?.toIso8601String(),
-      'startTime':
-          startTime != null ? startTime!.hour * 60 + startTime!.minute : null,
-      'endTime': endTime != null ? endTime!.hour * 60 + endTime!.minute : null,
-      'isStartDateUndefined': isStartDateUndefined ? 1 : 0,
-      'isEndDateUndefined': isEndDateUndefined ? 1 : 0,
-      'isStartTimeUndefined': isStartTimeUndefined ? 1 : 0,
-      'isEndTimeUndefined': isEndTimeUndefined ? 1 : 0,
-
-      'targetAtLeast': targetAtLeast, //REAL
-      'targetAtMost': targetAtMost, //REAL
-      'targetType': targetType.index,
-      'unit': unit,
-      'howMuchHasBeenDone': howMuchHasBeenDone,
-
-      'subtasks':
-          jsonEncode(subtasks.map((subtask) => subtask.toMap()).toList()),
-
-      'dataFiles': jsonEncode(dataFiles),
-      'updateTimeStamp': updateTimeStamp.toIso8601String(),
-      'timeZone': timeZone,
-    };
-  }
-
-  factory TimeInterval.fromMap(Map<String, dynamic> map) {
-    return TimeInterval(
-        id: map['id'],
-        isCompleted: map['isCompleted'] == 1,
-        taskId: map['taskId'],
-        measuableTaskId: map['measuableTaskId'],
-        taskWithSubtasksId: map['taskWithSubtasksId'],
-        startDate:
-            map['startDate'] != null ? DateTime.parse(map['startDate']) : null,
-        endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
-        startTime: map['startTime'] != null
-            ? TimeOfDay(
-                hour: map['startTime'] ~/ 60,
-                minute: map['startTime'] % 60,
-              )
-            : null,
-        endTime: map['endTime'] != null
-            ? TimeOfDay(hour: map['endTime'] ~/ 60, minute: map['endTime'] % 60)
-            : null,
-        isStartDateUndefined: map['isStartDateUndefined'] == 1,
-        isEndDateUndefined: map['isEndDateUndefined'] == 1,
-        isStartTimeUndefined: map['isStartTimeUndefined'] == 1,
-        isEndTimeUndefined: map['isEndTimeUndefined'] == 1,
-        targetAtLeast: map['targetAtLeast'],
-        targetAtMost: map['targetAtMost'],
-        // targetType: map['targetType'] == 0
-        //     ? TargetType.about
-        //     : map['targetType'] == 1
-        //         ? TargetType.atLeast
-        //         : TargetType.atMost,
-        targetType: TargetType.values[map['targetType']],
-        unit: map['unit'],
-        howMuchHasBeenDone:
-            (map['howMuchHasBeenDone'] as double?)?.toDouble() ??
-                0.0, //(map['howMuchHasBeenDone'] as num).toDouble(),
-
-        subtasks: List<Subtask>.from(jsonDecode(map['subtasks'])
-            .map((subtaskMap) => Subtask.fromMap(subtaskMap))),
-        dataFiles: List<String>.from(jsonDecode(map['dataFiles'])),
-        updateTimeStamp: DateTime.parse(map['updateTimeStamp']),
-        timeZone: map['timeZone']);
-  }
-
-  @override
-  String toString() {
-    return '''TimeInterval(
-      id: $id, 
-      taskId: $taskId,
-      isCompleted: $isCompleted,
-      startDate: $startDate,
-      endDate: $endDate,
-      startTime: $startTime,
-      endTime: $endTime,
-      isStartDateUndefined: $isStartDateUndefined,
-      isEndDateUndefined: $isEndDateUndefined,
-      isStartTimeUndefined: $isStartTimeUndefined,
-      isEndTimeUndefined: $isEndTimeUndefined,
-      howMuchHasBeenDone: $howMuchHasBeenDone,
-      )''';
-  }
-
-  @override
-  List<Object?> get props => [id];
-}
-
-enum TargetType { atLeast, atMost, about }
-
-class MeasurableTask {
-  final String id;
-  final String taskListId;
-  final String title;
-  final String description;
-  final String location;
-  final Color color;
-  final double targetAtLeast;
-  final double targetAtMost;
-  final TargetType targetType;
-  final String unit;
-  bool isCompleted;
-  bool isImportant;
-  double howMuchHasBeenDone;
-  final List<String> dataFiles;
-  final DateTime updateTimeStamp;
-
-  MeasurableTask({
-    String? id,
-    required this.taskListId,
-    required this.title,
-    String? description,
-    String? location,
-    Color? color,
-    required this.targetAtLeast,
-    required this.targetAtMost,
-    required this.targetType,
-    required this.unit,
-    bool? isCompleted,
-    bool? isImportant,
-    double? howMuchHasBeenDone,
-    List<String>? dataFiles,
-    DateTime? updateTimeStamp,
-  })  : assert(
-          id == null || id.isNotEmpty,
-          'id can not be null and should be empty',
-        ),
-        id = id ?? const Uuid().v4(),
-        isCompleted = isCompleted ?? false,
-        isImportant = isImportant ?? false,
-        description = description ?? '',
-        location = location ?? '',
-        color = color ?? Colors.white,
-        howMuchHasBeenDone = howMuchHasBeenDone ?? 0.0,
-        dataFiles = dataFiles ?? [],
-        updateTimeStamp = updateTimeStamp ?? DateTime.now();
-
-  // void updateProgress(num value) {
-  //   howMuchHasBeenDone = value;
-  //   if (targetType == TargetType.atLeast) {
-  //     isCompleted = target <= howMuchHasBeenDone;
-  //   } else {
-  //     isCompleted = target >= howMuchHasBeenDone;
-  //   }
-  // }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'taskListId': taskListId,
-      'title': title,
-      'description': description,
-      'location': location,
-      'color': color.value,
-      'targetAtLeast': targetAtLeast, //REAL
-      'targetAtMost': targetAtMost, //REAL
-      'targetType': targetType.index,
-      'unit': unit,
-      'isCompleted': isCompleted ? 1 : 0,
-      'isImportant': isImportant ? 1 : 0,
-      'howMuchHasBeenDone': howMuchHasBeenDone, //REAL
-      'dataFiles': jsonEncode(dataFiles),
-      'updateTimeStamp': updateTimeStamp.toIso8601String(),
-    };
-  }
-
-  factory MeasurableTask.fromMap(Map<String, dynamic> map) {
-    return MeasurableTask(
-        id: map['id'],
-        taskListId: map['taskListId'],
-        title: map['title'],
-        description: map['description'],
-        location: map['location'],
-        color: Color(map['color']),
-        targetAtLeast: map['targetAtLeast'],
-        targetAtMost: map['targetAtMost'],
-        // targetType: map['targetType'] == 0
-        //     ? TargetType.about
-        //     : map['targetType'] == 1
-        //         ? TargetType.atLeast
-        //         : TargetType.atMost,
-        targetType: TargetType.values[map['targetType']],
-        unit: map['unit'],
-        isCompleted: map['isCompleted'] == 1,
-        isImportant: map['isImportant'] == 1,
-        howMuchHasBeenDone:
-            (map['howMuchHasBeenDone'] as num?)?.toDouble() ?? 0.0,
-        dataFiles: map['dataFiles'] != null
-            ? List<String>.from(jsonDecode(map['dataFiles']))
-            : [],
-        updateTimeStamp: map['updateTimeStamp'] != null
-            ? DateTime.parse(map['updateTimeStamp'])
-            : null);
-  }
-}
-
-class Subtask {
-  bool isSubtaskCompleted;
-  String title;
-
-  Subtask({
-    required this.isSubtaskCompleted,
-    required this.title,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'isSubtaskCompleted': isSubtaskCompleted ? 1 : 0,
-      'title': title,
-    };
-  }
-
-  factory Subtask.fromMap(Map<String, dynamic> map) {
-    return Subtask(
-      isSubtaskCompleted: map['isSubtaskCompleted'] == 1,
-      title: map['title'],
-    );
-  }
-}
-
-class TaskWithSubtasks {
-  String id;
-  final String taskListId;
-  final String title;
-  final String description;
-  final String location;
-  final Color color;
-  bool isCompleted;
-  bool isImportant;
-  List<Subtask> subtasks;
-  final List<String> dataFiles;
-  final DateTime updateTimeStamp;
-
-  TaskWithSubtasks({
-    String? id,
-    required this.taskListId,
-    required this.title,
-    String? description,
-    String? location,
-    Color? color,
-    bool? isCompleted,
-    bool? isImportant,
-    required this.subtasks,
-    List<String>? dataFiles,
-    DateTime? updateTimeStamp,
-  })  : assert(
-          id == null || id.isNotEmpty,
-          'id can not be null and should be empty',
-        ),
-        id = id ?? const Uuid().v4(),
-        description = description ?? '',
-        location = location ?? '',
-        color = color ?? Colors.white,
-        isCompleted = isCompleted ?? false,
-        isImportant = isImportant ?? false,
-        dataFiles = dataFiles ?? [],
-        updateTimeStamp = updateTimeStamp ?? DateTime.now();
-
-  void updateCompletionStatus() {
-    isCompleted = subtasks.every((subtask) => subtask.isSubtaskCompleted);
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'taskListId': taskListId,
-      'title': title,
-      'description': description,
-      'location': location,
-      'color': color.value,
-      'isCompleted': isCompleted ? 1 : 0,
-      'isImportant': isImportant ? 1 : 0,
-      'subtasks':
-          jsonEncode(subtasks.map((subtask) => subtask.toMap()).toList()),
-      'dataFiles': jsonEncode(dataFiles),
-      'updateTimeStamp': updateTimeStamp
-          .toIso8601String() //updateTimeStamp.millisecondsSinceEpoch,
-    };
-  }
-
-  factory TaskWithSubtasks.fromMap(Map<String, dynamic> map) {
-    return TaskWithSubtasks(
-        id: map['id'],
-        taskListId: map['taskListId'],
-        title: map['title'],
-        description: map['description'],
-        location: map['location'],
-        color: Color(map['color']),
-        isCompleted: map['isCompleted'] == 1,
-        isImportant: map['isImportant'] == 1,
-        subtasks: List<Subtask>.from(jsonDecode(map['subtasks'])
-            .map((subtaskMap) => Subtask.fromMap(subtaskMap))),
-        dataFiles: List<String>.from(jsonDecode(map['dataFiles'])),
-        updateTimeStamp: map['updateTimeStamp'] != null
-            ? DateTime.parse(map['updateTimeStamp'])
-            : null
-        //DateTime.fromMillisecondsSinceEpoch(map['updateTimeStamp']),
-        );
-  }
-}
 
 class Event extends Equatable {
-  final String id;
+  String id;
   final String taskListId;
   final String title;
   final String description;
@@ -779,3 +175,376 @@ class FocusIntervalsStats {
 
 /// The type definition for a JSON-serializable [Map].
 typedef JsonMap = Map<String, dynamic>;
+
+typedef TimeIntervalTileBuilder<T extends Object?> = Widget Function(
+  DateTime date,
+  //List<CalendarEventData<T>> events,
+  List<TimeInterval> timeIntervals,
+  Rect boundary,
+  DateTime startDuration,
+  DateTime endDuration,
+);
+
+typedef DateWidgetBuilder = Widget Function(
+  DateTime date,
+);
+
+typedef WeekPageHeaderBuilder = Widget Function(
+    DateTime startDate, DateTime endDate);
+
+typedef DetectorBuilder<T extends Object?> = Widget Function({
+  required DateTime date,
+  required double height,
+  required double width,
+  required double heightPerMinute,
+  required MinuteSlotSize minuteSlotSize,
+});
+
+/// Defines different minute slot sizes.
+enum MinuteSlotSize {
+  /// Slot size: 15 minutes
+  minutes15,
+
+  /// Slot size: 30 minutes
+  minutes30,
+
+  /// Slot size: 60 minutes
+  minutes60,
+}
+
+typedef StringProvider = String Function(DateTime date,
+    {DateTime? secondaryDate});
+
+abstract class EventArranger<T extends Object?> {
+  /// [EventArranger] defines how simultaneous events will be arranged.
+  /// Implement [arrange] method to define how events will be arranged.
+  ///
+  /// There are three predefined class that implements of [EventArranger].
+  ///
+  /// [_StackEventArranger], [SideEventArranger] and [MergeEventArranger].
+  ///
+  const EventArranger();
+
+  /// This method will arrange all the events in and return List of
+  /// [OrganizedCalendarEventData].
+  ///
+  List<OrganizedCalendarEventData<T>> arrange({
+    //required List<CalendarEventData<T>> events,
+    required List<TimeInterval> events,
+    required double height,
+    required double width,
+    required double heightPerMinute,
+  });
+}
+
+class OrganizedCalendarEventData<T extends Object?> {
+  /// Top position from where event tile will start.
+  final double top;
+
+  /// End position from where event tile will end.
+  final double bottom;
+
+  /// Left position from where event tile will start.
+  final double left;
+
+  /// Right position where event tile will end.
+  final double right;
+
+  /// List of events to display in given tile.
+  //final List<CalendarEventData<T>> events;
+
+  final List<TimeInterval> events;
+
+  /// Start duration of event/event list.
+  final DateTime startDuration;
+
+  /// End duration of event/event list.
+  final DateTime endDuration;
+
+  /// Provides event data with its [left], [right], [top], and [bottom]
+  /// boundary.
+  OrganizedCalendarEventData({
+    required this.startDuration,
+    required this.endDuration,
+    required this.top,
+    required this.bottom,
+    required this.left,
+    required this.right,
+    required this.events,
+  });
+
+  OrganizedCalendarEventData.empty()
+      : startDuration = DateTime.now(),
+        endDuration = DateTime.now(),
+        right = 0,
+        left = 0,
+        events = const [],
+        top = 0,
+        bottom = 0;
+
+  OrganizedCalendarEventData<T> getWithUpdatedRight(double right) =>
+      OrganizedCalendarEventData<T>(
+        top: top,
+        bottom: bottom,
+        endDuration: endDuration,
+        events: events,
+        left: left,
+        right: right,
+        startDuration: startDuration,
+      );
+}
+
+typedef CalendarPageChangeCallBack = void Function(DateTime date, int page);
+
+class HourIndicatorSettings {
+  final double height;
+  final Color color;
+  final double offset;
+  final LineStyle lineStyle;
+  final double dashWidth;
+  final double dashSpaceWidth;
+
+  /// Settings for hour lines
+  const HourIndicatorSettings({
+    this.height = 1.0,
+    this.offset = 0.0,
+    this.color = const Color.fromARGB(255, 158, 158, 158),
+    this.lineStyle = LineStyle.solid,
+    this.dashWidth = 4,
+    this.dashSpaceWidth = 4,
+  }) : assert(height >= 0, "Height must be greater than or equal to 0.");
+
+  factory HourIndicatorSettings.none() => const HourIndicatorSettings(
+        //color: Colors.transparent,
+        height: 0.0,
+      );
+}
+
+enum LineStyle {
+  /// Solid line
+  solid,
+
+  /// Dashed line
+  dashed,
+}
+
+typedef EventFilter<T extends Object?> = List<TimeInterval> Function(
+    DateTime date, List<TimeInterval> events);
+
+typedef WeekNumberBuilder = Widget? Function(
+  DateTime firstDayOfWeek,
+);
+typedef CellTapCallback<T extends Object?> = void Function(
+    List<TimeInterval> events, DateTime date);
+
+enum WeekDays {
+  /// Monday: 0
+  monday,
+
+  /// Tuesday: 1
+  tuesday,
+
+  /// Wednesday: 2
+  wednesday,
+
+  /// Thursday: 3
+  thursday,
+
+  /// Friday: 4
+  friday,
+
+  /// Saturday: 5
+  saturday,
+
+  /// Sunday: 6
+  sunday,
+}
+
+typedef DatePressCallback = void Function(DateTime date);
+typedef DateTapCallback = void Function(DateTime date);
+
+class HeaderStyle {
+  /// Provide text style for calendar's header.
+  final TextStyle? headerTextStyle;
+
+  /// Widget used for left icon.
+  ///
+  /// Tapping on it will navigate to previous calendar page.
+  final Widget? leftIcon;
+
+  /// Widget used for right icon.
+  ///
+  /// Tapping on it will navigate to next calendar page.
+  final Widget? rightIcon;
+
+  /// Determines left icon visibility.
+  final bool leftIconVisible;
+
+  /// Determines right icon visibility.
+  final bool rightIconVisible;
+
+  /// Internal padding of the whole header.
+  final EdgeInsets headerPadding;
+
+  /// External margin of the whole header.
+  final EdgeInsets headerMargin;
+
+  /// Internal padding of left icon.
+  final EdgeInsets leftIconPadding;
+
+  /// Internal padding of right icon.
+  final EdgeInsets rightIconPadding;
+
+  /// Define Alignment of header text.
+  final TextAlign titleAlign;
+
+  /// Decoration of whole header.
+  final BoxDecoration? decoration;
+
+  /// Create a `HeaderStyle` of calendar view
+  const HeaderStyle({
+    this.headerTextStyle,
+    this.leftIcon,
+    this.rightIcon,
+    this.leftIconVisible = true,
+    this.rightIconVisible = true,
+    this.headerMargin = EdgeInsets.zero,
+    this.headerPadding = EdgeInsets.zero,
+    this.leftIconPadding = const EdgeInsets.all(10),
+    this.rightIconPadding = const EdgeInsets.all(10),
+    this.titleAlign = TextAlign.center,
+    this.decoration,
+  });
+}
+
+typedef FullDayEventBuilder<T> = Widget Function(
+    List<TimeInterval> events, DateTime date);
+
+extension DateTimeExtensions on DateTime {
+  /// Compares only [day], [month] and [year] of [DateTime].
+  bool compareWithoutTime(DateTime date) {
+    return day == date.day && month == date.month && year == date.year;
+  }
+
+  /// Gets difference of months between [date] and calling object.
+  int getMonthDifference(DateTime date) {
+    if (year == date.year) return ((date.month - month).abs() + 1);
+
+    var months = ((date.year - year).abs() - 1) * 12;
+
+    if (date.year >= year) {
+      months += date.month + (13 - month);
+    } else {
+      months += month + (13 - date.month);
+    }
+
+    return months;
+  }
+
+  /// Gets difference of days between [date] and calling object.
+  int getDayDifference(DateTime date) => DateTime.utc(year, month, day)
+      .difference(DateTime.utc(date.year, date.month, date.day))
+      .inDays
+      .abs();
+
+  /// Gets difference of weeks between [date] and calling object.
+  int getWeekDifference(DateTime date, {WeekDays start = WeekDays.monday}) =>
+      (firstDayOfWeek(start: start)
+                  .difference(date.firstDayOfWeek(start: start))
+                  .inDays
+                  .abs() /
+              7)
+          .ceil();
+
+  /// Returns The List of date of Current Week, all of the dates will be without
+  /// time.
+  /// Day will start from Monday to Sunday.
+  ///
+  /// ex: if Current Date instance is 8th and day is wednesday then weekDates
+  /// will return dates
+  /// [6,7,8,9,10,11,12]
+  /// Where on 6th there will be monday and on 12th there will be Sunday
+  List<DateTime> datesOfWeek({WeekDays start = WeekDays.monday}) {
+    // Here %7 ensure that we do not subtract >6 and <0 days.
+    // Initial formula is,
+    //    difference = (weekday - startInt)%7
+    // where weekday and startInt ranges from 1 to 7.
+    // But in WeekDays enum index ranges from 0 to 6 so we are
+    // adding 1 in index. So, new formula with WeekDays is,
+    //    difference = (weekdays - (start.index + 1))%7
+    //
+    final startDay =
+        DateTime(year, month, day - (weekday - start.index - 1) % 7);
+
+    return [
+      startDay,
+      DateTime(startDay.year, startDay.month, startDay.day + 1),
+      DateTime(startDay.year, startDay.month, startDay.day + 2),
+      DateTime(startDay.year, startDay.month, startDay.day + 3),
+      DateTime(startDay.year, startDay.month, startDay.day + 4),
+      DateTime(startDay.year, startDay.month, startDay.day + 5),
+      DateTime(startDay.year, startDay.month, startDay.day + 6),
+    ];
+  }
+
+  /// Returns the first date of week containing the current date
+  DateTime firstDayOfWeek({WeekDays start = WeekDays.monday}) =>
+      DateTime(year, month, day - ((weekday - start.index - 1) % 7));
+
+  /// Returns the last date of week containing the current date
+  DateTime lastDayOfWeek({WeekDays start = WeekDays.monday}) =>
+      DateTime(year, month, day + (6 - (weekday - start.index - 1) % 7));
+
+  /// Returns list of all dates of [month].
+  /// All the dates are week based that means it will return array of size 42
+  /// which will contain 6 weeks that is the maximum number of weeks a month
+  /// can have.
+  List<DateTime> datesOfMonths({WeekDays startDay = WeekDays.monday}) {
+    final monthDays = <DateTime>[];
+    for (var i = 1, start = 1; i < 7; i++, start += 7) {
+      monthDays
+          .addAll(DateTime(year, month, start).datesOfWeek(start: startDay));
+    }
+    return monthDays;
+  }
+
+  /// Gives formatted date in form of 'month - year'.
+  String get formatted => "$month-$year";
+
+  /// Returns total minutes this date is pointing at.
+  /// if [DateTime] object is, DateTime(2021, 5, 13, 12, 4, 5)
+  /// Then this getter will return 12*60 + 4 which evaluates to 724.
+  int get getTotalMinutes => hour * 60 + minute;
+
+  /// Returns a new [DateTime] object with hour and minutes calculated from
+  /// [totalMinutes].
+  DateTime copyFromMinutes([int totalMinutes = 0]) => DateTime(
+        year,
+        month,
+        day,
+        totalMinutes ~/ 60,
+        totalMinutes % 60,
+      );
+
+  /// Returns [DateTime] without timestamp.
+  DateTime get withoutTime => DateTime(year, month, day);
+
+  /// Compares time of two [DateTime] objects.
+  bool hasSameTimeAs(DateTime other) {
+    return other.hour == hour &&
+        other.minute == minute &&
+        other.second == second &&
+        other.millisecond == millisecond &&
+        other.microsecond == microsecond;
+  }
+
+  bool get isDayStart => hour % 24 == 0 && minute % 60 == 0;
+
+  @Deprecated(
+      "This extension is not being used in this package and will be removed "
+      "in next major release. Please use withoutTime instead.")
+  DateTime get dateYMD => DateTime(year, month, day);
+}
+
+typedef TileTapCallback<T extends Object?> = void Function(
+    TimeInterval event, DateTime date);

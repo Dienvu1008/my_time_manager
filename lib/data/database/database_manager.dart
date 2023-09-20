@@ -1,3 +1,8 @@
+import 'package:my_time_manager/data/models/model_list.dart';
+import 'package:my_time_manager/data/models/model_measurable_task.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
+import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/data/models/models.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -34,133 +39,197 @@ class DatabaseManager {
     );
   }
 
-  // When the database is first created, create a table to store breeds
-  // and a table to store dogs.
-
+//ON DELETE CASCADE doesn't work right. Why????
   Future<void> _onCreate(Database db, int version) async {
     // Run the CREATE {task lists} TABLE statement on the database.
-    await db.execute(
-      '''
-      CREATE TABLE tasklists(
-        id TEXT PRIMARY KEY, 
-        title TEXT,
-        description TEXT,
-        color INTEGER,
-        dataFiles TEXT,
-        updateTimeStamp TEXT
-        )
-      ''',
-    );
+    // await db.execute(
+    //   '''
+    //   CREATE TABLE tasklists (
+    //     id TEXT PRIMARY KEY,
+    //     title TEXT,
+    //     description TEXT,
+    //     color INTEGER,
+    //     dataFiles TEXT,
+    //     updateTimeStamp TEXT
+    //     )
+    //   ''',
+    // );
+    await onCreateTableTaskLists(db);
+    await onCreateTableTasks(db);
+    await onCreateTableMeasurableTasks(db);
+    await onCreateTableTasksWithSubtasks(db);
+    await onCreateTableEvents(db);
+    await onCreateTableTimeIntervals(db);
+
     // Run the CREATE {tasks} TABLE statement on the database.
-    await db.execute(
-      '''
-      CREATE TABLE tasks(
-        id TEXT PRIMARY KEY,
-        taskListId TEXT,
-        isCompleted INTEGER NOT NULL,
-        isImportant INTEGER NOT NULL,  
-        title TEXT, 
-        description TEXT,
-        location TEXT, 
-        color INTEGER,
-        tags TEXT,
-        dataFiles TEXT,
-        updateTimeStamp TEXT, 
-        FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE SET NULL)
-      ''',
-    );
+    // await db.execute(
+    //   '''
+    //   CREATE TABLE tasks (
+    //     id TEXT PRIMARY KEY,
+    //     taskListId TEXT,
+    //     isCompleted INTEGER NOT NULL,
+    //     isImportant INTEGER NOT NULL,  
+    //     title TEXT, 
+    //     description TEXT,
+    //     location TEXT, 
+    //     color INTEGER,
+    //     tags TEXT,
+    //     dataFiles TEXT,
+    //     updateTimeStamp TEXT, 
+    //     FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
+    //   ''',
+    // );
 
-    await db.execute(
-      '''
-      CREATE TABLE measurabletasks(
-        id TEXT PRIMARY KEY,
-        taskListId TEXT,
-        isCompleted INTEGER NOT NULL,
-        isImportant INTEGER NOT NULL,  
-        title TEXT, 
-        description TEXT,
-        location TEXT, 
-        color INTEGER,
-        targetAtLeast REAL,
-        targetAtMost REAL,
-        targetType INTEGER NOT NULL,
-        howMuchHasBeenDone REAL,
-        unit TEXT,
-        tags TEXT,
-        dataFiles TEXT,
-        updateTimeStamp TEXT, 
-        FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE SET NULL)
-      ''',
-    );
+    // await db.execute(
+    //   '''
+    //   CREATE TABLE measurabletasks (
+    //     id TEXT PRIMARY KEY,
+    //     taskListId TEXT,
+    //     isCompleted INTEGER NOT NULL,
+    //     isImportant INTEGER NOT NULL,  
+    //     title TEXT, 
+    //     description TEXT,
+    //     location TEXT, 
+    //     color INTEGER,
+    //     targetAtLeast REAL,
+    //     targetAtMost REAL,
+    //     targetType INTEGER NOT NULL,
+    //     howMuchHasBeenDone REAL,
+    //     unit TEXT,
+    //     tags TEXT,
+    //     dataFiles TEXT,
+    //     updateTimeStamp TEXT, 
+    //     FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
+    //   ''',
+    // );
 
-    await db.execute(
-      '''
-      CREATE TABLE taskswithsubtasks(
-        id TEXT PRIMARY KEY,
-        taskListId TEXT,
-        title TEXT,
-        description TEXT,
-        location TEXT,
-        color INTEGER,
-        isCompleted INTEGER NOT NULL,
-        isImportant INTEGER NOT NULL,
-        subtasks TEXT,
-        dataFiles TEXT,
-        updateTimeStamp TEXT,
-        FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE SET NULL)
-      ''',
-    );
+    // await db.execute(
+    //   '''
+    //   CREATE TABLE taskswithsubtasks (
+    //     id TEXT PRIMARY KEY,
+    //     taskListId TEXT,
+    //     title TEXT,
+    //     description TEXT,
+    //     location TEXT,
+    //     color INTEGER,
+    //     isCompleted INTEGER NOT NULL,
+    //     isImportant INTEGER NOT NULL,
+    //     subtasks TEXT,
+    //     dataFiles TEXT,
+    //     updateTimeStamp TEXT,
+    //     FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
+    //   ''',
+    // );
 
-    await db.execute(
-      '''
-      CREATE TABLE events(
-        id TEXT PRIMARY KEY,
-        taskListId TEXT,
-        title TEXT, 
-        description TEXT,
-        location TEXT, 
-        color INTEGER,
-        startTimeStamp INTEGER,
-        endTimeStamp INTEGER,
-        tags TEXT,
-        dataFiles TEXT,
-        updateTimeStamp TEXT, 
-        FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE SET NULL)
-      ''',
-    );
+    // await db.execute(
+    //   '''
+    //   CREATE TABLE events (
+    //     id TEXT PRIMARY KEY,
+    //     taskListId TEXT,
+    //     title TEXT, 
+    //     description TEXT,
+    //     location TEXT, 
+    //     color INTEGER,
+    //     startTimeStamp INTEGER,
+    //     endTimeStamp INTEGER,
+    //     tags TEXT,
+    //     dataFiles TEXT,
+    //     updateTimeStamp TEXT, 
+    //     FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
+    //   ''',
+    // );
 
-    await db.execute(
-      '''
-    CREATE TABLE timeintervals(
-      id TEXT PRIMARY KEY,
-      isCompleted INTEGER NOT NULL,
-      taskId TEXT,
-      measuableTaskId TEXT,
-      taskWithSubtasksId TEXT,
-      location TEXT,
-      notes TEXT,
-      startDate TEXT,
-      endDate TEXT,
-      startTime INTEGER,
-      endTime INTEGER,
-      isStartDateUndefined INTEGER NOT NULL,
-      isEndDateUndefined INTEGER NOT NULL,
-      isStartTimeUndefined INTEGER NOT NULL,
-      isEndTimeUndefined INTEGER NOT NULL,
-      targetAtLeast REAL,
-      targetAtMost REAL,
-      targetType INTEGER,
-      unit TEXT,
-      howMuchHasBeenDone REAL,
-      subtasks TEXT,
-      dataFiles TEXT,
-      updateTimeStamp TEXT,
-      timeZone TEXT,
-      FOREIGN KEY (taskId) REFERENCES tasks(id) ON DELETE SET NULL,
-      FOREIGN KEY (measuableTaskId) REFERENCES measurabletasks(id) ON DELETE SET NULL,
-      FOREIGN KEY (taskWithSubtasksId) REFERENCES taskswithsubtasks(id) ON DELETE SET NULL)
-    ''',
-    );
+    // await db.execute(
+    //   '''
+    // CREATE TABLE timeintervals (
+    //   id TEXT PRIMARY KEY,
+    //   isCompleted INTEGER NOT NULL,
+    //   taskId TEXT,
+    //   measurableTaskId TEXT,
+    //   taskWithSubtasksId TEXT,
+    //   location TEXT,
+    //   color INTEGER,
+    //   title TEXT, 
+    //   notes TEXT,
+    //   startDate TEXT,
+    //   endDate TEXT,
+    //   startTime INTEGER,
+    //   endTime INTEGER,
+    //   isStartDateUndefined INTEGER NOT NULL,
+    //   isEndDateUndefined INTEGER NOT NULL,
+    //   isStartTimeUndefined INTEGER NOT NULL,
+    //   isEndTimeUndefined INTEGER NOT NULL,
+    //   targetAtLeast REAL,
+    //   targetAtMost REAL,
+    //   targetType INTEGER,
+    //   unit TEXT,
+    //   howMuchHasBeenDone REAL,
+    //   subtasks TEXT,
+    //   dataFiles TEXT,
+    //   updateTimeStamp TEXT,
+    //   timeZone TEXT,
+    //   FOREIGN KEY (taskId) REFERENCES tasks(id) ON DELETE CASCADE,
+    //   FOREIGN KEY (measurableTaskId) REFERENCES measurabletasks(id) ON DELETE CASCADE,
+    //   FOREIGN KEY (taskWithSubtasksId) REFERENCES taskswithsubtasks(id) ON DELETE CASCADE)
+    // ''',
+    // );
+
+    await db.execute('''
+  CREATE TRIGGER update_timeintervals_of_task_title_color
+  AFTER UPDATE OF title, color ON tasks
+  BEGIN
+    UPDATE timeintervals
+    SET title = NEW.title, color = NEW.color
+    WHERE taskId = OLD.id;
+  END;
+''');
+
+    await db.execute('''
+  CREATE TRIGGER update_timeintervals_of_measurableTask_title_color
+  AFTER UPDATE OF title, color ON measurabletasks
+  BEGIN
+    UPDATE timeintervals
+    SET title = NEW.title, color = NEW.color
+    WHERE measurableTaskId = OLD.id;
+  END;
+''');
+
+    await db.execute('''
+  CREATE TRIGGER update_timeintervals_of_taskWithSubtasks_title_color
+  AFTER UPDATE OF title, color ON taskswithsubtasks
+  BEGIN
+    UPDATE timeintervals
+    SET title = NEW.title, color = NEW.color
+    WHERE taskWithSubtasksId = OLD.id;
+  END;
+''');
+
+    await db.execute('''
+  CREATE TRIGGER delete_timeintervals_of_task
+  AFTER DELETE ON tasks
+  BEGIN
+    DELETE FROM timeintervals
+    WHERE taskId = OLD.id;
+  END;
+''');
+
+    await db.execute('''
+  CREATE TRIGGER delete_timeintervals_of_measurableTask
+  AFTER DELETE ON measurabletasks
+  BEGIN
+    DELETE FROM timeintervals
+    WHERE measurableTaskId = OLD.id;
+  END;
+''');
+
+    await db.execute('''
+  CREATE TRIGGER delete_timeintervals_of_taskWithSubtasks
+  AFTER DELETE ON taskswithsubtasks
+  BEGIN
+    DELETE FROM timeintervals
+    WHERE taskWithSubtasksId = OLD.id;
+  END;
+''');
 
     //_addSampleData();
   }
@@ -224,6 +293,7 @@ class DatabaseManager {
       task.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    printTasks();
   }
 
   Future<void> insertMeasurableTask(MeasurableTask measurableTask) async {
@@ -251,6 +321,7 @@ class DatabaseManager {
       timeInterval.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    printTimeIntervals();
   }
 
   Future<void> insertEvent(Event event) async {
@@ -345,6 +416,13 @@ class DatabaseManager {
     final List<Map<String, dynamic>> maps =
         await db.query('events', where: 'id = ?', whereArgs: [id]);
     return Event.fromMap(maps[0]);
+  }
+
+    Future<TimeInterval> timeInterval(String id) async {
+    final db = await _databaseManager.database;
+    final List<Map<String, dynamic>> maps =
+        await db.query('timeintervals', where: 'id = ?', whereArgs: [id]);
+    return TimeInterval.fromMap(maps[0]);
   }
 
   Future<List<Task>> tasksOfTaskList(String taskListId) async {
@@ -444,12 +522,16 @@ class DatabaseManager {
 
   Future<void> updateTask(Task task) async {
     final db = await _databaseManager.database;
+    print('Updating task with id: ${task.id}');
     await db.update(
       'tasks',
       task.toMap(),
       where: 'id = ?',
       whereArgs: [task.id],
     );
+    print('Task updated');
+    printTasks();
+    printTimeIntervals();
   }
 
   Future<void> updateMeasurableTask(MeasurableTask measurableTask) async {
@@ -505,20 +587,25 @@ class DatabaseManager {
       // Pass the tasklist's id as a whereArg to prevent SQL injection.
       whereArgs: [id],
     );
+    printTasks();
   }
 
   Future<void> deleteTask(String id) async {
     final db = await _databaseManager.database;
+
     await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
+    printTimeIntervals();
   }
 
   Future<void> deleteMeasurableTask(String id) async {
     final db = await _databaseManager.database;
+
     await db.delete('measurabletasks', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> deleteTaskWithSubtasks(String id) async {
     final db = await _databaseManager.database;
+
     await db.delete('taskswithsubtasks', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -530,5 +617,164 @@ class DatabaseManager {
   Future<void> deleteTimeInterval(String id) async {
     final db = await _databaseManager.database;
     await db.delete('timeintervals', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> printTimeIntervals() async {
+    final db = await _databaseManager.database;
+    List<Map> result = await db.query('timeintervals');
+    for (var row in result) {
+      print(row);
+    }
+  }
+
+  Future<void> printTasks() async {
+    final db = await _databaseManager.database;
+    List<Map> result = await db.query('tasks');
+    for (var row in result) {
+      print(row);
+    }
+  }
+
+  Future<void> onCreateTableTaskLists(Database db) async {
+    // Run the CREATE {task lists} TABLE statement on the database.
+    await db.execute(
+      '''
+    CREATE TABLE tasklists (
+      id TEXT PRIMARY KEY, 
+      title TEXT,
+      description TEXT,
+      color INTEGER,
+      dataFiles TEXT,
+      updateTimeStamp TEXT
+      )
+    ''',
+    );
+  }
+
+  Future<void> onCreateTableTasks(Database db) async {
+    // Run the CREATE {tasks} TABLE statement on the database.
+    await db.execute(
+      '''
+    CREATE TABLE tasks (
+      id TEXT PRIMARY KEY,
+      taskListId TEXT,
+      isCompleted INTEGER NOT NULL,
+      isImportant INTEGER NOT NULL,  
+      title TEXT, 
+      description TEXT,
+      location TEXT, 
+      color INTEGER,
+      tags TEXT,
+      dataFiles TEXT,
+      updateTimeStamp TEXT, 
+      FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
+    ''',
+    );
+  }
+
+  Future<void> onCreateTableMeasurableTasks(Database db) async {
+    // Run the CREATE {task lists} TABLE statement on the database.
+    await db.execute(
+      '''
+      CREATE TABLE measurabletasks (
+        id TEXT PRIMARY KEY,
+        taskListId TEXT,
+        isCompleted INTEGER NOT NULL,
+        isImportant INTEGER NOT NULL,  
+        title TEXT, 
+        description TEXT,
+        location TEXT, 
+        color INTEGER,
+        targetAtLeast REAL,
+        targetAtMost REAL,
+        targetType INTEGER NOT NULL,
+        howMuchHasBeenDone REAL,
+        unit TEXT,
+        tags TEXT,
+        dataFiles TEXT,
+        updateTimeStamp TEXT, 
+        FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
+      ''',
+    );
+  }
+
+  Future<void> onCreateTableTasksWithSubtasks(Database db) async {
+    // Run the CREATE {task lists} TABLE statement on the database.
+    await db.execute(
+      '''
+      CREATE TABLE taskswithsubtasks (
+        id TEXT PRIMARY KEY,
+        taskListId TEXT,
+        title TEXT,
+        description TEXT,
+        location TEXT,
+        color INTEGER,
+        isCompleted INTEGER NOT NULL,
+        isImportant INTEGER NOT NULL,
+        subtasks TEXT,
+        dataFiles TEXT,
+        updateTimeStamp TEXT,
+        FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
+      ''',
+    );
+  }
+
+  Future<void> onCreateTableEvents(Database db) async {
+    // Run the CREATE {task lists} TABLE statement on the database.
+    await db.execute(
+      '''
+      CREATE TABLE events (
+        id TEXT PRIMARY KEY,
+        taskListId TEXT,
+        title TEXT, 
+        description TEXT,
+        location TEXT, 
+        color INTEGER,
+        startTimeStamp INTEGER,
+        endTimeStamp INTEGER,
+        tags TEXT,
+        dataFiles TEXT,
+        updateTimeStamp TEXT, 
+        FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
+      ''',
+    );
+  }
+
+  Future<void> onCreateTableTimeIntervals(Database db) async {
+    // Run the CREATE {task lists} TABLE statement on the database.
+    await db.execute(
+      '''
+    CREATE TABLE timeintervals (
+      id TEXT PRIMARY KEY,
+      isCompleted INTEGER NOT NULL,
+      taskId TEXT,
+      measurableTaskId TEXT,
+      taskWithSubtasksId TEXT,
+      location TEXT,
+      color INTEGER,
+      title TEXT, 
+      description TEXT,
+      startDate TEXT,
+      endDate TEXT,
+      startTime INTEGER,
+      endTime INTEGER,
+      isStartDateUndefined INTEGER NOT NULL,
+      isEndDateUndefined INTEGER NOT NULL,
+      isStartTimeUndefined INTEGER NOT NULL,
+      isEndTimeUndefined INTEGER NOT NULL,
+      targetAtLeast REAL,
+      targetAtMost REAL,
+      targetType INTEGER,
+      unit TEXT,
+      howMuchHasBeenDone REAL,
+      subtasks TEXT,
+      dataFiles TEXT,
+      updateTimeStamp TEXT,
+      timeZone TEXT,
+      FOREIGN KEY (taskId) REFERENCES tasks(id) ON DELETE CASCADE,
+      FOREIGN KEY (measurableTaskId) REFERENCES measurabletasks(id) ON DELETE CASCADE,
+      FOREIGN KEY (taskWithSubtasksId) REFERENCES taskswithsubtasks(id) ON DELETE CASCADE)
+    ''',
+    );
   }
 }

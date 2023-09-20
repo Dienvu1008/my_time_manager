@@ -1,38 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-import '../data/models/models.dart';
-
-// void main() {
-//   runApp(MyApp());
-// }
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Time Interval',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      //home: const TimeIntervalPage(task: null,),
-    );
-  }
-}
+import 'package:my_time_manager/data/database/database_manager.dart';
+import 'package:my_time_manager/data/models/model_measurable_task.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
+import 'package:my_time_manager/data/models/model_time_interval.dart';
 
 class TimeIntervalPage extends StatefulWidget {
-  const TimeIntervalPage({
-    super.key, 
-    this.task, 
-    this.measurableTask, 
-    this.taskWithSubtasks});
-  final Task? task; 
+  const TimeIntervalPage(
+      {super.key, 
+      this.task, 
+      this.measurableTask, 
+      this.taskWithSubtasks, 
+      this.taskId, 
+      this.measurableTaskId, 
+      this.taskWithSubtasksId});
+  final Task? task;
   final MeasurableTask? measurableTask;
   final TaskWithSubtasks? taskWithSubtasks;
+  final String? taskId;
+  final String? measurableTaskId;
+  final String? taskWithSubtasksId;
 
   @override
   _TimeIntervalPageState createState() => _TimeIntervalPageState();
 }
 
 class _TimeIntervalPageState extends State<TimeIntervalPage> {
+  final DatabaseManager _databaseManager = DatabaseManager();
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
@@ -45,8 +40,14 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
   List<TimeInterval> _timeIntervals = [];
   bool _isAscending = true;
 
+  Future<void> _onSaveTimeInterval(TimeInterval timeInterval) async {
+    await _databaseManager.insertTimeInterval(timeInterval);
+  }
+
   @override
   Widget build(BuildContext context) {
+    String languageCode = Localizations.localeOf(context).languageCode;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Time Interval'),
@@ -60,7 +61,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
               title: Row(
                 children: [
                   Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: TextFormField(
                       maxLines: 1,
                       controller: _startDateController,
@@ -74,7 +75,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                           );
                           if (date != null) {
                             _startDateController.text =
-                                DateFormat('dd-MM-yyyy').format(date);
+                                DateFormat('EEE, dd MMM, yyyy', languageCode).format(date);
                           }
                         }
                       },
@@ -84,11 +85,11 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                         }
                         return null;
                       },
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Start date',
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                      ),
+                      // decoration: const InputDecoration(
+                      //   border: OutlineInputBorder(),
+                      //   labelText: 'Start date',
+                      //   floatingLabelBehavior: FloatingLabelBehavior.always,
+                      // ),
                       enabled: !_isStartDateUndefined,
                     ),
                   ),
@@ -98,9 +99,9 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                       setState(() {
                         _isStartDateUndefined = value!;
                         if (_isStartDateUndefined) {
-                          _startDateController.text = 'Undefined';
+                          _startDateController.text = 'undefined';
                           _isStartTimeUndefined = true;
-                          _startTimeController.text = 'Undefined';
+                          _startTimeController.text = 'undefined';
                         } else {
                           _startDateController.clear();
                         }
@@ -134,11 +135,11 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                         }
                         return null;
                       },
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Start time',
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                      ),
+                      // decoration: const InputDecoration(
+                      //   border: OutlineInputBorder(),
+                      //   labelText: 'Start time',
+                      //   floatingLabelBehavior: FloatingLabelBehavior.always,
+                      // ),
                       enabled: !_isStartTimeUndefined,
                     ),
                   ),
@@ -150,7 +151,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                             setState(() {
                               _isStartTimeUndefined = value!;
                               if (_isStartTimeUndefined) {
-                                _startTimeController.text = 'Undefined';
+                                _startTimeController.text = 'undefined';
                               } else {
                                 _startTimeController.clear();
                               }
@@ -164,7 +165,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
               title: Row(
                 children: [
                   Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: TextFormField(
                       maxLines: 1,
                       controller: _endDateController,
@@ -178,7 +179,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                         );
                         if (date != null) {
                           _endDateController.text =
-                              DateFormat('dd-MM-yyyy').format(date);
+                              DateFormat('EEE, dd MMM, yyyy', languageCode).format(date);
                         }
                       },
                       validator: (value) {
@@ -187,11 +188,11 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                         }
                         return null;
                       },
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'End date',
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                      ),
+                      // decoration: const InputDecoration(
+                      //   border: OutlineInputBorder(),
+                      //   labelText: 'End date',
+                      //   floatingLabelBehavior: FloatingLabelBehavior.always,
+                      // ),
                     ),
                   ),
                   Checkbox(
@@ -200,9 +201,9 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                       setState(() {
                         _isEndDateUndefined = value!;
                         if (_isEndDateUndefined) {
-                          _endDateController.text = 'Undefined';
+                          _endDateController.text = 'undefined';
                           _isEndTimeUndefined = true;
-                          _endTimeController.text = 'Undefined';
+                          _endTimeController.text = 'undefined';
                         } else {
                           _endDateController.clear();
                         }
@@ -235,11 +236,11 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                         }
                         return null;
                       },
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'End time',
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                      ),
+                      // decoration: const InputDecoration(
+                      //   border: OutlineInputBorder(),
+                      //   labelText: 'End time',
+                      //   floatingLabelBehavior: FloatingLabelBehavior.always,
+                      // ),
                     ),
                   ),
                   Checkbox(
@@ -250,7 +251,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                             setState(() {
                               _isEndTimeUndefined = value!;
                               if (_isEndTimeUndefined) {
-                                _endTimeController.text = 'Undefined';
+                                _endTimeController.text = 'undefined';
                               } else {
                                 _endTimeController.clear();
                               }
@@ -263,12 +264,11 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
             const SizedBox(
               height: 20,
             ),
-
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         if (_isStartDateUndefined &&
                             _isEndDateUndefined &&
@@ -282,11 +282,11 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                           );
                         } else {
                           final startDate = !_isStartDateUndefined
-                              ? DateFormat('dd-MM-yyyy')
+                              ? DateFormat('EEE, dd MMM, yyyy', languageCode)
                                   .parse(_startDateController.text)
                               : null;
                           final endDate = !_isEndDateUndefined
-                              ? DateFormat('dd-MM-yyyy')
+                              ? DateFormat('EEE, dd MMM, yyyy', languageCode)
                                   .parse(_endDateController.text)
                               : null;
                           final startTime = !_isStartTimeUndefined
@@ -298,9 +298,23 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                                   .parse(_endTimeController.text))
                               : null;
                           final timeInterval = TimeInterval(
-                            taskId: widget.task == null ? '' : widget.task!.id,
-                            measuableTaskId: widget.measurableTask == null ? '' : widget.measurableTask!.id,
-                            taskWithSubtasksId: widget.taskWithSubtasks == null ? '' : widget.taskWithSubtasks!.id,
+                            taskId: widget.task?.id,
+                            measurableTaskId: widget.measurableTask?.id,
+                            taskWithSubtasksId: widget.taskWithSubtasks?.id,
+                            color: widget.task != null
+                                ? widget.task!.color
+                                : widget.measurableTask != null
+                                    ? widget.measurableTask!.color
+                                    : widget.taskWithSubtasks != null
+                                        ? widget.taskWithSubtasks!.color
+                                        : const Color(0xff000000),
+                            title: widget.task != null
+                                ? widget.task!.title
+                                : widget.measurableTask != null
+                                    ? widget.measurableTask!.title
+                                    : widget.taskWithSubtasks != null
+                                        ? widget.taskWithSubtasks!.title
+                                        : '',
                             startDate: startDate,
                             endDate: endDate,
                             startTime: startTime,
@@ -313,7 +327,56 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                                 startTime == null || _isStartTimeUndefined,
                             isEndTimeUndefined:
                                 endTime == null || _isEndTimeUndefined,
+                            subtasks: widget.taskWithSubtasks != null
+                                ? widget.taskWithSubtasks!.subtasks
+                                    .map((subtask) => Subtask(
+                                          isSubtaskCompleted: false,
+                                          title: subtask.title,
+                                        ))
+                                    .toList()
+                                : null,
+                            targetType: widget.measurableTask != null
+                                ? widget.measurableTask!.targetType
+                                : null,
+                            targetAtLeast: widget.measurableTask != null
+                                ? widget.measurableTask!.targetAtLeast
+                                : null,
+                            targetAtMost: widget.measurableTask != null
+                                ? widget.measurableTask!.targetAtMost
+                                : null,
+                            unit: widget.measurableTask != null
+                                ? widget.measurableTask!.unit
+                                : null,
+                            howMuchHasBeenDone:
+                                widget.measurableTask != null ? 0.0 : null,
                           );
+                          if (timeInterval.startTimestamp != null &&
+                              timeInterval.endTimestamp != null &&
+                              timeInterval.startTimestamp! >
+                                  timeInterval.endTimestamp!) {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: Text('Lỗi'),
+                                  content: Text(
+                                      'Thời gian bắt đầu không được phép xảy ra sau thời gian kết thúc.'),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      child: Text('Đóng'),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          } else {
+                            //_onSaveTimeInterval(timeInterval);
+                            await _databaseManager
+                                .insertTimeInterval(timeInterval);
+                          }
                           setState(() {
                             _timeIntervals.add(timeInterval);
                             _startDateController.clear();
@@ -324,7 +387,6 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                             _isEndDateUndefined = false;
                             _isStartTimeUndefined = false;
                             _isEndTimeUndefined = false;
-
                           });
                         }
                       }
@@ -383,9 +445,9 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                                       maxLines: 1,
                                       initialValue: timeInterval.startDate !=
                                               null
-                                          ? DateFormat('dd-MM-yyyy')
+                                          ? DateFormat('EEE,dd MMM, yyyy', languageCode)
                                               .format(timeInterval.startDate!)
-                                          : 'N/A',
+                                          : 'undefined',
                                       // decoration: const InputDecoration(
                                       //   border: OutlineInputBorder(),
                                       //   labelText: 'Start date',
@@ -403,7 +465,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                                       initialValue: timeInterval.startTime !=
                                               null
                                           ? '${timeInterval.startTime!.hour.toString().padLeft(2, '0')}:${timeInterval.startTime!.minute.toString().padLeft(2, '0')}'
-                                          : 'N/A',
+                                          : 'undefined',
                                       // decoration: const InputDecoration(
                                       //   border: OutlineInputBorder(),
                                       //   labelText: 'Start time',
@@ -423,9 +485,9 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                                     child: TextFormField(
                                       maxLines: 1,
                                       initialValue: timeInterval.endDate != null
-                                          ? DateFormat('dd-MM-yyyy')
+                                          ? DateFormat('EEE, dd MMM, yyyy', languageCode)
                                               .format(timeInterval.endDate!)
-                                          : 'N/A',
+                                          : 'undefined',
                                       // decoration: const InputDecoration(
                                       //   border: OutlineInputBorder(),
                                       //   labelText: 'End date',
@@ -442,7 +504,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                                       maxLines: 1,
                                       initialValue: timeInterval.endTime != null
                                           ? '${timeInterval.endTime!.hour.toString().padLeft(2, '0')}:${timeInterval.endTime!.minute.toString().padLeft(2, '0')}'
-                                          : 'N/A',
+                                          : 'undefined',
                                       // decoration: const InputDecoration(
                                       //   border: OutlineInputBorder(),
                                       //   labelText: 'End time',
@@ -487,7 +549,8 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                   ),
                 )
               ],
-            )),
+            ),
+            ),
           ],
         ),
       ),

@@ -80,7 +80,8 @@ enum ScreenSelected {
   calendarScreen(4),
   focusTimerScreen(5),
   contactsScreen(6),
-  statsScreen(7);
+  statsScreen(7),
+  notesScreen(8),;
 
   const ScreenSelected(this.value);
   final int value;
@@ -119,15 +120,15 @@ enum PageOfCalendarScreenSelected {
 }
 
 enum AppLanguage {
-  english('english', 'EN'),
-  vietnamese('vietnamese', 'VI'),
-  german('german', 'DE'),
-  // french('french', 'FR'),
-  // japanese('japanese', 'JA'),
-  // russian('russian', 'RU'),
-  // chinese('chinese', 'ZH'),
-  // korean('korean', 'KO'),
-  // italian('italian', 'IT'),
+  german('German', 'DE'),
+  english('English', 'EN'),
+  // french('French', 'FR'),
+  // italian('Italian', 'IT'),
+  // japanese('Japanese', 'JA'),
+  // korean('Korean', 'KO'),
+  // russian('Russian', 'RU'),
+  vietnamese('Vietnamese', 'VI'),
+  //chinese('Chinese', 'ZH')
   ;
 
   const AppLanguage(this.language, this.short_language);
@@ -135,38 +136,16 @@ enum AppLanguage {
   final String short_language;
 }
 
-const double FONT_VERY_SMALL = 4.0;
-const double FONT_SMALL = 8.0;
-const double FONT_MEDIUM = 16.0;
-const double FONT_LARGE = 24.0;
-const double FONT_VERY_LARGE = 32.0;
-
-//For Task Row
-const double FONT_SIZE_TITLE = 16.0;
-const double FONT_SIZE_LABEL = 14.0;
-const double FONT_SIZE_DATE = 12.0;
-
-//About_Us
-class AboutUsKeys {
-  static const TITLE_ABOUT = "titleAbout";
-  static const TITLE_REPORT = 'titleReport';
-  static const SUBTITLE_REPORT = 'subtitleReport';
-  static const AUTHOR_NAME = 'authorName';
-  static const AUTHOR_USERNAME = 'authorUsername';
-  static const AUTHOR_EMAIL = 'authorEmail';
-  static const VERSION_NUMBER = 'versionNumber';
-}
-
-const String GITHUB_URL = "https://github.com/Dienvu1008";
-const String AUTHOR_FACEBOOK_URL =
-    "https://www.facebook.com/profile.php?id=100074416023246";
-const String PAGE_FACEBOOK_URL =
-    "https://www.facebook.com/profile.php?id=100083919462769";
-const String EMAIL_URL =
-    "mailto:<dienvu1008@gmail.com>?subject=MyTimeManager%20Query&body=Hi";
-const String README_URL =
-    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README.md";
-const String PRIVACY_URL =
-    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/PRIVACY.md";
-const String ISSUE_URL =
-    "https://github.com/Dienvu1008/My-Time-Manager-Infor/issues";
+Uri githubUrl = Uri.parse('https://github.com/Dienvu1008');
+Uri authorFacebookUrl =
+    Uri.parse("https://www.facebook.com/profile.php?id=100074416023246");
+Uri pageFacebookUrl =
+    Uri.parse("https://www.facebook.com/profile.php?id=100083919462769");
+Uri emailUrl = Uri.parse(
+    "mailto:<dienvu1008@gmail.com>?subject=MyTimeManager%20Query&body=Hi");
+Uri readMeUrl = Uri.parse(
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README.md");
+Uri privacyUrl = Uri.parse(
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/PRIVACY.md");
+Uri issueUrl =
+    Uri.parse("https://github.com/Dienvu1008/My-Time-Manager-Infor/issues");
