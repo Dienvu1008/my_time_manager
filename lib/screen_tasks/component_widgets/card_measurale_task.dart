@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -90,7 +92,8 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (widget.measurableTask.description.isNotEmpty || widget.measurableTask.description != '')
+                        if (widget.measurableTask.description.isNotEmpty ||
+                            widget.measurableTask.description != '')
                           Text(
                             widget.measurableTask.description,
                             style: TextStyle(color: labelColor),
@@ -133,15 +136,28 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                           widget.onMeasurableTaskToggleComplete(
                               widget.measurableTask);
                         } else if (result == 'option4') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => TimeIntervalPage(
-                                    measurableTask: widget.measurableTask)),
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            showDragHandle: true,
+                            builder: (BuildContext context) =>
+                                SetTimeIntervalBottomSheet(
+                              measurableTaskId: widget.measurableTask.id,
+                            ),
                           );
                         } else if (result == 'option6') {
                           setState(() => _isExpanded = !_isExpanded);
                           _saveIsExpanded();
+                        } else if (result == 'planned') {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            showDragHandle: true,
+                            builder: (BuildContext context) =>
+                                ShowTimeIntervalsBottomSheet(
+                              measurableTaskId: widget.measurableTask.id,
+                            ),
+                          );
                         }
                       },
                       itemBuilder: (BuildContext context) =>
@@ -175,12 +191,22 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                           ),
                         ),
                         const PopupMenuItem<String>(
+                          value: 'planned',
+                          child: Row(
+                            children: [
+                              Icon(Icons.event_note_outlined),
+                              SizedBox(width: 8),
+                              Text('Planned'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem<String>(
                           value: 'option4',
                           child: Row(
                             children: [
                               Icon(Icons.hourglass_empty),
                               SizedBox(width: 8),
-                              Text('Add time interval'),
+                              Text('Schedule'),
                             ],
                           ),
                         ),

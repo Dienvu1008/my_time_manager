@@ -39,6 +39,10 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
   }
 
   bool _isExpanded = true;
+  String _formattedStartDate = '--/--/----';
+  String _formattedStartTime = '--:--';
+  String _formattedEndDate = '--/--/----';
+  String _formattedEndTime = '--:--';
 
   @override
   void initState() {
@@ -70,11 +74,34 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
         : ColorScheme.light(primary: taskWithSubtasksColor);
     final backgroundColor = myColorScheme.primaryContainer;
     final labelColor = contrastColor(backgroundColor);
-    String languageCode = Localizations.localeOf(context).languageCode;
-    final String formattedStartDate = widget.timeInterval.startDate != null
-        ? DateFormat('EEE, dd MMM, yyyy', languageCode).format(widget.timeInterval.startDate!)
-        : '--/--/----';
     final textTheme = Theme.of(context).textTheme.apply(bodyColor: labelColor);
+    if (widget.timeInterval.startDate != null) {
+      _formattedStartDate = DateFormat(
+              'EEE, dd MMM, yyyy', Localizations.localeOf(context).languageCode)
+          .format(widget.timeInterval.startDate!);
+    } else {
+      _formattedStartDate = '--/--/----';
+    }
+
+    if (widget.timeInterval.startTime != null) {
+      _formattedStartTime = widget.timeInterval.startTime!.format(context);
+    } else {
+      _formattedStartTime = '--:--';
+    }
+
+    if (widget.timeInterval.endDate != null) {
+      _formattedEndDate = DateFormat(
+              'EEE, dd MMM, yyyy', Localizations.localeOf(context).languageCode)
+          .format(widget.timeInterval.endDate!);
+    } else {
+      _formattedEndDate = '--/--/----';
+    }
+
+    if (widget.timeInterval.endTime != null) {
+      _formattedEndTime = widget.timeInterval.endTime!.format(context);
+    } else {
+      _formattedEndTime = '--:--';
+    }
 
     return Card(
       color: backgroundColor,
@@ -88,33 +115,55 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ListTile(
-                    // title: Text(
-                    //   widget.timeInterval.title,
-                    //   style: TextStyle(
-                    //     color: labelColor,
-                    //     decoration: widget.timeInterval.isCompleted
-                    //         ? TextDecoration.lineThrough
-                    //         : null,
-                    //   ),
-                    // ),
-                    // subtitle: widget.timeInterval.description.isNotEmpty
-                    //     ? Text(
-                    //         widget.timeInterval.description,
-                    //         style: TextStyle(color: labelColor),
-                    //       )
-                    //     : null,(
-                    title: Text(
-                      '$formattedStartDate: ${widget.timeInterval.startTime!.format(context)} - ${widget.timeInterval.endTime!.format(context)}',
-                      style: textTheme.labelSmall,
+                    title: RichText(
+                      text: TextSpan(
+                        style: textTheme.labelSmall,
+                        children: <TextSpan>[
+                          TextSpan(
+                            text: widget.timeInterval.isGone == true
+                                ? "gone "
+                                : "",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: widget.timeInterval.isInProgress == true
+                                ? "in progress "
+                                : "",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: widget.timeInterval.isToday == true
+                                ? "today "
+                                : "",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: _formattedStartDate == _formattedEndDate
+                                ? '$_formattedStartDate: $_formattedStartTime - $_formattedEndTime'
+                                : '$_formattedStartDate: $_formattedStartTime - $_formattedEndDate: $_formattedEndTime',
+                          ),
+                        ],
+                      ),
                     ),
-                    subtitle:
-                        // Text(
-                        //   widget.timeInterval.title,
-                        //   style: TextStyle(
-                        //     color: labelColor,
-                        //   ),
-                        // ),
-                        Column(
+
+                    // Text(
+                    //   '${widget.timeInterval.isGone == true ? "**is gone** " : ""}'
+                    //   '${widget.timeInterval.isInProgress == true ? "**is in progress** " : ""}'
+                    //   '${widget.timeInterval.isToday == true ? "**is today** " : ""}'
+                    //   '${_formattedStartDate == _formattedEndDate ? '$_formattedStartDate: $_formattedStartTime - $_formattedEndTime' : '$_formattedStartDate: $_formattedStartTime - $_formattedEndDate: $_formattedEndTime'}',
+                    //   style: textTheme.labelSmall,
+                    // ),
+
+                    // (_formattedStartDate == _formattedEndDate)
+                    //     ? Text(
+                    //         '$_formattedStartDate $_formattedStartTime -> $_formattedEndTime',
+                    //         style: textTheme.labelSmall,
+                    //       )
+                    //     : Text(
+                    //         '$_formattedStartDate $_formattedStartTime -> $_formattedEndDate $_formattedEndTime',
+                    //         style: textTheme.labelSmall,
+                    //       ),
+                    subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -155,26 +204,6 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                             ],
                           ),
                         ),
-                        // if (widget.timeInterval.targetType == TargetType.about)
-                        //   Text(
-                        //       'Target: about ${widget.timeInterval.targetAtLeast} to ${widget.timeInterval.targetAtMost} ${widget.timeInterval.unit}',
-                        //       style: TextStyle(color: labelColor)),
-                        // if (widget.timeInterval.targetType ==
-                        //     TargetType.atLeast)
-                        //   Text(
-                        //     'Target: at least ${widget.timeInterval.targetAtLeast} ${widget.timeInterval.unit}',
-                        //     style: TextStyle(color: labelColor),
-                        //   ),
-                        // if (widget.timeInterval.targetType == TargetType.atMost)
-                        //   Text(
-                        //     'Target: at most ${widget.timeInterval.targetAtMost} ${widget.timeInterval.unit}',
-                        //     style: TextStyle(color: labelColor),
-                        //   ),
-                        // if (widget.timeInterval.howMuchHasBeenDone != 0)
-                        //   Text(
-                        //     'Has been done: ${widget.timeInterval.howMuchHasBeenDone} ${widget.timeInterval.unit}',
-                        //     style: TextStyle(color: labelColor),
-                        //   ),
                       ],
                     ),
                     trailing: PopupMenuButton<String>(
@@ -222,20 +251,20 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                             ),
                           ),
                         if (widget.timeInterval.measurableTaskId != null)
-                        PopupMenuItem<String>(
-                          value: 'option6',
-                          child: Row(
-                            children: [
-                              Icon(_isExpanded
-                                  ? Icons.chevron_right
-                                  : Icons.expand_more),
-                              const SizedBox(width: 8),
-                              _isExpanded
-                                  ? const Text('Hide target infor')
-                                  : const Text('Show target infor'),
-                            ],
+                          PopupMenuItem<String>(
+                            value: 'option6',
+                            child: Row(
+                              children: [
+                                Icon(_isExpanded
+                                    ? Icons.chevron_right
+                                    : Icons.expand_more),
+                                const SizedBox(width: 8),
+                                _isExpanded
+                                    ? const Text('Hide target infor')
+                                    : const Text('Show target infor'),
+                              ],
+                            ),
                           ),
-                        ),
                         PopupMenuItem<String>(
                           value: 'option3',
                           child: Row(
@@ -260,16 +289,6 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                             ],
                           ),
                         ),
-                        // const PopupMenuItem<String>(
-                        //   value: 'option6',
-                        //   child: Row(
-                        //     children: [
-                        //       Icon(Icons.timelapse_outlined),
-                        //       SizedBox(width: 8),
-                        //       Text('Focus right now?'),
-                        //     ],
-                        //   ),
-                        // ),
                         const PopupMenuItem<String>(
                           value: 'option1',
                           child: Row(

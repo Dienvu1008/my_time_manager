@@ -106,7 +106,7 @@ class _ShowTimeIntervalsBottomSheetState
                           //When you press this button, the calendar or list of time intervals will switch to the current day
                           //or the day closest to the current day.
                           IconButton(
-                            icon: const Icon(Icons.wb_sunny_outlined),
+                            icon: const Icon(Icons.today_outlined),
                             onPressed: () {},
                           ),
                           //This filter will screen to display time intervals that are completed, not completed,
@@ -159,6 +159,10 @@ class _TimeIntervalOfTaskOrEventPageState
     extends State<TimeIntervalOfTaskOrEventPage> {
   final DatabaseManager _databaseManager = DatabaseManager();
   List<TimeInterval> _timeIntervals = [];
+  String _formattedStartDate = '--/--/----';
+  String _formattedStartTime = '--:--';
+  String _formattedEndDate = '--/--/----';
+  String _formattedEndTime = '--:--';
 
   @override
   void initState() {
@@ -191,15 +195,80 @@ class _TimeIntervalOfTaskOrEventPageState
         itemBuilder: (context, index) {
           final timeInterval = _timeIntervals[index];
           final textTheme = Theme.of(context).textTheme;
-          final String formattedStartDate = timeInterval.startDate != null
-              ? DateFormat.yMMMd().format(timeInterval.startDate!)
-              : '--/--/----';
+          if (timeInterval.startDate != null) {
+            _formattedStartDate = DateFormat('EEE, dd MMM, yyyy',
+                    Localizations.localeOf(context).languageCode)
+                .format(timeInterval.startDate!);
+          } else {
+            _formattedStartDate = '--/--/----';
+          }
+
+          if (timeInterval.startTime != null) {
+            _formattedStartTime = timeInterval.startTime!.format(context);
+          } else {
+            _formattedStartTime = '--:--';
+          }
+
+          if (timeInterval.endDate != null) {
+            _formattedEndDate = DateFormat('EEE, dd MMM, yyyy',
+                    Localizations.localeOf(context).languageCode)
+                .format(timeInterval.endDate!);
+          } else {
+            _formattedEndDate = '--/--/----';
+          }
+
+          if (timeInterval.endTime != null) {
+            _formattedEndTime = timeInterval.endTime!.format(context);
+          } else {
+            _formattedEndTime = '--:--';
+          }
+
           return ListTile(
-            title: Text(
-              '$formattedStartDate: ${timeInterval.startTime!.format(context)} - ${timeInterval.endTime!.format(context)}',
+              title: RichText(
+            text: TextSpan(
               style: textTheme.labelSmall,
+              children: <TextSpan>[
+                TextSpan(
+                  text: timeInterval.isGone == true ? "gone  " : "",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(
+                  text: timeInterval.isInProgress == true
+                      ? "in progress  "
+                      : "",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(
+                  text: timeInterval.isToday == true ? "today  " : "",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(
+                  text: _formattedStartDate == _formattedEndDate
+                      ? '$_formattedStartDate: $_formattedStartTime - $_formattedEndTime'
+                      : '$_formattedStartDate: $_formattedStartTime - $_formattedEndDate: $_formattedEndTime',
+                ),
+              ],
             ),
-          );
+          )
+
+              //     Text(
+              //   '${timeInterval.isGone == true ? "**is gone** " : ""}'
+              //   '${timeInterval.isInProgress == true ? "**is in progress** " : ""}'
+              //   '${timeInterval.isToday == true ? "**is today** " : ""}'
+              //   '${_formattedStartDate == _formattedEndDate ? '$_formattedStartDate: $_formattedStartTime - $_formattedEndTime' : '$_formattedStartDate: $_formattedStartTime - $_formattedEndDate: $_formattedEndTime'}',
+              //   style: textTheme.labelSmall,
+              // )
+
+              // (_formattedStartDate == _formattedEndDate)
+              //     ? Text(
+              //         '$_formattedStartDate: $_formattedStartTime - $_formattedEndTime',
+              //         style: textTheme.labelSmall,
+              //       )
+              //     : Text(
+              //         '$_formattedStartDate: $_formattedStartTime - $_formattedEndDate: $_formattedEndTime',
+              //         style: textTheme.labelSmall,
+              //       ),
+              );
         });
   }
 }

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
+import 'package:my_time_manager/data/models/model_measurable_task.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/utils/constants.dart';
 
 class SetTimeIntervalBottomSheet extends StatefulWidget {
   const SetTimeIntervalBottomSheet(
@@ -20,6 +24,8 @@ class _SetTimeIntervalBottomSheetState extends State<SetTimeIntervalBottomSheet>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+
+  final GlobalKey<_SetTimeIntervalPageState> key = GlobalKey();
 
   @override
   void initState() {
@@ -101,12 +107,15 @@ class _SetTimeIntervalBottomSheetState extends State<SetTimeIntervalBottomSheet>
                           ),
                           IconButton(
                             icon: const Icon(Icons.save_outlined),
-                            onPressed: () {},
+                            onPressed: () {
+                              key.currentState!._onSave();
+                            },
                           ),
                         ],
                       ),
                       Expanded(
                         child: SetTimeIntervalPage(
+                          key: key,
                           taskId: widget.taskId,
                           measurableTaskId: widget.measurableTaskId,
                           taskWithSubtasksId: widget.taskWithSubtasksId,
@@ -123,8 +132,12 @@ class _SetTimeIntervalBottomSheetState extends State<SetTimeIntervalBottomSheet>
 }
 
 class SetTimeIntervalPage extends StatefulWidget {
-  const SetTimeIntervalPage(
-      {super.key, this.taskId, this.measurableTaskId, this.taskWithSubtasksId});
+  const SetTimeIntervalPage({
+    super.key,
+    this.taskId,
+    this.measurableTaskId,
+    this.taskWithSubtasksId,
+  });
 
   final String? taskId;
   final String? measurableTaskId;
@@ -147,6 +160,159 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
   bool _isEndTimeUndefined = false;
   //List<TimeInterval> _timeIntervals = [];
   //bool _isAscending = true;
+  //String _languageCode = 'en';
+  String _title = '';
+  String _description = '';
+  String _location = '';
+
+  Color _color = ColorSeed.baseColor.color;
+  bool _isCompleted = false;
+  List<Subtask>? _subtasks = [];
+  TargetType? _targetType = TargetType.about;
+  double? _targetAtLeast = double.negativeInfinity;
+  double? _targetAtMost = double.infinity;
+  double? _howMuchHasBeenDone = 0.0;
+  String? _unit = '';
+
+  Future<void> _init() async {
+    if (widget.taskId != null) {
+      final Task task = await _databaseManager.task(widget.taskId!);
+      _title = task.title;
+      _color = task.color;
+      _description = task.description;
+      _location = task.location;
+    } else if (widget.taskWithSubtasksId != null) {
+      final TaskWithSubtasks taskWithSubtasks =
+          await _databaseManager.taskWithSubtasks(widget.taskWithSubtasksId!);
+      _title = taskWithSubtasks.title;
+      _color = taskWithSubtasks.color;
+      _description = taskWithSubtasks.description;
+      _location = taskWithSubtasks.location;
+      _subtasks = taskWithSubtasks.subtasks
+          .map((subtask) => Subtask(
+                isSubtaskCompleted: false,
+                title: subtask.title,
+              ))
+          .toList();
+    } else if (widget.measurableTaskId != null) {
+      final MeasurableTask measurableTask =
+          await _databaseManager.measurableTask(widget.measurableTaskId!);
+      _title = measurableTask.title;
+      _color = measurableTask.color;
+      _description = measurableTask.description;
+      _location = measurableTask.location;
+      _targetType = measurableTask.targetType;
+      _targetAtLeast = measurableTask.targetAtLeast;
+      _targetAtMost = measurableTask.targetAtMost;
+      _unit = measurableTask.unit;
+    }
+  }
+
+  Future<void> _onSave() async {
+    if (_formKey.currentState!.validate()) {
+      if (_isStartDateUndefined &&
+          _isEndDateUndefined &&
+          _isStartTimeUndefined &&
+          _isEndTimeUndefined) {
+        showDialog(
+          context: context,
+          builder: (context) => const AlertDialog(
+            content: Text('Please enter at least one date'),
+          ),
+        );
+      } else {
+        final startDate = !_isStartDateUndefined
+            ? DateFormat('EEE, dd MMM, yyyy',
+                    Localizations.localeOf(context).languageCode)
+                .parse(_startDateController.text)
+            : null;
+        final endDate = !_isEndDateUndefined
+            ? DateFormat('EEE, dd MMM, yyyy',
+                    Localizations.localeOf(context).languageCode)
+                .parse(_endDateController.text)
+            : null;
+        final startTime = !_isStartTimeUndefined
+            ? TimeOfDay.fromDateTime(
+                DateFormat('HH:mm').parse(_startTimeController.text))
+            : null;
+        final endTime = !_isEndTimeUndefined
+            ? TimeOfDay.fromDateTime(
+                DateFormat('HH:mm').parse(_endTimeController.text))
+            : null;
+        final timeInterval = TimeInterval(
+          taskId: widget.taskId,
+          measurableTaskId: widget.measurableTaskId,
+          taskWithSubtasksId: widget.taskWithSubtasksId,
+          color: _color,
+          title: _title,
+          isCompleted: _isCompleted,
+          description: _description,
+          location: _location,
+          subtasks: _subtasks,
+          targetType: _targetType,
+          unit: _unit,
+          targetAtLeast: _targetAtLeast,
+          targetAtMost: _targetAtMost,
+          howMuchHasBeenDone: _howMuchHasBeenDone,
+          startDate: startDate,
+          endDate: endDate,
+          startTime: startTime,
+          endTime: endTime,
+          isStartDateUndefined: startDate == null || _isStartDateUndefined,
+          isEndDateUndefined: endDate == null || _isEndDateUndefined,
+          isStartTimeUndefined: startTime == null || _isStartTimeUndefined,
+          isEndTimeUndefined: endTime == null || _isEndTimeUndefined,
+        );
+        if (timeInterval.startTimestamp != null &&
+            timeInterval.endTimestamp != null &&
+            timeInterval.startTimestamp! > timeInterval.endTimestamp!) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Lỗi'),
+                content: Text(
+                    'Thời gian bắt đầu không được phép xảy ra sau thời gian kết thúc.'),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text('Đóng'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          //_onSaveTimeInterval(timeInterval);
+          await _databaseManager.insertTimeInterval(timeInterval);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('has been scheduled'),
+            ),
+          );
+        }
+        setState(() {
+          //_timeIntervals.add(timeInterval);
+          _startDateController.clear();
+          _startTimeController.clear();
+          _endDateController.clear();
+          _endTimeController.clear();
+          _isStartDateUndefined = false;
+          _isEndDateUndefined = false;
+          _isStartTimeUndefined = false;
+          _isEndTimeUndefined = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -477,23 +643,16 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
                 height: 4,
               ),
               RepeatListTile(),
+              AlarmListTile(),
               // ListTile(
-              //   leading: const Icon(Icons.alarm_outlined),
-              //   title: Text('Alarm'),
+              //   leading: const Icon(Icons.public_outlined),
+              //   title: Text('Timezone'),
               //   onTap: () {},
               // ),
-              AlarmListTile(),
               // const Divider(
               //   height: 4,
               // ),
-              ListTile(
-                leading: const Icon(Icons.public_outlined),
-                title: Text('Timezone'),
-                onTap: () {},
-              ),
-              const Divider(
-                height: 4,
-              ),
+              TimezoneListTile(),
             ],
           ),
         ),
@@ -905,7 +1064,7 @@ class _AlarmListTileState extends State<AlarmListTile> {
                             Navigator.of(context).pop();
                           },
                         ),
-                                                RadioListTile(
+                        RadioListTile(
                           title: const Text('Custom...'),
                           value: 'custom',
                           groupValue: null,
@@ -940,6 +1099,58 @@ class _AlarmListTileState extends State<AlarmListTile> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class TimezoneListTile extends StatefulWidget {
+  @override
+  _TimezoneListTileState createState() => _TimezoneListTileState();
+}
+
+class _TimezoneListTileState extends State<TimezoneListTile> {
+  String _selectedTimezone = 'Timezone của thiết bị';
+
+  // Danh sách tất cả các timezone theo IANA
+  List<String> _timezones = [
+    'Timezone 1',
+    'Timezone 2',
+    // Thêm tất cả các timezone khác vào đây
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.public_outlined),
+      title: Text(_selectedTimezone),
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Chọn timezone'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _timezones.map((timezone) {
+                    return RadioListTile(
+                      title: Text(timezone),
+                      value: timezone,
+                      groupValue: _selectedTimezone,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedTimezone = value as String;
+                        });
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

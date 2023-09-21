@@ -53,6 +53,11 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
   String _id = '';
   //bool _isImportant = false;
 
+  String _formattedStartDate = '--/--/----';
+  String _formattedStartTime = '--:--';
+  String _formattedEndDate = '--/--/----';
+  String _formattedEndTime = '--:--';
+
   @override
   void initState() {
     super.initState();
@@ -106,8 +111,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
               widget.timeInterval!.startTime.toString()
           : _startTimeController.text = '--:--';
       widget.timeInterval?.endTime != null
-          ? _endTimeController.text =
-              widget.timeInterval!.endTime.toString()
+          ? _endTimeController.text = widget.timeInterval!.endTime.toString()
           : _endTimeController.text = '--:--';
     } else {
       _id = const Uuid().v4();
@@ -269,6 +273,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
         ? DateFormat.yMMMd().format(widget.timeInterval!.startDate!)
         : '--/--/----';
     double bottom = MediaQuery.of(context).viewInsets.bottom;
+
     return Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
@@ -292,25 +297,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Text('List: ${widget.taskList.title}',
-                //     style: textTheme.titleLarge!),
-                // const SizedBox(height: 24.0),
                 ListTile(
-                  // title: Text(
-                  //   widget.timeInterval.title,
-                  //   style: TextStyle(
-                  //     color: labelColor,
-                  //     decoration: widget.timeInterval.isCompleted
-                  //         ? TextDecoration.lineThrough
-                  //         : null,
-                  //   ),
-                  // ),
-                  // subtitle: widget.timeInterval.description.isNotEmpty
-                  //     ? Text(
-                  //         widget.timeInterval.description,
-                  //         style: TextStyle(color: labelColor),
-                  //       )
-                  //     : null,(
                   title: Text(
                     '$formattedStartDate: ${widget.timeInterval!.startTime!.format(context)} - ${widget.timeInterval!.endTime!.format(context)}',
                     style: textTheme.labelSmall,
@@ -348,56 +335,8 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                 const Divider(
                   height: 4,
                 ),
-                // ListTile(
-                //   leading: const Padding(
-                //     padding: EdgeInsets.only(left: 0.0, right: 4.0),
-                //     child: Icon(Icons.description_outlined),
-                //   ),
-                //   title: TextField(
-                //     controller: _descriptionController,
-                //     maxLines: null,
-                //     decoration: const InputDecoration(
-                //       hintText: 'Description',
-                //       border: InputBorder.none,
-                //     ),
-                //   ),
-                // ),
-                // const Divider(
-                //   height: 4,
-                // ),
                 DescriptionListTile(
                     descriptionController: _descriptionController),
-                // ListTile(
-                //   leading: Padding(
-                //     padding: EdgeInsets.only(left: 0.0, right: 4.0),
-                //     child: Icon(
-                //       _isCompleted
-                //           ? Icons.check_box
-                //           : Icons.check_box_outline_blank,
-                //     ),
-                //   ),
-                //   title: DropdownButtonHideUnderline(
-                //     child: DropdownButton<bool>(
-                //       isDense: true,
-                //       value: _isCompleted,
-                //       onChanged: (bool? newValue) {
-                //         setState(() {
-                //           _isCompleted = newValue!;
-                //         });
-                //       },
-                //       items: <bool>[true, false]
-                //           .map<DropdownMenuItem<bool>>((bool value) {
-                //         return DropdownMenuItem<bool>(
-                //           value: value,
-                //           child: Text(value ? 'Completed' : 'Incompleted'),
-                //         );
-                //       }).toList(),
-                //     ),
-                //   ),
-                // ),
-                // const Divider(
-                //   height: 4,
-                // ),
                 CompletionListTile(
                   isCompleted: _isCompleted,
                   onCompletionChanged: (bool? newValue) {
@@ -406,188 +345,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                     });
                   },
                 ),
-                // ListTile(
-                //   leading: Padding(
-                //     padding: EdgeInsets.only(left: 0.0, right: 4.0),
-                //     child: Icon(
-                //       _isImportant ? Icons.star : Icons.star_border,
-                //     ),
-                //   ),
-                //   title: DropdownButtonHideUnderline(
-                //     child: DropdownButton<bool>(
-                //       isDense: true,
-                //       value: _isImportant,
-                //       onChanged: (bool? newValue) {
-                //         setState(() {
-                //           _isImportant = newValue!;
-                //         });
-                //       },
-                //       items: <bool>[true, false]
-                //           .map<DropdownMenuItem<bool>>((bool value) {
-                //         return DropdownMenuItem<bool>(
-                //           value: value,
-                //           child: Text(value ? 'Important' : 'Not Important'),
-                //         );
-                //       }).toList(),
-                //     ),
-                //   ),
-                // ),
-                // const Divider(
-                //   height: 4,
-                // ),
-                // ListTile(
-                //   leading: const Padding(
-                //     padding: EdgeInsets.only(left: 0.0, right: 4.0),
-                //     child: Icon(Icons.location_on_outlined),
-                //   ),
-                //   title: TextField(
-                //     controller: _locationController,
-                //     maxLines: null,
-                //     decoration: const InputDecoration(
-                //       hintText: 'Location',
-                //       border: InputBorder.none,
-                //     ),
-                //   ),
-                //   trailing: ElevatedButton(
-                //     child: const Text('MAP'),
-                //     onPressed: () => {
-                //       launchURL(Uri.parse(
-                //           'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(_locationController.text)}')),
-                //     },
-                //   ),
-                // ),
-                // const Divider(
-                //   height: 4,
-                // ),
                 LocationListTile(locationController: _locationController),
-                // const SizedBox(height: 12.0),
-
-                // Row(
-                //   children: [
-                //     Expanded(
-                //       child: DropdownButtonFormField<TargetType>(
-                //         value: _targetType,
-                //         onChanged: (value) =>
-                //             setState(() => _targetType = value!),
-                //         items: TargetType.values
-                //             .map((e) => DropdownMenuItem(
-                //                   value: e,
-                //                   child: Text(e == TargetType.atLeast
-                //                       ? 'at least'
-                //                       : e == TargetType.atMost
-                //                           ? 'at most'
-                //                           : 'about'),
-                //                 ))
-                //             .toList(),
-                //         decoration: const InputDecoration(
-                //             border: OutlineInputBorder(),
-                //             labelText: 'Target Type',
-                //             floatingLabelBehavior: FloatingLabelBehavior.auto),
-                //         validator: (value) {
-                //           if (value == null) {
-                //             return 'Please select a target type';
-                //           }
-                //           return null;
-                //         },
-                //       ),
-                //     ),
-                //     const SizedBox(width: 12),
-                //     Expanded(
-                //       child: TextFormField(
-                //         controller: _unitController,
-                //         decoration: const InputDecoration(
-                //             border: OutlineInputBorder(),
-                //             labelText: 'Unit',
-                //             floatingLabelBehavior: FloatingLabelBehavior.auto),
-                //         validator: (value) {
-                //           if (value == null || value.isEmpty) {
-                //             return 'Please input unit';
-                //           }
-                //           return null;
-                //         },
-                //       ),
-                //     ),
-                //   ],
-                // ),
-                // const SizedBox(height: 12),
-                // Row(
-                //   children: [
-                //     if (_targetType == TargetType.atLeast ||
-                //         _targetType == TargetType.about)
-                //       Expanded(
-                //         child: TextFormField(
-                //           controller: _targetAtLeastController,
-                //           decoration: const InputDecoration(
-                //               border: OutlineInputBorder(),
-                //               labelText: 'min.',
-                //               floatingLabelBehavior:
-                //                   FloatingLabelBehavior.auto),
-                //           keyboardType: const TextInputType.numberWithOptions(
-                //               decimal: true, signed: false),
-                //           validator: (value) {
-                //             if (value == null || value.isEmpty) {
-                //               return 'Vui lòng nhập giá trị ít nhất';
-                //             }
-                //             if (double.tryParse(value) == null) {
-                //               return 'Vui lòng nhập số';
-                //             }
-                //             return null;
-                //           },
-                //         ),
-                //       ),
-                //     if (_targetType == TargetType.about)
-                //       const SizedBox(width: 12),
-                //     if (_targetType == TargetType.atMost ||
-                //         _targetType == TargetType.about)
-                //       Expanded(
-                //         child: TextFormField(
-                //           controller: _targetAtMostController,
-                //           decoration: const InputDecoration(
-                //               border: OutlineInputBorder(),
-                //               labelText: 'max.',
-                //               floatingLabelBehavior:
-                //                   FloatingLabelBehavior.auto),
-                //           keyboardType: const TextInputType.numberWithOptions(
-                //               decimal: true, signed: false),
-                //           validator: (value) {
-                //             if (value == null || value.isEmpty) {
-                //               return 'Vui lòng nhập giá trị nhiều nhất';
-                //             }
-                //             if (double.tryParse(value) == null) {
-                //               return 'Vui lòng nhập số';
-                //             }
-                //             return null;
-                //           },
-                //         ),
-                //       ),
-                //   ],
-                // ),
-                // const SizedBox(height: 12),
-                // Row(
-                //   children: [
-                //     Expanded(
-                //       child: TextFormField(
-                //         controller: _hasBeenDoneController,
-                //         decoration: const InputDecoration(
-                //             border: OutlineInputBorder(),
-                //             labelText: 'Has been done',
-                //             floatingLabelBehavior: FloatingLabelBehavior.auto),
-                //         keyboardType: const TextInputType.numberWithOptions(
-                //             decimal: true, signed: false),
-                //         validator: (value) {
-                //           if (value == null || value.isEmpty) {
-                //             return 'Vui lòng nhập giá trị';
-                //           }
-                //           if (double.tryParse(value) == null) {
-                //             return 'Vui lòng nhập số';
-                //           }
-                //           return null;
-                //         },
-                //       ),
-                //     ),
-                //   ],
-                // ),
-
                 TargetBlockListTile(
                   unitController: _unitController,
                   targetAtLeastController: _targetAtLeastController,

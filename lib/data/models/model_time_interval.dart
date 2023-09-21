@@ -27,6 +27,11 @@ class TimeInterval {
   bool isEndTimeUndefined;
   int? startTimestamp;
   int? endTimestamp;
+  bool? isGone;
+  bool? isToday;
+  bool? isTomorrow;
+  bool? isYesterday;
+  bool? isInProgress;
   //just used for MeasuableTask
   double targetAtLeast;
   double targetAtMost;
@@ -67,12 +72,12 @@ class TimeInterval {
     DateTime? updateTimeStamp,
     String? timeZone,
     Color? color,
-    String? title, 
+    String? title,
     //int? startTimestamp,
     //int? endTimestamp
   })  : //assert(
-          //id == null || id.isNotEmpty,
-          //'id can not be null and should be empty',
+        //id == null || id.isNotEmpty,
+        //'id can not be null and should be empty',
         //),
         //taskId = taskId,
         //measurableTaskId = measurableTaskId,
@@ -80,7 +85,7 @@ class TimeInterval {
         id = id ?? const Uuid().v4(),
         isCompleted = isCompleted ?? false,
         color = color ?? const Color(0xff000000),
-        title = title ?? '', 
+        title = title ?? '',
         location = location ?? '',
         description = description ?? '',
         targetAtLeast = targetAtLeast ?? double.negativeInfinity,
@@ -117,67 +122,38 @@ class TimeInterval {
     if (isEndDateUndefined) {
       isEndTimeUndefined = true;
       endTimestamp = null;
-    } else if (isEndTimeUndefined) {
+    } else if (isEndTimeUndefined && endDate != null) {
       endTimestamp =
           DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59)
               .millisecondsSinceEpoch;
-    } else {
+    } else if (endDate != null && endTime != null) {
       endTimestamp = DateTime(endDate!.year, endDate!.month, endDate!.day,
               endTime!.hour, endTime!.minute)
           .millisecondsSinceEpoch;
     }
 
-    // if (startTimestamp != null &&
-    //     endTimestamp != null &&
-    //     startTimestamp! > endTimestamp!) {
-    //   throw ArgumentError('End timestamp must be after start timestamp');
-    // }
+    if (endDate != null && endDate!.isBefore(DateTime.now())) {
+      isGone = true;
+    } else {
+      isGone = false;
+    }
 
-    //init();
+    if (startDate != null &&
+        startDate!.day == DateTime.now().day &&
+        startDate!.month == DateTime.now().month &&
+        startDate!.year == DateTime.now().year) {
+      isToday = true;
+    }
+
+    if (startTimestamp != null && endTimestamp != null) {
+      if (startTimestamp! < DateTime.now().millisecondsSinceEpoch &&
+          endTimestamp! > DateTime.now().millisecondsSinceEpoch) {
+        isInProgress = true;
+      } else {
+        isInProgress = false;
+      }
+    }
   }
-
-  // Future<Color> getColor() async {
-  //   final DatabaseManager databaseManager = DatabaseManager();
-  //   if (taskId != null) {
-  //     final task = await databaseManager.task(taskId!);
-  //     return task.color;
-  //   } else if (measuableTaskId != null) {
-  //     final measurableTask =
-  //         await databaseManager.measurableTask(measuableTaskId!);
-  //     return measurableTask.color;
-  //   } else if (taskWithSubtasksId != null) {
-  //     final taskWithSubtasks =
-  //         await databaseManager.taskWithSubtasks(taskWithSubtasksId!);
-  //     return taskWithSubtasks.color;
-  //   }
-  //   // Trả về màu mặc định nếu không có id nào được chỉ định
-  //   return Colors.black;
-  // }
-
-  // Future<String> getTitle() async {
-  //   final DatabaseManager databaseManager = DatabaseManager();
-  //   if (taskId != null) {
-  //     final task = await databaseManager.task(taskId!);
-  //     return task.title;
-  //   } else if (measuableTaskId != null) {
-  //     final measurableTask =
-  //         await databaseManager.measurableTask(measuableTaskId!);
-  //     return measurableTask.title;
-  //   } else if (taskWithSubtasksId != null) {
-  //     final taskWithSubtasks =
-  //         await databaseManager.taskWithSubtasks(taskWithSubtasksId!);
-  //     return taskWithSubtasks.title;
-  //   }
-  //   return '';
-  // }
-
-  // Future<void> init() async {
-  //   title = await getTitle();
-  //   color = await getColor();
-  // }
-
-  
-
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -213,7 +189,6 @@ class TimeInterval {
       'location': location,
       'description': description,
     };
-    
   }
 
   factory TimeInterval.fromMap(Map<String, dynamic> map) {
@@ -261,7 +236,6 @@ class TimeInterval {
         location: map['location'],
         description: map['description'],
         timeZone: map['timeZone']);
-        
   }
 
   // @override

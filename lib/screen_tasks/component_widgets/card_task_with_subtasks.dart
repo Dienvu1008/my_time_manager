@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -41,6 +43,7 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
     super.initState();
     _loadIsExpanded();
   }
+
   void _loadIsExpanded() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final isExpanded =
@@ -105,15 +108,34 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                           widget.onTaskWithSubtasksToggleComplete(
                               widget.taskWithSubtasks);
                         } else if (result == 'option4') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => TimeIntervalPage(
-                                    taskWithSubtasks: widget.taskWithSubtasks)),
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //       builder: (context) => TimeIntervalPage(
+                          //           taskWithSubtasks: widget.taskWithSubtasks)),
+                          // );
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            showDragHandle: true,
+                            builder: (BuildContext context) =>
+                                SetTimeIntervalBottomSheet(
+                              taskWithSubtasksId: widget.taskWithSubtasks.id,
+                            ),
                           );
                         } else if (result == 'option5') {
                           setState(() => _isExpanded = !_isExpanded);
                           _saveIsExpanded();
+                        } else if (result == 'planned') {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            showDragHandle: true,
+                            builder: (BuildContext context) =>
+                                ShowTimeIntervalsBottomSheet(
+                                    taskWithSubtasksId:
+                                        widget.taskWithSubtasks.id),
+                          );
                         }
                       },
                       itemBuilder: (BuildContext context) =>
@@ -147,12 +169,22 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                           ),
                         ),
                         const PopupMenuItem<String>(
+                          value: 'planned',
+                          child: Row(
+                            children: [
+                              Icon(Icons.event_note_outlined),
+                              SizedBox(width: 8),
+                              Text('Planned'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem<String>(
                           value: 'option4',
                           child: Row(
                             children: [
                               Icon(Icons.hourglass_empty),
                               SizedBox(width: 8),
-                              Text('Add time interval'),
+                              Text('Schedule'),
                             ],
                           ),
                         ),

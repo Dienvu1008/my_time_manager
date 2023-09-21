@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval.dart';
 
 class TaskCard extends StatefulWidget {
@@ -83,11 +85,30 @@ class _TaskCardState extends State<TaskCard> {
                         } else if (result == 'mark_completion') {
                           widget.onTaskToggleComplete(widget.task);
                         } else if (result == 'schedule') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    TimeIntervalPage(task: widget.task)),
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //       builder: (context) =>
+                          //           TimeIntervalPage(task: widget.task)),
+                          // );
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            showDragHandle: true,
+                            builder: (BuildContext context) =>
+                                SetTimeIntervalBottomSheet(
+                              taskId: widget.task.id,
+                            ),
+                          );
+                        } else if (result == 'planned') {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            showDragHandle: true,
+                            builder: (BuildContext context) =>
+                                ShowTimeIntervalsBottomSheet(
+                              taskId: widget.task.id,
+                            ),
                           );
                         }
                       },
@@ -108,10 +129,20 @@ class _TaskCardState extends State<TaskCard> {
                           ),
                         ),
                         const PopupMenuItem<String>(
+                          value: 'planned',
+                          child: Row(
+                            children: [
+                              Icon(Icons.event_note_outlined),
+                              SizedBox(width: 8),
+                              Text('Planned'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem<String>(
                           value: 'schedule',
                           child: Row(
                             children: [
-                              Icon(Icons.hourglass_empty),
+                              Icon(Icons.hourglass_empty_outlined),
                               SizedBox(width: 8),
                               Text('Schedule'),
                             ],
