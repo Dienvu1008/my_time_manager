@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskWithSubtasksCard extends StatefulWidget {

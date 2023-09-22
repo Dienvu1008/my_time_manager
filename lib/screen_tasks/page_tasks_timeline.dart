@@ -19,27 +19,32 @@ class TasksTimelinePage extends StatefulWidget {
 class _TasksTimelinePageState extends State<TasksTimelinePage> {
   final DatabaseManager _databaseManager = DatabaseManager();
   List<TimeInterval> _timeIntervals = [];
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _init();
-  // }
 
   @override
   void initState() {
     super.initState();
     _init();
-    // WidgetsBinding.instance!.addPostFrameCallback((_) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text('This feature is still under development'),
-    //     ),
-    //   );
-    // });
   }
 
   Future<void> _init() async {
     final timeIntervals = await _databaseManager.timeIntervals();
+
+    
+  timeIntervals.sort((a, b) {
+    final aTimestamp = a.startTimestamp ?? a.endTimestamp;
+    final bTimestamp = b.startTimestamp ?? b.endTimestamp;
+
+    if (aTimestamp != null && bTimestamp != null) {
+      return aTimestamp.compareTo(bTimestamp);
+    } else if (aTimestamp != null) {
+      return -1;
+    } else if (bTimestamp != null) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }); 
+  
     setState(() => _timeIntervals = timeIntervals);
   }
 
@@ -49,48 +54,31 @@ class _TasksTimelinePageState extends State<TasksTimelinePage> {
   }
 
   Future<void> _onTimeIntervalToggleCompleted(TimeInterval timeInterval) async {
-    TimeInterval _timeInterval = TimeInterval(
-      color: timeInterval.color,
-      //description: timeInterval.description,
-      //taskListId: timeInterval.taskListId,
-      title: timeInterval.title,
-      isCompleted: !timeInterval.isCompleted,
-      id: timeInterval.id,
-      subtasks: timeInterval.subtasks,
-    );
+    TimeInterval _timeInterval = timeInterval.copyWith(isCompleted: !timeInterval.isCompleted);
     await _databaseManager.updateTimeInterval(_timeInterval);
-    //final updatedTimeInterval =
-    //await _databaseManager.timeInterval(timeInterval.id);
-    //final index =
-    //_items.indexWhere((item) => item.id == updatedTimeInterval.id);
-    //if (index != -1) {
+    final updatedTimeInterval =
+    await _databaseManager.timeInterval(timeInterval.id);
+    final index =
+    _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
+    if (index != -1) {
     setState(() {
-      //_items[index] = updatedTimeInterval;
+      _timeIntervals[index] = updatedTimeInterval;
     });
-    //}
+    }
   }
 
   Future<void> _onSubtasksChanged(TimeInterval timeInterval) async {
-    TimeInterval _timeInterval = TimeInterval(
-      color: timeInterval.color,
-      //description: timeInterval.description,
-      //taskListId: timeInterval.taskListId,
-      title: timeInterval.title,
-      //isCompleted: taskWithSubtasks.isCompleted,
-      id: timeInterval.id,
-      subtasks: timeInterval.subtasks,
-    );
+    TimeInterval _timeInterval = timeInterval.copyWith(subtasks: timeInterval.subtasks,);
     await _databaseManager.updateTimeInterval(_timeInterval);
-    //final updatedTaskWithSubtasks =
-    //await _databaseManager.timeInterval(timeInterval.id);
-    //final index =
-    //_items.indexWhere((item) => item.id == updatedTaskWithSubtasks.id);
-    //if (index != -1) {
+    final updatedTimeInterval =
+    await _databaseManager.timeInterval(timeInterval.id);
+    final index =
+    _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
+    if (index != -1) {
     setState(() {
-      //_items[index] = updatedTaskWithSubtasks;
+      _timeIntervals[index] = updatedTimeInterval;
     });
-    //}
-    //_init();
+    }
   }
 
   Future<void> _onHasBeenDoneUpdate(TimeInterval timeInterval) async {
@@ -114,28 +102,17 @@ class _TasksTimelinePageState extends State<TasksTimelinePage> {
           ),
           TextButton(
             onPressed: () async {
-              TimeInterval _timeInterval = TimeInterval(
-                  //color: timeInterval.color,
-                  //description: timeInterval.description,
-                  //taskListId: timeInterval.taskListId,
-                  title: timeInterval.title,
-                  isCompleted: timeInterval.isCompleted,
-                  id: timeInterval.id,
-                  targetAtLeast: timeInterval.targetAtLeast,
-                  targetAtMost:timeInterval.targetAtMost,
-                  targetType: timeInterval.targetType,
-                  howMuchHasBeenDone: double.parse(_hasBeenDoneController.text),
-                  unit: timeInterval.unit);
+              TimeInterval _timeInterval = timeInterval.copyWith(howMuchHasBeenDone: double.parse(_hasBeenDoneController.text));
               await _databaseManager.updateTimeInterval(_timeInterval);
               final updatedTimeInterval =
                   await _databaseManager.timeInterval(timeInterval.id);
-              // final index = _items
-              //     .indexWhere((item) => item.id == updatedMeasurableTask.id);
-              // if (index != -1) {
-              //   setState(() {
-              //     _items[index] = updatedMeasurableTask;
-              //   });
-              // }
+              final index = _timeIntervals
+                  .indexWhere((item) => item.id == updatedTimeInterval.id);
+              if (index != -1) {
+                setState(() {
+                  _timeIntervals[index] = updatedTimeInterval;
+                });
+              }
               Navigator.pop(context);
             },
             child: Text('Update'),
@@ -158,22 +135,21 @@ class _TasksTimelinePageState extends State<TasksTimelinePage> {
             MaterialPageRoute(
               builder: (_) => AddOrEditTimeIntervalPage(
                 timeInterval: timeInterval,
-                //taskList: widget.taskList,
               ),
               fullscreenDialog: false,
             ),
           );
-          // final updatedTaskWithSubtasks = await _databaseManager
-          //     .taskWithSubtasks(taskWithSubtasks.id);
-          // final index = _items.indexWhere(
-          //     (item) => item.id == updatedTaskWithSubtasks.id);
-          //if (index != -1) {
+          final updatedTimeInterval = await _databaseManager
+              .timeInterval(timeInterval.id);
+          final index = _timeIntervals.indexWhere(
+              (item) => item.id == updatedTimeInterval.id);
+          if (index != -1) {
           setState(() {
-            //_items[index] = updatedTaskWithSubtasks;
+            _timeIntervals[index] = updatedTimeInterval;
           });
-          //}
+          }
         },
-        onTimeIntervalToggleComplete: _onTimeIntervalToggleCompleted, 
+        onTimeIntervalToggleComplete: (TimeInterval timeInterval) {_onTimeIntervalToggleCompleted(timeInterval);}, 
         onHasBeenDoneUpdate: _onHasBeenDoneUpdate,
       )),
     );

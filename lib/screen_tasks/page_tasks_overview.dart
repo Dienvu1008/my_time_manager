@@ -683,7 +683,9 @@ class TaskListCardOptions extends StatelessWidget {
                   await addTask(task);
                 }
               },
-              child: Text(localizations!.addANewTask),
+              child: Expanded(
+                child: Text(localizations!.addANewTask),
+              ),
             ),
             MenuItemButton(
               onPressed: () async {
@@ -697,22 +699,25 @@ class TaskListCardOptions extends StatelessWidget {
                   await addMeasurableTask(measurableTask);
                 }
               },
-              child: Text(localizations.addANewMeasureableTask),
+              child: Expanded(
+                child: Text(localizations.addANewMeasureableTask),
+              ),
             ),
             MenuItemButton(
-              onPressed: () async {
-                final taskWithSubtasks = await showDialog<TaskWithSubtasks>(
-                  context: context,
-                  builder: (context) => AddOrEditTaskWithSubtasksPage(
-                    taskList: taskList,
-                  ),
-                );
-                if (taskWithSubtasks != null) {
-                  await addTaskWithSubtasks(taskWithSubtasks);
-                }
-              },
-              child: Text(localizations.addANewTaskWithSubtasks),
-            ),
+                onPressed: () async {
+                  final taskWithSubtasks = await showDialog<TaskWithSubtasks>(
+                    context: context,
+                    builder: (context) => AddOrEditTaskWithSubtasksPage(
+                      taskList: taskList,
+                    ),
+                  );
+                  if (taskWithSubtasks != null) {
+                    await addTaskWithSubtasks(taskWithSubtasks);
+                  }
+                },
+                child: Expanded(
+                  child: Text(localizations.addANewTaskWithSubtasks),
+                )),
             MenuItemButton(
               onPressed: () async {
                 final taskWithSubtasks = await showDialog<TaskWithSubtasks>(
@@ -725,7 +730,9 @@ class TaskListCardOptions extends StatelessWidget {
                 //await addTask(taskWithSubtasks);
                 //}
               },
-              child: Text(localizations.addANewEvent),
+              child: Expanded(
+                child: Text(localizations.addANewEvent),
+              ),
             ),
           ],
           child: Row(

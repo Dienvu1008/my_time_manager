@@ -3,7 +3,6 @@ import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;

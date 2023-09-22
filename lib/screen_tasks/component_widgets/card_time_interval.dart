@@ -68,13 +68,14 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
 
   @override
   Widget build(BuildContext context) {
-    final taskWithSubtasksColor = widget.timeInterval.color;
+    final timeIntervalColor = widget.timeInterval.color;
     final myColorScheme = Theme.of(context).brightness == Brightness.dark
-        ? ColorScheme.dark(primary: taskWithSubtasksColor)
-        : ColorScheme.light(primary: taskWithSubtasksColor);
+        ? ColorScheme.dark(primary: timeIntervalColor)
+        : ColorScheme.light(primary: timeIntervalColor);
     final backgroundColor = myColorScheme.primaryContainer;
     final labelColor = contrastColor(backgroundColor);
     final textTheme = Theme.of(context).textTheme.apply(bodyColor: labelColor);
+
     if (widget.timeInterval.startDate != null) {
       _formattedStartDate = DateFormat(
               'EEE, dd MMM, yyyy', Localizations.localeOf(context).languageCode)
@@ -115,54 +116,66 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ListTile(
-                    title: RichText(
-                      text: TextSpan(
-                        style: textTheme.labelSmall,
-                        children: <TextSpan>[
-                          TextSpan(
-                            text: widget.timeInterval.isGone == true
-                                ? "gone "
-                                : "",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          TextSpan(
-                            text: widget.timeInterval.isInProgress == true
-                                ? "in progress "
-                                : "",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          TextSpan(
-                            text: widget.timeInterval.isToday == true
-                                ? "today "
-                                : "",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          TextSpan(
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 8.0,
+                          children: <Widget>[
+                            if (widget.timeInterval.isGone == true)
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(
+                                      5), // bo tròn viền tại đây
+                                ),
+                                child: const Text(
+                                  'gone',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 10),
+                                ),
+                              ),
+                            if (widget.timeInterval.isInProgress == true)
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(
+                                      5), // bo tròn viền tại đây
+                                ),
+                                child: const Text(
+                                  'in progress',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 10),
+                                ),
+                              ),
+                            if (widget.timeInterval.isToday == true)
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(
+                                      5), // bo tròn viền tại đây
+                                ),
+                                child: const Text(
+                                  'today',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 10),
+                                ),
+                              ),
+                          ],
+                        ),
+                        RichText(
+                          text: TextSpan(
+                            style: widget.timeInterval.isCompleted
+                                ? textTheme.labelMedium!.copyWith(
+                                    decoration: TextDecoration.lineThrough)
+                                : textTheme.labelMedium,
                             text: _formattedStartDate == _formattedEndDate
-                                ? '$_formattedStartDate: $_formattedStartTime - $_formattedEndTime'
-                                : '$_formattedStartDate: $_formattedStartTime - $_formattedEndDate: $_formattedEndTime',
+                                ? 'From $_formattedStartDate: $_formattedStartTime to $_formattedEndTime'
+                                : 'From $_formattedStartDate: $_formattedStartTime to $_formattedEndDate: $_formattedEndTime',
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-
-                    // Text(
-                    //   '${widget.timeInterval.isGone == true ? "**is gone** " : ""}'
-                    //   '${widget.timeInterval.isInProgress == true ? "**is in progress** " : ""}'
-                    //   '${widget.timeInterval.isToday == true ? "**is today** " : ""}'
-                    //   '${_formattedStartDate == _formattedEndDate ? '$_formattedStartDate: $_formattedStartTime - $_formattedEndTime' : '$_formattedStartDate: $_formattedStartTime - $_formattedEndDate: $_formattedEndTime'}',
-                    //   style: textTheme.labelSmall,
-                    // ),
-
-                    // (_formattedStartDate == _formattedEndDate)
-                    //     ? Text(
-                    //         '$_formattedStartDate $_formattedStartTime -> $_formattedEndTime',
-                    //         style: textTheme.labelSmall,
-                    //       )
-                    //     : Text(
-                    //         '$_formattedStartDate $_formattedStartTime -> $_formattedEndDate $_formattedEndTime',
-                    //         style: textTheme.labelSmall,
-                    //       ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -170,6 +183,9 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                           widget.timeInterval.title,
                           style: TextStyle(
                             color: labelColor,
+                            decoration: widget.timeInterval.isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
                           ),
                         ),
                         if (widget.timeInterval.description.isNotEmpty)
@@ -274,21 +290,36 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                   : Icons.check_box_outline_blank),
                               const SizedBox(width: 8),
                               widget.timeInterval.isCompleted
-                                  ? const Text('Mark as incompleted')
-                                  : const Text('Mark as completed'),
+                                  ? const Expanded(
+                                      child: Text(
+                                          'Mark as incompleted in this time interval'))
+                                  : const Expanded(
+                                      child: Text(
+                                          'Mark as completed in this time interval'),
+                                    )
                             ],
                           ),
                         ),
                         const PopupMenuItem<String>(
-                          value: 'option4',
+                          value: 'option1',
                           child: Row(
                             children: [
-                              Icon(Icons.hourglass_empty),
+                              Icon(Icons.copy_outlined),
                               SizedBox(width: 8),
-                              Text('Add time interval'),
+                              Expanded(child:Text('Sync details from task to this time interval'),)
                             ],
                           ),
                         ),
+                        // const PopupMenuItem<String>(
+                        //   value: 'option4',
+                        //   child: Row(
+                        //     children: [
+                        //       Icon(Icons.hourglass_empty),
+                        //       SizedBox(width: 8),
+                        //       Text('Add time interval'),
+                        //     ],
+                        //   ),
+                        // ),
                         const PopupMenuItem<String>(
                           value: 'option1',
                           child: Row(
@@ -336,7 +367,6 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                         controlAffinity: ListTileControlAffinity.leading,
                         value: subtask.isSubtaskCompleted,
                         onChanged: (value) {
-                          //_isLoading = false;
                           subtask.isSubtaskCompleted = value ?? false;
                           widget.onSubtasksChanged(widget.timeInterval);
                         },
@@ -378,10 +408,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                               },
                             );
                             if (result == true) {
-                              //setState(() {
-                              //_isLoading = false;
                               widget.timeInterval.subtasks.remove(subtask);
-                              //});
                               widget.onSubtasksChanged(widget.timeInterval);
                             }
                           },

@@ -6,8 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_completion.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_importance.dart';
@@ -15,7 +13,6 @@ import 'package:my_time_manager/screen_tasks/component_widgets/listtile_location
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_schedule.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_tasklist.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_title.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval.dart';
 import 'package:my_time_manager/utils/constants.dart';
 import 'package:uuid/uuid.dart';
 

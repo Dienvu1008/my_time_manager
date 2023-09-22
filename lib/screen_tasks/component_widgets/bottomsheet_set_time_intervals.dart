@@ -98,7 +98,7 @@ class _SetTimeIntervalBottomSheetState extends State<SetTimeIntervalBottomSheet>
                             }
                           },
                         ),
-                        title: Text('Schedule'),
+                        //title: Text('Schedule'),
                         actions: <Widget>[
                           //Switch display between calendar and list of time intervals
                           IconButton(
@@ -644,14 +644,6 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
               ),
               RepeatListTile(),
               AlarmListTile(),
-              // ListTile(
-              //   leading: const Icon(Icons.public_outlined),
-              //   title: Text('Timezone'),
-              //   onTap: () {},
-              // ),
-              // const Divider(
-              //   height: 4,
-              // ),
               TimezoneListTile(),
             ],
           ),

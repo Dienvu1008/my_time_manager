@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MeasurableTaskCard extends StatefulWidget {
@@ -89,7 +88,8 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                             : null,
                       ),
                     ),
-                    subtitle: Column(
+                    subtitle: 
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (widget.measurableTask.description.isNotEmpty ||
@@ -102,6 +102,13 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                           visible: _isExpanded,
                           child: Column(
                             children: [
+                              // if (widget
+                              //         .measurableTask.description.isNotEmpty ||
+                              //     widget.measurableTask.description != '')
+                              //   Text(
+                              //     widget.measurableTask.description,
+                              //     style: TextStyle(color: labelColor),
+                              //   ),
                               if (widget.measurableTask.targetType ==
                                   TargetType.about)
                                 Text(

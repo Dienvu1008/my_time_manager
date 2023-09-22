@@ -28,6 +28,7 @@ class AddOrEditTimeIntervalPage extends StatefulWidget {
 }
 
 class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
@@ -51,7 +52,6 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
   Color _timeIntervalColor = ColorSeed.baseColor.color;
   bool _isCompleted = false;
   String _id = '';
-  //bool _isImportant = false;
 
   String _formattedStartDate = '--/--/----';
   String _formattedStartTime = '--:--';
@@ -99,179 +99,261 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
       _isStartTimeUndefined = widget.timeInterval!.isStartTimeUndefined;
       _isEndDateUndefined = widget.timeInterval!.isEndDateUndefined;
       _isEndTimeUndefined = widget.timeInterval!.isEndTimeUndefined;
-      widget.timeInterval?.startDate != null
-          ? _startDateController.text =
-              widget.timeInterval!.startDate.toString()
-          : _startDateController.text = '--/--/----';
-      widget.timeInterval?.endDate != null
-          ? _endDateController.text = widget.timeInterval!.endDate.toString()
-          : _endDateController.text = '--/--/----';
-      widget.timeInterval?.startTime != null
-          ? _startTimeController.text =
-              widget.timeInterval!.startTime.toString()
-          : _startTimeController.text = '--:--';
-      widget.timeInterval?.endTime != null
-          ? _endTimeController.text = widget.timeInterval!.endTime.toString()
-          : _endTimeController.text = '--:--';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (widget.timeInterval?.startDate != null) {
+          _startDateController.text = DateFormat('EEE, dd MMM, yyyy',
+                  Localizations.localeOf(context).languageCode)
+              .format(widget.timeInterval!.startDate!);
+        } else {
+          _startDateController.text = 'undefined';
+        }
+
+        if (widget.timeInterval?.endDate != null) {
+          _endDateController.text = DateFormat('EEE, dd MMM, yyyy',
+                  Localizations.localeOf(context).languageCode)
+              .format(widget.timeInterval!.endDate!);
+        } else {
+          _endDateController.text = 'undefined';
+        }
+        widget.timeInterval?.startTime != null
+            ? _startTimeController.text =
+                widget.timeInterval!.startTime!.format(context)
+            : _startTimeController.text = 'undefined';
+        widget.timeInterval?.endTime != null
+            ? _endTimeController.text =
+                widget.timeInterval!.endTime!.format(context)
+            : _endTimeController.text = 'undefined';
+      });
     } else {
       _id = const Uuid().v4();
     }
   }
 
   Future<void> _onSave() async {
-    final id = _id;
-    final title = _titleController.text;
-    final description = _descriptionController.text;
-    final location = _locationController.text;
-    final isCompleted = widget.timeInterval == null ? false : _isCompleted;
-    final color = _timeIntervalColor;
-    final subtasks = _subtasks;
-
-    final howMuchHasBeenDone = _hasBeenDoneController.text == ''
-        ? double.parse('0.0')
-        : double.parse(_hasBeenDoneController.text);
-    double? targetAtLeast;
-    if (_targetType == TargetType.atLeast || _targetType == TargetType.about) {
-      targetAtLeast = double.tryParse(_targetAtLeastController.text);
-      if (targetAtLeast == null) {
+    if (_formKey.currentState!.validate()) {
+      if (_isStartDateUndefined &&
+          _isEndDateUndefined &&
+          _isStartTimeUndefined &&
+          _isEndTimeUndefined) {
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Error'),
-            content: Text('Invalid value for "at least"'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('OK'),
-              ),
-            ],
+          builder: (context) => const AlertDialog(
+            content: Text('Please enter at least one date'),
           ),
         );
-        return;
-      }
-    } else {
-      targetAtLeast = double.negativeInfinity;
-    }
-    double? targetAtMost;
-    if (_targetType == TargetType.atMost || _targetType == TargetType.about) {
-      targetAtMost = double.tryParse(_targetAtMostController.text);
-      if (targetAtMost == null) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Error'),
-            content: Text('Invalid value for "at most"'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('OK'),
+      } else {
+        final id = _id;
+        final title = _titleController.text;
+        final description = _descriptionController.text;
+        final location = _locationController.text;
+        final isCompleted = widget.timeInterval == null ? false : _isCompleted;
+        final color = _timeIntervalColor;
+        final subtasks = _subtasks;
+
+        final howMuchHasBeenDone = _hasBeenDoneController.text == ''
+            ? double.parse('0.0')
+            : double.parse(_hasBeenDoneController.text);
+        double? targetAtLeast;
+        if (_targetType == TargetType.atLeast ||
+            _targetType == TargetType.about) {
+          targetAtLeast = double.tryParse(_targetAtLeastController.text);
+          if (targetAtLeast == null) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Error'),
+                content: Text('Invalid value for "at least"'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('OK'),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-        return;
-      }
-    } else {
-      targetAtMost = double.infinity;
-    }
+            );
+            return;
+          }
+        } else {
+          targetAtLeast = double.negativeInfinity;
+        }
+        double? targetAtMost;
+        if (_targetType == TargetType.atMost ||
+            _targetType == TargetType.about) {
+          targetAtMost = double.tryParse(_targetAtMostController.text);
+          if (targetAtMost == null) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Error'),
+                content: Text('Invalid value for "at most"'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('OK'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
+        } else {
+          targetAtMost = double.infinity;
+        }
 
-    final targetType = _targetType;
-    final unit = _unitController.text;
-
-    // if (title.isEmpty) {
-    //   showDialog(
-    //     context: context,
-    //     builder: (context) => AlertDialog(
-    //       title: const Text('Thông báo'),
-    //       content: const Text('Bạn chưa nhập tiêu đề của nhiệm vụ'),
-    //       actions: [
-    //         TextButton(
-    //           onPressed: () => Navigator.pop(context),
-    //           child: const Text('Đóng'),
-    //         ),
-    //       ],
-    //     ),
-    //   );
-    //   return;
-    // }
-
-    if (targetType == TargetType.about && (targetAtLeast > targetAtMost)) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Thông báo'),
-          content: const Text(
-              'Bạn đang nhập dữ liệu mục tiêu nhỏ nhất lớn hơn mục tiêu lớn nhất'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Đóng'),
+        final targetType = _targetType;
+        if (targetType == TargetType.about && (targetAtLeast > targetAtMost)) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Thông báo'),
+              content: const Text(
+                  'Bạn đang nhập dữ liệu mục tiêu nhỏ nhất lớn hơn mục tiêu lớn nhất'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Đóng'),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-      return;
-    }
+          );
+          return;
+        }
+        final unit = _unitController.text;
 
-    final isStartDateUndefined = _isStartDateUndefined;
-    final isStartTimeUndefined = _isStartTimeUndefined;
-    final isEndDateUndefined = _isEndDateUndefined;
-    final isEndTimeUndefined = _isEndTimeUndefined;
+        // final isStartDateUndefined = _isStartDateUndefined;
+        // final isStartTimeUndefined = _isStartTimeUndefined;
+        // final isEndDateUndefined = _isEndDateUndefined;
+        // final isEndTimeUndefined = _isEndTimeUndefined;
+        final startDate = !_isStartDateUndefined
+            ? DateFormat('EEE, dd MMM, yyyy',
+                    Localizations.localeOf(context).languageCode)
+                .parse(_startDateController.text)
+            : null;
+        final endDate = !_isEndDateUndefined
+            ? DateFormat('EEE, dd MMM, yyyy',
+                    Localizations.localeOf(context).languageCode)
+                .parse(_endDateController.text)
+            : null;
+        final startTime = !_isStartTimeUndefined
+            ? TimeOfDay.fromDateTime(
+                DateFormat('HH:mm').parse(_startTimeController.text))
+            : null;
+        final endTime = !_isEndTimeUndefined
+            ? TimeOfDay.fromDateTime(
+                DateFormat('HH:mm').parse(_endTimeController.text))
+            : null;
 
-    final TimeInterval timeInterval = widget.timeInterval == null
-        ? TimeInterval(
+        final TimeInterval timeInterval = TimeInterval(
+            id: id,
             title: title,
             isCompleted: isCompleted,
             description: description,
             location: location,
             color: color,
             subtasks: subtasks,
-          )
-        : TimeInterval(
-            id: widget.timeInterval!.id,
-            title: title,
-            description: description,
-            location: location,
-            isCompleted: isCompleted,
-            color: color,
-            subtasks: subtasks,
+            targetType: targetType,
+            targetAtLeast: targetAtLeast,
+            targetAtMost: targetAtMost,
+            unit: unit,
+            // isEndDateUndefined: isEndDateUndefined,
+            // isEndTimeUndefined: isEndTimeUndefined,
+            // isStartDateUndefined: isStartDateUndefined,
+            // isStartTimeUndefined: isStartTimeUndefined,
+            howMuchHasBeenDone: howMuchHasBeenDone,
+            startDate: startDate,
+            endDate: endDate,
+            startTime: startTime,
+            endTime: endTime,
+            isStartDateUndefined: startDate == null || _isStartDateUndefined,
+            isEndDateUndefined: endDate == null || _isEndDateUndefined,
+            isStartTimeUndefined: startTime == null || _isStartTimeUndefined,
+            isEndTimeUndefined: endTime == null || _isEndTimeUndefined,
+            taskId: widget.timeInterval!.taskId,
+            measurableTaskId: widget.timeInterval!.measurableTaskId,
+            taskWithSubtasksId: widget.timeInterval!.taskWithSubtasksId);
+        if (timeInterval.startTimestamp != null &&
+            timeInterval.endTimestamp != null &&
+            timeInterval.startTimestamp! > timeInterval.endTimestamp!) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Lỗi'),
+                content: Text(
+                    'Thời gian bắt đầu không được phép xảy ra sau thời gian kết thúc.'),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text('Đóng'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              );
+            },
           );
+        } else {
+          widget.timeInterval == null
+              ? await _databaseManager.insertTimeInterval(timeInterval)
+              : await _databaseManager.updateTimeInterval(timeInterval);
 
-    widget.timeInterval == null
-        ? await _databaseManager.insertTimeInterval(
-            TimeInterval(
-              id: id,
-              title: title,
-              description: description,
-              location: location,
-              isCompleted: isCompleted,
-              color: color,
-              subtasks: subtasks,
-            ),
-          )
-        : await _databaseManager.updateTimeInterval(
-            TimeInterval(
-              id: widget.timeInterval!.id,
-              title: title,
-              description: description,
-              location: location,
-              isCompleted: isCompleted,
-              color: color,
-              subtasks: subtasks,
-            ),
-          );
+          Navigator.pop(context, timeInterval);
+          setState(() {});
+        }
+      }
+    }
+  }
 
-    Navigator.pop(context, timeInterval);
+  static Color contrastColor(Color color) {
+    final brightness = ThemeData.estimateBrightnessForColor(color);
+    switch (brightness) {
+      case Brightness.dark:
+        return Colors.white;
+      case Brightness.light:
+        return Colors.black;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context)
-        .textTheme
-        .apply(displayColor: Theme.of(context).colorScheme.onSurface);
-    final String formattedStartDate = widget.timeInterval!.startDate != null
-        ? DateFormat.yMMMd().format(widget.timeInterval!.startDate!)
-        : '--/--/----';
+    // final textTheme = Theme.of(context)
+    //     .textTheme
+    //     .apply(displayColor: Theme.of(context).colorScheme.onSurface);
+    final timeIntervalColor = widget.timeInterval!.color;
+    final myColorScheme = Theme.of(context).brightness == Brightness.dark
+        ? ColorScheme.dark(primary: timeIntervalColor)
+        : ColorScheme.light(primary: timeIntervalColor);
+    final backgroundColor = myColorScheme.primaryContainer;
+    final labelColor = contrastColor(backgroundColor);
+    final textTheme = Theme.of(context).textTheme.apply(bodyColor: labelColor);
+
+    if (widget.timeInterval!.startDate != null) {
+      _formattedStartDate = DateFormat(
+              'EEE, dd MMM, yyyy', Localizations.localeOf(context).languageCode)
+          .format(widget.timeInterval!.startDate!);
+    } else {
+      _formattedStartDate = '--/--/----';
+    }
+
+    if (widget.timeInterval!.startTime != null) {
+      _formattedStartTime = widget.timeInterval!.startTime!.format(context);
+    } else {
+      _formattedStartTime = '--:--';
+    }
+
+    if (widget.timeInterval!.endDate != null) {
+      _formattedEndDate = DateFormat(
+              'EEE, dd MMM, yyyy', Localizations.localeOf(context).languageCode)
+          .format(widget.timeInterval!.endDate!);
+    } else {
+      _formattedEndDate = '--/--/----';
+    }
+
+    if (widget.timeInterval!.endTime != null) {
+      _formattedEndTime = widget.timeInterval!.endTime!.format(context);
+    } else {
+      _formattedEndTime = '--:--';
+    }
     double bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
@@ -298,39 +380,420 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ListTile(
-                  title: Text(
-                    '$formattedStartDate: ${widget.timeInterval!.startTime!.format(context)} - ${widget.timeInterval!.endTime!.format(context)}',
-                    style: textTheme.labelSmall,
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8.0, // khoảng cách giữa các Chip
+                        children: <Widget>[
+                          if (widget.timeInterval!.isGone == true)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(
+                                    5), // bo tròn viền tại đây
+                              ),
+                              child: const Text(
+                                'gone',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 10),
+                              ),
+                            ),
+                          if (widget.timeInterval!.isInProgress == true)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(
+                                    5), // bo tròn viền tại đây
+                              ),
+                              child: const Text(
+                                'in progress',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 10),
+                              ),
+                            ),
+                          if (widget.timeInterval!.isToday == true)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(
+                                    5), // bo tròn viền tại đây
+                              ),
+                              child: const Text(
+                                'today',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 10),
+                              ),
+                            ),
+                        ],
+                      ),
+                      // RichText(
+                      //   text: TextSpan(
+                      //     style: textTheme.labelMedium,
+                      //     text: _formattedStartDate == _formattedEndDate
+                      //         ? '$_formattedStartDate: $_formattedStartTime - $_formattedEndTime'
+                      //         : '$_formattedStartDate: $_formattedStartTime - $_formattedEndDate: $_formattedEndTime',
+                      //   ),
+                      // ),
+                    ],
                   ),
                 ),
                 ListTile(
-                  trailing: Padding(
-                    padding: const EdgeInsets.only(left: 0.0, right: 0.0),
-                    child: ColorSeedButton(
-                      colorSelected: ColorSeed.values.firstWhere(
-                        (e) => e.color.value == _timeIntervalColor.value,
-                        orElse: () => ColorSeed.baseColor,
-                      ),
-                      handleColorSelect: (index) {
-                        setState(() {
-                          _timeIntervalColor = ColorSeed.values[index].color;
-                        });
-                      },
-                    ),
-                  ),
                   title: TextField(
                     controller: _titleController,
                     style: TextStyle(
                       decoration: _isCompleted
                           ? TextDecoration.lineThrough
                           : TextDecoration.none,
+                      color: labelColor,
                     ),
                     maxLines: null,
-                    decoration: const InputDecoration(
+                    enabled: false, // This disables the TextField
+                    decoration: InputDecoration(
                       hintText: 'Title',
-                      border: InputBorder.none,
+                      filled:
+                          true, // This is important, it enables the color fill
+                      fillColor:
+                          _timeIntervalColor, // This sets the background color
+                      border:
+                          OutlineInputBorder(), // This adds a border around the TextField
                     ),
                   ),
+                ),
+                const Divider(
+                  height: 4,
+                ),
+                const SizedBox(height: 10),
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: TextFormField(
+                              style: const TextStyle(
+                                fontSize: 12.0,
+                              ),
+                              maxLines: 1,
+                              controller: _startDateController,
+                              readOnly: _isStartDateUndefined,
+                              onTap: () async {
+                                if (!_isStartDateUndefined) {
+                                  final date = await showDatePicker(
+                                    context: context,
+                                    initialDate: DateTime.now(),
+                                    firstDate: DateTime(1900),
+                                    lastDate: DateTime(2100),
+                                  );
+                                  if (date != null) {
+                                    _startDateController.text = DateFormat(
+                                            'EEE, dd MMM, yyyy',
+                                            Localizations.localeOf(context)
+                                                .languageCode)
+                                        .format(date);
+                                  }
+                                }
+                              },
+                              validator: (value) {
+                                if (!_isStartDateUndefined && value!.isEmpty) {
+                                  return 'Please enter a start date';
+                                }
+                                return null;
+                              },
+                              decoration: InputDecoration(
+                                suffixIcon: Checkbox(
+                                  value: _isStartDateUndefined,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isStartDateUndefined = value!;
+                                      if (_isStartDateUndefined) {
+                                        _startDateController.text = 'undefined';
+                                        _isStartTimeUndefined = true;
+                                        _startTimeController.text = 'undefined';
+                                      } else {
+                                        _startDateController.clear();
+                                      }
+                                    });
+                                  },
+                                ),
+                                border: OutlineInputBorder(),
+                                labelText: 'Start date',
+                                floatingLabelBehavior:
+                                    FloatingLabelBehavior.auto,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          // Expanded(
+                          //   flex: 1,
+                          //   child: TextFormField(
+                          //     readOnly: _isStartTimeUndefined,
+                          //     maxLines: 1,
+                          //     controller: _startTimeController,
+                          //     onTap: () async {
+                          //       if (!_isStartTimeUndefined) {
+                          //         final time = await showTimePicker(
+                          //           context: context,
+                          //           initialTime: TimeOfDay(
+                          //               hour: TimeOfDay.now().hour, minute: 0),
+                          //         );
+                          //         if (time != null) {
+                          //           _startTimeController.text =
+                          //               '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                          //         }
+                          //       }
+                          //     },
+                          //     validator: (value) {
+                          //       if (!_isStartTimeUndefined && value!.isEmpty) {
+                          //         return 'Please enter a start time';
+                          //       }
+                          //       return null;
+                          //     },
+                          //     decoration: InputDecoration(
+                          //       suffixIcon: Checkbox(
+                          //         value: _isStartTimeUndefined,
+                          //         onChanged: _isStartDateUndefined
+                          //             ? null
+                          //             : (value) {
+                          //                 setState(() {
+                          //                   _isStartTimeUndefined = value!;
+                          //                   if (_isStartTimeUndefined) {
+                          //                     _startTimeController.text = 'undefined';
+                          //                   } else {
+                          //                     _startTimeController.clear();
+                          //                   }
+                          //                 });
+                          //               },
+                          //       ),
+                          //       border: OutlineInputBorder(),
+                          //       labelText: 'Start time',
+                          //       floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          //     ),
+                          //   ),
+                          // ),
+                          Expanded(
+                            flex: 2,
+                            child: TextFormField(
+                              style: const TextStyle(
+                                fontSize: 12.0,
+                              ),
+                              maxLines: 1,
+                              controller: _endDateController,
+                              readOnly: _isEndDateUndefined,
+                              onTap: () async {
+                                final date = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime(1900),
+                                  lastDate: DateTime(2100),
+                                );
+                                if (date != null) {
+                                  _endDateController.text = DateFormat(
+                                          'EEE, dd MMM, yyyy',
+                                          Localizations.localeOf(context)
+                                              .languageCode)
+                                      .format(date);
+                                }
+                              },
+                              validator: (value) {
+                                if (value!.isEmpty) {
+                                  return 'Please enter an end date';
+                                }
+                                return null;
+                              },
+                              decoration: InputDecoration(
+                                suffixIcon: Checkbox(
+                                  value: _isEndDateUndefined,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isEndDateUndefined = value!;
+                                      if (_isEndDateUndefined) {
+                                        _endDateController.text = 'undefined';
+                                        _isEndTimeUndefined = true;
+                                        _endTimeController.text = 'undefined';
+                                      } else {
+                                        _endDateController.clear();
+                                      }
+                                    });
+                                  },
+                                ),
+                                border: OutlineInputBorder(),
+                                labelText: 'End date',
+                                floatingLabelBehavior:
+                                    FloatingLabelBehavior.auto,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 10,
+                      ),
+                      Row(
+                        children: [
+                          // Expanded(
+                          //   flex: 2,
+                          //   child: TextFormField(
+                          //     maxLines: 1,
+                          //     controller: _endDateController,
+                          //     readOnly: _isEndDateUndefined,
+                          //     onTap: () async {
+                          //       final date = await showDatePicker(
+                          //         context: context,
+                          //         initialDate: DateTime.now(),
+                          //         firstDate: DateTime(1900),
+                          //         lastDate: DateTime(2100),
+                          //       );
+                          //       if (date != null) {
+                          //         _endDateController.text =
+                          //             DateFormat('EEE, dd MMM, yyyy', languageCode)
+                          //                 .format(date);
+                          //       }
+                          //     },
+                          //     validator: (value) {
+                          //       if (value!.isEmpty) {
+                          //         return 'Please enter an end date';
+                          //       }
+                          //       return null;
+                          //     },
+                          //     decoration: InputDecoration(
+                          //       suffixIcon: Checkbox(
+                          //         value: _isEndDateUndefined,
+                          //         onChanged: (value) {
+                          //           setState(() {
+                          //             _isEndDateUndefined = value!;
+                          //             if (_isEndDateUndefined) {
+                          //               _endDateController.text = 'undefined';
+                          //               _isEndTimeUndefined = true;
+                          //               _endTimeController.text = 'undefined';
+                          //             } else {
+                          //               _endDateController.clear();
+                          //             }
+                          //           });
+                          //         },
+                          //       ),
+                          //       border: OutlineInputBorder(),
+                          //       labelText: 'End date',
+                          //       floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          //     ),
+                          //   ),
+                          // ),
+                          Expanded(
+                            flex: 1,
+                            child: TextFormField(
+                              style: const TextStyle(
+                                fontSize: 12.0,
+                              ),
+                              readOnly: _isStartTimeUndefined,
+                              maxLines: 1,
+                              controller: _startTimeController,
+                              onTap: () async {
+                                if (!_isStartTimeUndefined) {
+                                  final time = await showTimePicker(
+                                    context: context,
+                                    initialTime: TimeOfDay(
+                                        hour: TimeOfDay.now().hour, minute: 0),
+                                  );
+                                  if (time != null) {
+                                    _startTimeController.text =
+                                        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                                  }
+                                }
+                              },
+                              validator: (value) {
+                                if (!_isStartTimeUndefined && value!.isEmpty) {
+                                  return 'Please enter a start time';
+                                }
+                                return null;
+                              },
+                              decoration: InputDecoration(
+                                suffixIcon: Checkbox(
+                                  value: _isStartTimeUndefined,
+                                  onChanged: _isStartDateUndefined
+                                      ? null
+                                      : (value) {
+                                          setState(() {
+                                            _isStartTimeUndefined = value!;
+                                            if (_isStartTimeUndefined) {
+                                              _startTimeController.text =
+                                                  'undefined';
+                                            } else {
+                                              _startTimeController.clear();
+                                            }
+                                          });
+                                        },
+                                ),
+                                border: OutlineInputBorder(),
+                                labelText: 'Start time',
+                                floatingLabelBehavior:
+                                    FloatingLabelBehavior.auto,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Expanded(
+                            flex: 1,
+                            child: TextFormField(
+                              style: const TextStyle(
+                                fontSize: 12.0,
+                              ),
+                              maxLines: 1,
+                              controller: _endTimeController,
+                              readOnly: _isEndTimeUndefined,
+                              onTap: (() async {
+                                final time = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay(
+                                      hour: TimeOfDay.now().hour, minute: 0),
+                                );
+                                if (time != null) {
+                                  _endTimeController.text =
+                                      '${time.hour.toString().padLeft(2, "0")}:${time.minute.toString().padLeft(2, "0")}';
+                                }
+                              }),
+                              validator: (value) {
+                                if (value!.isEmpty) {
+                                  return 'Please enter an end time';
+                                }
+                                return null;
+                              },
+                              decoration: InputDecoration(
+                                suffixIcon: Checkbox(
+                                  value: _isEndTimeUndefined,
+                                  onChanged: _isEndDateUndefined
+                                      ? null
+                                      : (value) {
+                                          setState(() {
+                                            _isEndTimeUndefined = value!;
+                                            if (_isEndTimeUndefined) {
+                                              _endTimeController.text =
+                                                  'undefined';
+                                            } else {
+                                              _endTimeController.clear();
+                                            }
+                                          });
+                                        },
+                                ),
+                                border: OutlineInputBorder(),
+                                labelText: 'End time',
+                                floatingLabelBehavior:
+                                    FloatingLabelBehavior.auto,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(
+                  height: 08,
                 ),
                 const Divider(
                   height: 4,
@@ -346,89 +809,91 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                   },
                 ),
                 LocationListTile(locationController: _locationController),
-                TargetBlockListTile(
-                  unitController: _unitController,
-                  targetAtLeastController: _targetAtLeastController,
-                  targetAtMostController: _targetAtMostController,
-                  hasBeenDoneController: _hasBeenDoneController,
-                  targetType: _targetType,
-                  onTargetTypeChanged: (value) =>
-                      setState(() => _targetType = value),
-                ),
-
+                if (widget.timeInterval!.measurableTaskId != null)
+                  TargetBlockListTile(
+                    unitController: _unitController,
+                    targetAtLeastController: _targetAtLeastController,
+                    targetAtMostController: _targetAtMostController,
+                    hasBeenDoneController: _hasBeenDoneController,
+                    targetType: _targetType,
+                    onTargetTypeChanged: (value) =>
+                        setState(() => _targetType = value),
+                  ),
                 const SizedBox(height: 12.0),
-                ..._subtasks.map((subtask) => CheckboxListTile(
-                      controlAffinity: ListTileControlAffinity.leading,
-                      value: subtask.isSubtaskCompleted,
-                      onChanged: (value) => setState(
-                          () => subtask.isSubtaskCompleted = value ?? false),
-                      title: GestureDetector(
-                        onTap: () async {
-                          final TextEditingController _controller =
-                              TextEditingController();
-                          _controller.text = subtask.title;
-                          final newTitle = await showDialog<String>(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: Text('Edit Subtask'),
-                                content: TextField(
-                                  controller: _controller,
-                                  decoration:
-                                      InputDecoration(labelText: 'Title'),
-                                ),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text('Cancel'),
+                if (widget.timeInterval!.taskWithSubtasksId != null)
+                  ..._subtasks.map((subtask) => CheckboxListTile(
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: subtask.isSubtaskCompleted,
+                        onChanged: (value) => setState(
+                            () => subtask.isSubtaskCompleted = value ?? false),
+                        title: GestureDetector(
+                          onTap: () async {
+                            final TextEditingController _controller =
+                                TextEditingController();
+                            _controller.text = subtask.title;
+                            final newTitle = await showDialog<String>(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: Text('Edit Subtask'),
+                                  content: TextField(
+                                    controller: _controller,
+                                    decoration:
+                                        InputDecoration(labelText: 'Title'),
                                   ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(
-                                        context, _controller.text),
-                                    child: Text('Save'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                          if (newTitle != null) {
-                            setState(() {
-                              subtask.title = newTitle;
-                            });
-                          }
-                        },
-                        child: Text(
-                          subtask.title,
-                          style: TextStyle(
-                            decoration: subtask.isSubtaskCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
+                                  actions: <Widget>[
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(
+                                          context, _controller.text),
+                                      child: Text('Save'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                            if (newTitle != null) {
+                              setState(() {
+                                subtask.title = newTitle;
+                              });
+                            }
+                          },
+                          child: Text(
+                            subtask.title,
+                            style: TextStyle(
+                              decoration: subtask.isSubtaskCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
                           ),
                         ),
-                      ),
-                      secondary: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          setState(() {
-                            _subtasks.remove(subtask);
-                          });
-                        },
-                      ),
-                    )),
+                        secondary: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            setState(() {
+                              _subtasks.remove(subtask);
+                            });
+                          },
+                        ),
+                      )),
                 const SizedBox(height: 24.0),
-                Row(children: [
-                  ElevatedButton(
-                    onPressed: () => _showAddSubtaskDialog(context),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.add),
-                        SizedBox(width: 4),
-                        Text('Add Subtask'),
-                      ],
-                    ),
-                  )
-                ]),
+                if (widget.timeInterval!.taskWithSubtasksId != null)
+                  Row(children: [
+                    ElevatedButton(
+                      onPressed: () => _showAddSubtaskDialog(context),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add),
+                          SizedBox(width: 4),
+                          Text('Add Subtask'),
+                        ],
+                      ),
+                    )
+                  ]),
               ],
             ),
           ),

@@ -113,7 +113,7 @@ class TimeInterval {
       startTimestamp =
           DateTime(startDate!.year, startDate!.month, startDate!.day)
               .millisecondsSinceEpoch;
-    } else {
+    } else if (startDate != null && startTimestamp != null) {
       startTimestamp = DateTime(startDate!.year, startDate!.month,
               startDate!.day, startTime!.hour, startTime!.minute)
           .millisecondsSinceEpoch;
@@ -132,16 +132,25 @@ class TimeInterval {
           .millisecondsSinceEpoch;
     }
 
-    if (endDate != null && endDate!.isBefore(DateTime.now())) {
+    // if (endDate != null && endDate!.isBefore(DateTime.now())) {
+    //   isGone = true;
+    // } else {
+    //   isGone = false;
+    // }
+    if (endTimestamp != null && endTimestamp! < DateTime.now().millisecondsSinceEpoch) {
       isGone = true;
     } else {
       isGone = false;
     }
 
-    if (startDate != null &&
+    if ((startDate != null &&
         startDate!.day == DateTime.now().day &&
         startDate!.month == DateTime.now().month &&
-        startDate!.year == DateTime.now().year) {
+        startDate!.year == DateTime.now().year) ||
+        (endDate != null &&
+        endDate!.day == DateTime.now().day &&
+        endDate!.month == DateTime.now().month &&
+        endDate!.year == DateTime.now().year) ){
       isToday = true;
     }
 
@@ -236,6 +245,64 @@ class TimeInterval {
         location: map['location'],
         description: map['description'],
         timeZone: map['timeZone']);
+  }
+
+  TimeInterval copyWith({
+    String? id,
+    String? taskId,
+    String? measurableTaskId,
+    String? taskWithSubtasksId,
+    bool? isCompleted,
+    String? location,
+    String? description,
+    DateTime? startDate,
+    DateTime? endDate,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    bool? isStartDateUndefined,
+    bool? isEndDateUndefined,
+    bool? isStartTimeUndefined,
+    bool? isEndTimeUndefined,
+    double? targetAtLeast,
+    double? targetAtMost,
+    TargetType? targetType,
+    String? unit,
+    List<Subtask>? subtasks,
+    double? howMuchHasBeenDone,
+    List<String>? dataFiles,
+    DateTime? updateTimeStamp,
+    String? timeZone,
+    Color? color,
+    String? title
+  }) {
+    return TimeInterval(
+      id: id ?? this.id,
+      taskId: taskId ?? this.taskId,
+      measurableTaskId: measurableTaskId ?? this.measurableTaskId,
+      taskWithSubtasksId: taskWithSubtasksId ?? this.taskWithSubtasksId,
+      isCompleted: isCompleted ?? this.isCompleted,
+      location: location ?? this.location,
+      description: description ?? this.description,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      isStartDateUndefined: isStartDateUndefined ?? this.isStartDateUndefined,
+      isEndDateUndefined: isEndDateUndefined ?? this.isEndDateUndefined,
+      isStartTimeUndefined: isStartTimeUndefined ?? this.isStartTimeUndefined,
+      isEndTimeUndefined: isEndTimeUndefined ?? this.isEndTimeUndefined,      
+      targetAtLeast: targetAtLeast ?? this.targetAtLeast,      
+      targetAtMost: targetAtMost ?? this.targetAtMost,      
+      targetType: targetType ?? this.targetType,      
+      unit: unit ?? this.unit,      
+      subtasks: subtasks ?? this.subtasks,      
+      howMuchHasBeenDone: howMuchHasBeenDone ?? this.howMuchHasBeenDone,      
+      dataFiles: dataFiles ?? this.dataFiles,      
+      updateTimeStamp: updateTimeStamp ?? this.updateTimeStamp,      
+      timeZone: timeZone ?? this.timeZone,      
+      color: color ?? this.color,      
+      title: title ?? this.title
+    );
   }
 
   // @override
