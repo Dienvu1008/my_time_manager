@@ -16,7 +16,8 @@ class TimeInterval {
   final String? taskWithSubtasksId;
   final String location;
   final String description;
-  late final bool isCompleted;
+  bool isCompleted;
+  bool isImportant;
   DateTime? startDate;
   DateTime? endDate;
   TimeOfDay? startTime;
@@ -31,13 +32,23 @@ class TimeInterval {
   bool? isToday;
   bool? isTomorrow;
   bool? isYesterday;
+  bool? isThisWeek;
+  bool? isThisMonth;
+  bool? isNextMonth;
   bool? isInProgress;
+  bool isDetailsAdded;
+  bool isDescriptionChanged;
+  bool isLocationChanged;
+  bool isSubtasksChanged;
+  bool isTargetChanged;
+
   //just used for MeasuableTask
   double targetAtLeast;
   double targetAtMost;
   TargetType targetType;
   String unit;
   double howMuchHasBeenDone;
+
   //just used for task with sub tasks
   List<Subtask> subtasks;
   final List<String> dataFiles;
@@ -52,6 +63,7 @@ class TimeInterval {
     this.measurableTaskId,
     this.taskWithSubtasksId,
     bool? isCompleted,
+    bool? isImportant,
     String? location,
     String? description,
     this.startDate,
@@ -73,6 +85,11 @@ class TimeInterval {
     String? timeZone,
     Color? color,
     String? title,
+    this.isDetailsAdded = false,
+    this.isDescriptionChanged = false,
+    this.isLocationChanged = false,
+    this.isTargetChanged = false,
+    this.isSubtasksChanged = false,
     //int? startTimestamp,
     //int? endTimestamp
   })  : //assert(
@@ -84,6 +101,7 @@ class TimeInterval {
         //taskWithSubtasksId = taskWithSubtasksId,
         id = id ?? const Uuid().v4(),
         isCompleted = isCompleted ?? false,
+        isImportant = isImportant ?? false,
         color = color ?? const Color(0xff000000),
         title = title ?? '',
         location = location ?? '',
@@ -107,29 +125,89 @@ class TimeInterval {
     }
 
     if (isStartDateUndefined) {
+      //isStartDateUndefined == true;
       isStartTimeUndefined = true;
+      startDate = null;
+      startTime = null;
       startTimestamp = null;
-    } else if (isStartTimeUndefined && startDate != null) {
-      startTimestamp =
-          DateTime(startDate!.year, startDate!.month, startDate!.day)
-              .millisecondsSinceEpoch;
-    } else if (startDate != null && startTimestamp != null) {
-      startTimestamp = DateTime(startDate!.year, startDate!.month,
-              startDate!.day, startTime!.hour, startTime!.minute)
-          .millisecondsSinceEpoch;
+    } else {
+      if (startDate == null) {
+        //isStartDateUndefined == false;
+        //startDate == null;
+        //isStartTimeUndefined == true;
+        //throw ArgumentError(
+        //'If the start date is determined, the start date must be set');
+      } else {
+        if (isStartTimeUndefined) {
+          //isStartDateUndefined == false;
+          //startDate != null;
+          //isStartTimeUndefined == true;
+          startTime = null;
+          startTimestamp =
+              DateTime(startDate!.year, startDate!.month, startDate!.day)
+                  .millisecondsSinceEpoch;
+        } else {
+          if (startTime == null) {
+            //isStartDateUndefined == false;
+            //startDate != null;
+            //isStartTimeUndefined == false;
+            //startTime == null;
+            //throw ArgumentError(
+            //'If the start time is determined, the start time must be set');
+          } else {
+            //isStartDateUndefined == false;
+            //startDate != null;
+            //isStartTimeUndefined == false;
+            //startTime != null;
+            startTimestamp = DateTime(startDate!.year, startDate!.month,
+                    startDate!.day, startTime!.hour, startTime!.minute)
+                .millisecondsSinceEpoch;
+          }
+        }
+      }
     }
 
     if (isEndDateUndefined) {
+      //isEndDateUndefined == true;
       isEndTimeUndefined = true;
+      endDate = null;
+      endTime = null;
       endTimestamp = null;
-    } else if (isEndTimeUndefined && endDate != null) {
-      endTimestamp =
-          DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59)
-              .millisecondsSinceEpoch;
-    } else if (endDate != null && endTime != null) {
-      endTimestamp = DateTime(endDate!.year, endDate!.month, endDate!.day,
-              endTime!.hour, endTime!.minute)
-          .millisecondsSinceEpoch;
+    } else {
+      if (endDate == null) {
+        //isEndDateUndefined == false;
+        //endDate == null;
+        //isEndTimeUndefined == true;
+        //throw ArgumentError(
+        //'If the end date is determined, the end date must be set');
+      } else {
+        if (isEndTimeUndefined) {
+          //isEndDateUndefined == false;
+          //endDate != null;
+          //isEndTimeUndefined == true;
+          endTime = null;
+          endTimestamp =
+              DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59, 59)
+                  .millisecondsSinceEpoch;
+        } else {
+          if (endTime == null) {
+            //isEndDateUndefined == false;
+            //endDate != null;
+            //isEndTimeUndefined == false;
+            //endTime == null;
+            //throw ArgumentError(
+            //'If the end time is determined, the end time must be set');
+          } else {
+            //isEndDateUndefined == false;
+            //endDate != null;
+            //isEndTimeUndefined == false;
+            //endTime != null;
+            endTimestamp = DateTime(endDate!.year, endDate!.month, endDate!.day,
+                    endTime!.hour, endTime!.minute)
+                .millisecondsSinceEpoch;
+          }
+        }
+      }
     }
 
     // if (endDate != null && endDate!.isBefore(DateTime.now())) {
@@ -137,20 +215,22 @@ class TimeInterval {
     // } else {
     //   isGone = false;
     // }
-    if (endTimestamp != null && endTimestamp! < DateTime.now().millisecondsSinceEpoch) {
+
+    if (endTimestamp != null &&
+        endTimestamp! < DateTime.now().millisecondsSinceEpoch) {
       isGone = true;
     } else {
       isGone = false;
     }
 
     if ((startDate != null &&
-        startDate!.day == DateTime.now().day &&
-        startDate!.month == DateTime.now().month &&
-        startDate!.year == DateTime.now().year) ||
+            startDate!.day == DateTime.now().day &&
+            startDate!.month == DateTime.now().month &&
+            startDate!.year == DateTime.now().year) ||
         (endDate != null &&
-        endDate!.day == DateTime.now().day &&
-        endDate!.month == DateTime.now().month &&
-        endDate!.year == DateTime.now().year) ){
+            endDate!.day == DateTime.now().day &&
+            endDate!.month == DateTime.now().month &&
+            endDate!.year == DateTime.now().year)) {
       isToday = true;
     }
 
@@ -162,11 +242,58 @@ class TimeInterval {
         isInProgress = false;
       }
     }
+
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(Duration(days: 7));
+    final startOfMonth = DateTime(now.year, now.month);
+    final endOfMonth =
+        DateTime(now.year, now.month + 1).subtract(Duration(days: 1));
+    final startOfNextMonth = DateTime(now.year, now.month + 1);
+    final endOfNextMonth =
+        DateTime(now.year, now.month + 2).subtract(Duration(days: 1));
+
+    if (startDate != null) {
+      isThisWeek =
+          startDate!.isAfter(startOfWeek) && startDate!.isBefore(endOfWeek);
+    } else if (endDate != null) {
+      isThisWeek =
+          endDate!.isAfter(startOfWeek) && endDate!.isBefore(endOfWeek);
+    } else {
+      isThisWeek = false;
+    }
+
+    if (startDate != null) {
+      isThisMonth =
+          startDate!.isAfter(startOfMonth) && startDate!.isBefore(endOfMonth);
+    } else if (endDate != null) {
+      isThisMonth =
+          endDate!.isAfter(startOfMonth) && endDate!.isBefore(endOfMonth);
+    } else {
+      isThisMonth = false;
+    }
+
+    if (startDate != null) {
+      isNextMonth = startDate!.isAfter(startOfNextMonth) &&
+          startDate!.isBefore(endOfNextMonth);
+    } else if (endDate != null) {
+      isNextMonth = endDate!.isAfter(startOfNextMonth) &&
+          endDate!.isBefore(endOfNextMonth);
+    } else {
+      isNextMonth = false;
+    }
+
+    if (startTimestamp != null &&
+        endTimestamp != null &&
+        startTimestamp! > endTimestamp!) {
+      //throw ArgumentError('End timestamp must be after start timestamp');
+    }
   }
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'isCompleted': isCompleted ? 1 : 0,
+      'isImportant': isImportant ? 1 : 0,
       'taskId': taskId,
       'measurableTaskId': measurableTaskId,
       'taskWithSubtasksId': taskWithSubtasksId,
@@ -204,6 +331,7 @@ class TimeInterval {
     return TimeInterval(
         id: map['id'],
         isCompleted: map['isCompleted'] == 1,
+        isImportant: map['isImportant'] == 1,
         taskId: map['taskId'],
         measurableTaskId: map['measurableTaskId'],
         taskWithSubtasksId: map['taskWithSubtasksId'],
@@ -247,62 +375,62 @@ class TimeInterval {
         timeZone: map['timeZone']);
   }
 
-  TimeInterval copyWith({
-    String? id,
-    String? taskId,
-    String? measurableTaskId,
-    String? taskWithSubtasksId,
-    bool? isCompleted,
-    String? location,
-    String? description,
-    DateTime? startDate,
-    DateTime? endDate,
-    TimeOfDay? startTime,
-    TimeOfDay? endTime,
-    bool? isStartDateUndefined,
-    bool? isEndDateUndefined,
-    bool? isStartTimeUndefined,
-    bool? isEndTimeUndefined,
-    double? targetAtLeast,
-    double? targetAtMost,
-    TargetType? targetType,
-    String? unit,
-    List<Subtask>? subtasks,
-    double? howMuchHasBeenDone,
-    List<String>? dataFiles,
-    DateTime? updateTimeStamp,
-    String? timeZone,
-    Color? color,
-    String? title
-  }) {
+  TimeInterval copyWith(
+      {String? id,
+      String? taskId,
+      String? measurableTaskId,
+      String? taskWithSubtasksId,
+      bool? isCompleted,
+      bool? isImportant,
+      String? location,
+      String? description,
+      DateTime? startDate,
+      DateTime? endDate,
+      TimeOfDay? startTime,
+      TimeOfDay? endTime,
+      bool? isStartDateUndefined,
+      bool? isEndDateUndefined,
+      bool? isStartTimeUndefined,
+      bool? isEndTimeUndefined,
+      double? targetAtLeast,
+      double? targetAtMost,
+      TargetType? targetType,
+      String? unit,
+      List<Subtask>? subtasks,
+      double? howMuchHasBeenDone,
+      List<String>? dataFiles,
+      DateTime? updateTimeStamp,
+      String? timeZone,
+      Color? color,
+      String? title}) {
     return TimeInterval(
-      id: id ?? this.id,
-      taskId: taskId ?? this.taskId,
-      measurableTaskId: measurableTaskId ?? this.measurableTaskId,
-      taskWithSubtasksId: taskWithSubtasksId ?? this.taskWithSubtasksId,
-      isCompleted: isCompleted ?? this.isCompleted,
-      location: location ?? this.location,
-      description: description ?? this.description,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      isStartDateUndefined: isStartDateUndefined ?? this.isStartDateUndefined,
-      isEndDateUndefined: isEndDateUndefined ?? this.isEndDateUndefined,
-      isStartTimeUndefined: isStartTimeUndefined ?? this.isStartTimeUndefined,
-      isEndTimeUndefined: isEndTimeUndefined ?? this.isEndTimeUndefined,      
-      targetAtLeast: targetAtLeast ?? this.targetAtLeast,      
-      targetAtMost: targetAtMost ?? this.targetAtMost,      
-      targetType: targetType ?? this.targetType,      
-      unit: unit ?? this.unit,      
-      subtasks: subtasks ?? this.subtasks,      
-      howMuchHasBeenDone: howMuchHasBeenDone ?? this.howMuchHasBeenDone,      
-      dataFiles: dataFiles ?? this.dataFiles,      
-      updateTimeStamp: updateTimeStamp ?? this.updateTimeStamp,      
-      timeZone: timeZone ?? this.timeZone,      
-      color: color ?? this.color,      
-      title: title ?? this.title
-    );
+        id: id ?? this.id,
+        taskId: taskId ?? this.taskId,
+        measurableTaskId: measurableTaskId ?? this.measurableTaskId,
+        taskWithSubtasksId: taskWithSubtasksId ?? this.taskWithSubtasksId,
+        isCompleted: isCompleted ?? this.isCompleted,
+        isImportant: isImportant ?? this.isImportant,
+        location: location ?? this.location,
+        description: description ?? this.description,
+        startDate: startDate ?? this.startDate,
+        endDate: endDate ?? this.endDate,
+        startTime: startTime ?? this.startTime,
+        endTime: endTime ?? this.endTime,
+        isStartDateUndefined: isStartDateUndefined ?? this.isStartDateUndefined,
+        isEndDateUndefined: isEndDateUndefined ?? this.isEndDateUndefined,
+        isStartTimeUndefined: isStartTimeUndefined ?? this.isStartTimeUndefined,
+        isEndTimeUndefined: isEndTimeUndefined ?? this.isEndTimeUndefined,
+        targetAtLeast: targetAtLeast ?? this.targetAtLeast,
+        targetAtMost: targetAtMost ?? this.targetAtMost,
+        targetType: targetType ?? this.targetType,
+        unit: unit ?? this.unit,
+        subtasks: subtasks ?? this.subtasks,
+        howMuchHasBeenDone: howMuchHasBeenDone ?? this.howMuchHasBeenDone,
+        dataFiles: dataFiles ?? this.dataFiles,
+        updateTimeStamp: updateTimeStamp ?? this.updateTimeStamp,
+        timeZone: timeZone ?? this.timeZone,
+        color: color ?? this.color,
+        title: title ?? this.title);
   }
 
   // @override

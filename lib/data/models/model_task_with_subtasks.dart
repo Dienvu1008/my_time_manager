@@ -106,4 +106,32 @@ class TaskWithSubtasks {
         //DateTime.fromMillisecondsSinceEpoch(map['updateTimeStamp']),
         );
   }
+
+  TaskWithSubtasks copyWith({
+    String? id,
+    String? taskListId,
+    String? title,
+    String? description,
+    String? location,
+    Color? color,
+    bool? isCompleted,
+    bool? isImportant,
+    List<Subtask>? subtasks,
+    List<String>? dataFiles,
+    DateTime? updateTimeStamp,
+  }) {
+    return TaskWithSubtasks(
+      id: id ?? this.id,
+      taskListId: taskListId ?? this.taskListId,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      location: location ?? this.location,
+      color: color ?? this.color,
+      isCompleted: isCompleted ?? this.isCompleted,
+      isImportant: isImportant ?? this.isImportant,
+      subtasks: subtasks ?? this.subtasks,
+      dataFiles: dataFiles ?? this.dataFiles,
+      updateTimeStamp: updateTimeStamp ?? this.updateTimeStamp,
+    );
+  }
 }

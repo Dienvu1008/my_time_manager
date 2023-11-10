@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
+import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_completion.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description.dart';
@@ -133,7 +134,7 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
               children: [
                 TaskListListTile(
                   title: widget.taskList.title,
-                  style: textTheme.titleMedium!,
+                  style: textTheme.titleLarge!,
                 ),
                 TitleListTile(
                   itemColor: _taskColor,
@@ -148,24 +149,18 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
                 DescriptionListTile(
                   descriptionController: _descriptionController,
                 ),
-                LocationListTile(
-                  locationController: _locationController,
-                ),
-                CompletionListTile(
-                  isCompleted: _isCompleted,
-                  onCompletionChanged: (bool? newValue) {
-                    setState(() {
-                      _isCompleted = newValue!;
-                    });
-                  },
-                ),
-                ImportanceListTile(
-                  isImportant: _isImportant,
-                  onImportanceChanged: (bool? newValue) {
-                    setState(() {
-                      _isImportant = newValue!;
-                    });
-                  },
+                if(widget.task !=null)
+                ScheduleListTile(
+                  title: widget.task!.title,
+                  color: widget.task!.color,
+                  description: widget.task!.description,
+                  location: widget.task!.location,
+                  targetType: TargetType.about,
+                  targetAtLeast: double.negativeInfinity,
+                  targetAtMost: double.infinity,
+                  unit:'',
+                  subtasks: [],
+                  taskId: _id,
                 ),
                 ListTile(
                   leading: const Padding(
@@ -232,6 +227,26 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
                 const Divider(
                   height: 4,
                 ),
+                LocationListTile(
+                  locationController: _locationController,
+                ),
+                CompletionListTile(
+                  isCompleted: _isCompleted,
+                  onCompletionChanged: (bool? newValue) {
+                    setState(() {
+                      _isCompleted = newValue!;
+                    });
+                  },
+                ),
+                ImportanceListTile(
+                  isImportant: _isImportant,
+                  onImportanceChanged: (bool? newValue) {
+                    setState(() {
+                      _isImportant = newValue!;
+                    });
+                  },
+                ),
+
                 // ListTile(
                 //   leading: const Padding(
                 //     padding: EdgeInsets.only(left: 0.0, right: 4.0),
@@ -262,7 +277,6 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
                 // const Divider(
                 //   height: 4,
                 // ),
-                ScheduleListTile(taskId: _id,)
               ],
             ),
           ),

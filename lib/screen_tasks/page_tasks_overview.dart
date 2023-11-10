@@ -206,6 +206,8 @@ class _TaskListCardState extends State<TaskListCard> {
   final DatabaseManager _databaseManager = DatabaseManager();
   late SharedPreferences _prefs;
   bool _isExpanded = false;
+  final Map<String, bool> _isTaskWithSubtasksCardsExpanded = {};
+  final Map<String, bool> _isMeasurableTaskCardsExpanded = {};
   late List<dynamic> _items;
 
   @override
@@ -228,6 +230,16 @@ class _TaskListCardState extends State<TaskListCard> {
       ...tasksWithSubtasks,
       ...events,
     ];
+
+    for (var taskWithSubtasks in tasksWithSubtasks) {
+      _isTaskWithSubtasksCardsExpanded[taskWithSubtasks.id] =
+          _prefs.getBool('isExpanded_${taskWithSubtasks.id}') ?? false;
+    }
+
+    for (var measurableTask in measurableTasks) {
+      _isMeasurableTaskCardsExpanded[measurableTask.id] =
+          _prefs.getBool('isExpanded_${measurableTask.id}') ?? false;
+    }
 
     final order = _prefs.getStringList('itemsOrder');
     if (order != null) {
@@ -254,47 +266,47 @@ class _TaskListCardState extends State<TaskListCard> {
   }
 
   Future<void> _onTaskToggleCompleted(Task task) async {
-    Task _task = Task(
-        color: task.color,
-        description: task.description,
-        taskListId: task.taskListId,
-        title: task.title,
-        isCompleted: !task.isCompleted,
-        id: task.id);
-    await _databaseManager.updateTask(_task);
-    final updatedTask = await _databaseManager.task(task.id);
-    final index = _items.indexWhere((item) => item.id == updatedTask.id);
+    Task _task = task.copyWith(
+      isCompleted: !task.isCompleted,
+    );
+    final index = _items.indexWhere((item) => item.id == _task.id);
     if (index != -1) {
       setState(() {
-        _items[index] = updatedTask;
+        _items[index] = _task;
       });
     }
+
+    await _databaseManager.updateTask(_task);
+    //final updatedTask = await _databaseManager.task(task.id);
+    //final index = _items.indexWhere((item) => item.id == updatedTask.id);
+    // if (index != -1) {
+    //   setState(() {
+    //     _items[index] = updatedTask;
+    //   });
+    // }
   }
 
   Future<void> _onMeasurableTaskToggleCompleted(
       MeasurableTask measurableTask) async {
-    MeasurableTask _measurableTask = MeasurableTask(
-        color: measurableTask.color,
-        description: measurableTask.description,
-        taskListId: measurableTask.taskListId,
-        title: measurableTask.title,
-        isCompleted: !measurableTask.isCompleted,
-        id: measurableTask.id,
-        targetAtLeast: measurableTask.targetAtLeast,
-        targetAtMost: measurableTask.targetAtMost,
-        targetType: measurableTask.targetType,
-        howMuchHasBeenDone: measurableTask.howMuchHasBeenDone,
-        unit: measurableTask.unit);
-    await _databaseManager.updateMeasurableTask(_measurableTask);
-    final updatedMeasurableTask =
-        await _databaseManager.measurableTask(measurableTask.id);
-    final index =
-        _items.indexWhere((item) => item.id == updatedMeasurableTask.id);
+    MeasurableTask _measurableTask = measurableTask.copyWith(
+      isCompleted: !measurableTask.isCompleted,
+    );
+    final index = _items.indexWhere((item) => item.id == _measurableTask.id);
     if (index != -1) {
       setState(() {
-        _items[index] = updatedMeasurableTask;
+        _items[index] = _measurableTask;
       });
     }
+    await _databaseManager.updateMeasurableTask(_measurableTask);
+    // final updatedMeasurableTask =
+    //     await _databaseManager.measurableTask(measurableTask.id);
+    // final index =
+    //     _items.indexWhere((item) => item.id == updatedMeasurableTask.id);
+    // if (index != -1) {
+    //   setState(() {
+    //     _items[index] = updatedMeasurableTask;
+    //   });
+    // }
   }
 
   Future<void> _onHasBeenDoneUpdate(MeasurableTask measurableTask) async {
@@ -318,28 +330,27 @@ class _TaskListCardState extends State<TaskListCard> {
           ),
           TextButton(
             onPressed: () async {
-              MeasurableTask _measurableTask = MeasurableTask(
-                  color: measurableTask.color,
-                  description: measurableTask.description,
-                  taskListId: measurableTask.taskListId,
-                  title: measurableTask.title,
-                  isCompleted: measurableTask.isCompleted,
-                  id: measurableTask.id,
-                  targetAtLeast: measurableTask.targetAtLeast,
-                  targetAtMost: measurableTask.targetAtMost,
-                  targetType: measurableTask.targetType,
-                  howMuchHasBeenDone: double.parse(_hasBeenDoneController.text),
-                  unit: measurableTask.unit);
-              await _databaseManager.updateMeasurableTask(_measurableTask);
-              final updatedMeasurableTask =
-                  await _databaseManager.measurableTask(measurableTask.id);
-              final index = _items
-                  .indexWhere((item) => item.id == updatedMeasurableTask.id);
+              MeasurableTask _measurableTask = measurableTask.copyWith(
+                  howMuchHasBeenDone:
+                      double.parse(_hasBeenDoneController.text));
+              final index =
+                  _items.indexWhere((item) => item.id == _measurableTask.id);
               if (index != -1) {
                 setState(() {
-                  _items[index] = updatedMeasurableTask;
+                  _items[index] = _measurableTask;
                 });
               }
+              await _databaseManager.updateMeasurableTask(_measurableTask);
+
+              // final updatedMeasurableTask =
+              //     await _databaseManager.measurableTask(measurableTask.id);
+              // final index = _items
+              //     .indexWhere((item) => item.id == updatedMeasurableTask.id);
+              // if (index != -1) {
+              //   setState(() {
+              //     _items[index] = updatedMeasurableTask;
+              //   });
+              // }
               Navigator.pop(context);
             },
             child: Text('Update'),
@@ -351,47 +362,56 @@ class _TaskListCardState extends State<TaskListCard> {
 
   Future<void> _onTaskWithSubtasksToggleCompleted(
       TaskWithSubtasks taskWithSubtasks) async {
-    TaskWithSubtasks _taskWithSubtasks = TaskWithSubtasks(
-      color: taskWithSubtasks.color,
-      description: taskWithSubtasks.description,
-      taskListId: taskWithSubtasks.taskListId,
-      title: taskWithSubtasks.title,
-      isCompleted: !taskWithSubtasks.isCompleted,
-      id: taskWithSubtasks.id,
-      subtasks: taskWithSubtasks.subtasks,
-    );
-    await _databaseManager.updateTaskWithSubtasks(_taskWithSubtasks);
-    final updatedTaskWithSubtasks =
-        await _databaseManager.taskWithSubtasks(taskWithSubtasks.id);
-    final index =
-        _items.indexWhere((item) => item.id == updatedTaskWithSubtasks.id);
+    TaskWithSubtasks _taskWithSubtasks =
+        taskWithSubtasks.copyWith(isCompleted: !taskWithSubtasks.isCompleted);
+    final index = _items.indexWhere((item) => item.id == _taskWithSubtasks.id);
     if (index != -1) {
       setState(() {
-        _items[index] = updatedTaskWithSubtasks;
+        _items[index] = _taskWithSubtasks;
       });
     }
+    await _databaseManager.updateTaskWithSubtasks(_taskWithSubtasks);
+    // final updatedTaskWithSubtasks =
+    //     await _databaseManager.taskWithSubtasks(taskWithSubtasks.id);
+    // final index =
+    //     _items.indexWhere((item) => item.id == updatedTaskWithSubtasks.id);
+    // if (index != -1) {
+    //   setState(() {
+    //     _items[index] = updatedTaskWithSubtasks;
+    //   });
+    // }
   }
 
   Future<void> _onSubtasksChanged(TaskWithSubtasks taskWithSubtasks) async {
-    TaskWithSubtasks _taskWithSubtasks = TaskWithSubtasks(
-      color: taskWithSubtasks.color,
-      description: taskWithSubtasks.description,
-      taskListId: taskWithSubtasks.taskListId,
-      title: taskWithSubtasks.title,
-      //isCompleted: taskWithSubtasks.isCompleted,
-      id: taskWithSubtasks.id,
-      subtasks: taskWithSubtasks.subtasks,
-    );
-    await _databaseManager.updateTaskWithSubtasks(_taskWithSubtasks);
-    final updatedTaskWithSubtasks =
-        await _databaseManager.taskWithSubtasks(taskWithSubtasks.id);
-    final index =
-        _items.indexWhere((item) => item.id == updatedTaskWithSubtasks.id);
+    TaskWithSubtasks _taskWithSubtasks = taskWithSubtasks;
+
+    // TaskWithSubtasks(
+    //   color: taskWithSubtasks.color,
+    //   description: taskWithSubtasks.description,
+    //   taskListId: taskWithSubtasks.taskListId,
+    //   title: taskWithSubtasks.title,
+    //   //isCompleted: taskWithSubtasks.isCompleted,
+    //   id: taskWithSubtasks.id,
+    //   subtasks: taskWithSubtasks.subtasks,
+    // );
+
+    final index = _items.indexWhere((item) => item.id == _taskWithSubtasks.id);
     if (index != -1) {
       setState(() {
-        _items[index] = updatedTaskWithSubtasks;
+        _items[index] = _taskWithSubtasks;
       });
     }
+
+    await _databaseManager.updateTaskWithSubtasks(_taskWithSubtasks);
+    // final updatedTaskWithSubtasks =
+    //     await _databaseManager.taskWithSubtasks(taskWithSubtasks.id);
+    // final index =
+    //     _items.indexWhere((item) => item.id == updatedTaskWithSubtasks.id);
+    // if (index != -1) {
+    //   setState(() {
+    //     _items[index] = updatedTaskWithSubtasks;
+    //   });
+    // }
     //_init();
   }
 
@@ -417,11 +437,11 @@ class _TaskListCardState extends State<TaskListCard> {
       },
     );
     if (result == true) {
-      await _databaseManager.deleteTask(task.id);
       setState(() {
         _items.remove(task);
       });
       await _saveOrder();
+      await _databaseManager.deleteTask(task.id);
     }
   }
 
@@ -447,11 +467,11 @@ class _TaskListCardState extends State<TaskListCard> {
       },
     );
     if (result == true) {
-      await _databaseManager.deleteMeasurableTask(measurableTask.id);
       setState(() {
         _items.remove(measurableTask);
       });
       await _saveOrder();
+      await _databaseManager.deleteMeasurableTask(measurableTask.id);
     }
   }
 
@@ -478,11 +498,11 @@ class _TaskListCardState extends State<TaskListCard> {
       },
     );
     if (result == true) {
-      await _databaseManager.deleteTaskWithSubtasks(taskWithSubtasks.id);
       setState(() {
         _items.remove(taskWithSubtasks);
       });
       await _saveOrder();
+      await _databaseManager.deleteTaskWithSubtasks(taskWithSubtasks.id);
     }
   }
 
@@ -509,6 +529,27 @@ class _TaskListCardState extends State<TaskListCard> {
     await _prefs.setStringList('itemsOrder', order);
   }
 
+  void _onTaskWithSubtasksCardExpanded(
+      TaskWithSubtasks taskWithSubtasks) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isExpanded =
+        _isTaskWithSubtasksCardsExpanded[taskWithSubtasks.id] ?? false;
+    setState(() {
+      _isTaskWithSubtasksCardsExpanded[taskWithSubtasks.id] = !isExpanded;
+    });
+    await prefs.setBool('isExpanded_${taskWithSubtasks.id}', !isExpanded);
+  }
+
+  void _onMeasurableTaskCardExpanded(MeasurableTask measurableTask) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isExpanded =
+        _isMeasurableTaskCardsExpanded[measurableTask.id] ?? false;
+    setState(() {
+      _isMeasurableTaskCardsExpanded[measurableTask.id] = !isExpanded;
+    });
+    await prefs.setBool('isExpanded_${measurableTask.id}', !isExpanded);
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context)
@@ -516,7 +557,7 @@ class _TaskListCardState extends State<TaskListCard> {
         .apply(displayColor: Theme.of(context).colorScheme.onSurface);
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(0.0),
         child: Column(children: [
           Row(
             children: [
@@ -555,6 +596,38 @@ class _TaskListCardState extends State<TaskListCard> {
               ),
             ],
           ),
+
+          // ListTile(
+          //   leading: IconButton(
+          //     icon: Icon(_isExpanded ? Icons.expand_more : Icons.chevron_right),
+          //     onPressed: () => setState(() {
+          //       _isExpanded = !_isExpanded;
+          //       _prefs.setBool('${widget.taskList.id}_isExpanded', _isExpanded);
+          //     }),
+          //   ),
+          //   title: Expanded(
+          //     child: GestureDetector(
+          //       onTap: () => widget.onTaskListEdit(widget.taskList),
+          //       child: Column(
+          //         crossAxisAlignment: CrossAxisAlignment.start,
+          //         children: [
+          //           Text(widget.taskList.title, style: textTheme.titleMedium),
+          //           const SizedBox(height: 4.0),
+          //           if (_isExpanded && widget.taskList.description.isNotEmpty)
+          //             Text(widget.taskList.description),
+          //         ],
+          //       ),
+          //     ),
+          //   ),
+          //   trailing: TaskListCardOptions(
+          //     taskList: widget.taskList,
+          //     onTaskListDelete: () => widget.onTaskListDelete(widget.taskList),
+          //     onTaskListEdit: () => widget.onTaskListEdit(widget.taskList),
+          //     addTask: (value) => _addTask(value),
+          //     addMeasurableTask: (value) => _addMeasurableTask(value),
+          //     addTaskWithSubtasks: (value) => _addTaskWithSubtasks(value),
+          //   ),
+          // ),
           if (_isExpanded)
             ItemsHolder(
               onReorder: _reorderItems,
@@ -603,6 +676,13 @@ class _TaskListCardState extends State<TaskListCard> {
               onMeasurableTaskToggleComplete: _onMeasurableTaskToggleCompleted,
               onMeasurableTaskDelete: _onMeasurableTaskDelete,
               onHasBeenDoneUpdate: _onHasBeenDoneUpdate,
+              isMeasurableTaskCardExpanded: (MeasurableTask measurableTask) {
+                return _isMeasurableTaskCardsExpanded[measurableTask.id] ??
+                    false;
+              },
+              onMeasurableTaskCardExpanded: (MeasurableTask measurableTask) {
+                _onMeasurableTaskCardExpanded(measurableTask);
+              },
               onTaskWithSubtasksEdit:
                   (TaskWithSubtasks taskWithSubtasks) async {
                 await Navigator.of(context).push(
@@ -628,6 +708,15 @@ class _TaskListCardState extends State<TaskListCard> {
                   _onTaskWithSubtasksToggleCompleted,
               onTaskWithSubtasksDelete: _onTaskWithSubtasksDelete,
               onSubtasksChanged: _onSubtasksChanged,
+              isTaskWithSubtasksCardExpanded:
+                  (TaskWithSubtasks taskWithSubtasks) {
+                return _isTaskWithSubtasksCardsExpanded[taskWithSubtasks.id] ??
+                    false;
+              },
+              onTaskWithSubtasksCardExpanded:
+                  (TaskWithSubtasks taskWithSubtasks) {
+                _onTaskWithSubtasksCardExpanded(taskWithSubtasks);
+              },
             ),
         ]),
       ),
@@ -683,9 +772,7 @@ class TaskListCardOptions extends StatelessWidget {
                   await addTask(task);
                 }
               },
-              child: Expanded(
-                child: Text(localizations!.addANewTask),
-              ),
+              child: Text(localizations!.addANewTask),
             ),
             MenuItemButton(
               onPressed: () async {
@@ -699,9 +786,8 @@ class TaskListCardOptions extends StatelessWidget {
                   await addMeasurableTask(measurableTask);
                 }
               },
-              child: Expanded(
-                child: Text(localizations.addANewMeasureableTask),
-              ),
+              child: Text(localizations.addANewMeasureableTask),
+              
             ),
             MenuItemButton(
                 onPressed: () async {
@@ -715,24 +801,22 @@ class TaskListCardOptions extends StatelessWidget {
                     await addTaskWithSubtasks(taskWithSubtasks);
                   }
                 },
-                child: Expanded(
-                  child: Text(localizations.addANewTaskWithSubtasks),
-                )),
+                child: Text(localizations.addANewTaskWithSubtasks),
+                ),
             MenuItemButton(
-              onPressed: () async {
-                final taskWithSubtasks = await showDialog<TaskWithSubtasks>(
-                  context: context,
-                  builder: (context) => AddOrEditTaskWithSubtasksPage(
-                    taskList: taskList,
-                  ),
-                );
+              // onPressed: () async {
+              //   final taskWithSubtasks = await showDialog<TaskWithSubtasks>(
+              //     context: context,
+              //     builder: (context) => AddOrEditTaskWithSubtasksPage(
+              //       taskList: taskList,
+              //     ),
+              //   );
                 //if (taskWithSubtasks != null) {
                 //await addTask(taskWithSubtasks);
                 //}
-              },
-              child: Expanded(
-                child: Text(localizations.addANewEvent),
-              ),
+              //},
+              onPressed: () => showComingSoonDialog(context),
+              child: Text(localizations.addANewEvent),
             ),
           ],
           child: Row(
@@ -786,10 +870,14 @@ class ItemsHolder extends StatefulWidget {
     required this.onMeasurableTaskDelete,
     required this.onMeasurableTaskToggleComplete,
     required this.onHasBeenDoneUpdate,
+    required this.isMeasurableTaskCardExpanded,
+    required this.onMeasurableTaskCardExpanded,
     required this.onTaskWithSubtasksEdit,
     required this.onTaskWithSubtasksDelete,
     required this.onTaskWithSubtasksToggleComplete,
     required this.onSubtasksChanged,
+    required this.isTaskWithSubtasksCardExpanded,
+    required this.onTaskWithSubtasksCardExpanded,
   }) : super(key: key);
 
   final Function(Task) onTaskEdit;
@@ -800,11 +888,15 @@ class ItemsHolder extends StatefulWidget {
   final Function(MeasurableTask) onMeasurableTaskDelete;
   final Function(MeasurableTask) onMeasurableTaskToggleComplete;
   final Function(MeasurableTask) onHasBeenDoneUpdate;
+  final bool Function(MeasurableTask) isMeasurableTaskCardExpanded;
+  final Function(MeasurableTask) onMeasurableTaskCardExpanded;
 
   final Function(TaskWithSubtasks) onTaskWithSubtasksEdit;
   final Function(TaskWithSubtasks) onTaskWithSubtasksDelete;
   final Function(TaskWithSubtasks) onTaskWithSubtasksToggleComplete;
   final Function(TaskWithSubtasks) onSubtasksChanged;
+  final bool Function(TaskWithSubtasks) isTaskWithSubtasksCardExpanded;
+  final Function(TaskWithSubtasks) onTaskWithSubtasksCardExpanded;
   final List<dynamic> items;
   final Function(int, int) onReorder;
 
@@ -854,6 +946,10 @@ class _ItemsHolderState extends State<ItemsHolder> {
             onHasBeenDoneUpdate: (MeasurableTask measurableTask) async {
               widget.onHasBeenDoneUpdate(measurableTask);
             },
+            isMeasurableTaskCardExpanded: widget.isMeasurableTaskCardExpanded,
+            onMeasurableTaskCardExpanded: (MeasurableTask measurableTask) {
+              widget.onMeasurableTaskCardExpanded(measurableTask);
+            },
           );
         } else if (item is TaskWithSubtasks) {
           return TaskWithSubtasksCard(
@@ -874,6 +970,12 @@ class _ItemsHolderState extends State<ItemsHolder> {
             onSubtasksChanged: (TaskWithSubtasks taskWithSubtasks) {
               widget.onSubtasksChanged(taskWithSubtasks);
             },
+            onTaskWithSubtasksCardExpanded:
+                (TaskWithSubtasks taskWithSubtasks) {
+              widget.onTaskWithSubtasksCardExpanded(taskWithSubtasks);
+            },
+            isTaskWithSubtasksCardExpanded:
+                widget.isTaskWithSubtasksCardExpanded,
           );
         } else if (item is Event) {
         } else {
@@ -1223,7 +1325,7 @@ class BlocTasksOverviewPage extends StatelessWidget {
                     context
                         .read<TaskListsHolderBloc>()
                         .add(DeleteTaskListEvent(id: value.id));
-                  }
+                  } else {}
                 },
 
                 onTaskListEdit: (TaskList taskList) async {
@@ -1327,6 +1429,21 @@ class TaskListsHolderBloc
     await _saveOrder(taskLists);
     emit(state.copyWith(taskLists: taskLists));
   }
+
+//   Future<void> _onDeleteTaskListEvent(
+//   DeleteTaskListEvent event, 
+//   Emitter<TaskListsHolderState> emit,
+//   Future<bool> Function() confirmDelete,
+// ) async {
+//   final shouldDelete = await confirmDelete();
+//   if (shouldDelete) {
+//     await _databaseManager.deleteTaskList(event.id);
+//     final taskLists = state.taskLists..removeWhere((b) => b.id == event.id);
+//     await _saveOrder(taskLists);
+//     emit(state.copyWith(taskLists: taskLists));
+//   }
+// }
+
 
   Future<void> _onAddTaskListEvent(
       AddTaskListEvent event, Emitter<TaskListsHolderState> emit) async {

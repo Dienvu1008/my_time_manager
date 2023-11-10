@@ -78,6 +78,34 @@ class Task extends Equatable {
     );
   }
 
+  Task copyWith({
+    String? id,
+    String? taskListId,
+    String? title,
+    bool? isCompleted,
+    bool? isImportant,
+    String? description,
+    String? location,
+    Color? color,
+    List<String>? tags,
+    List<String>? dataFiles,
+    DateTime? updateTimeStamp,
+  }) {
+    return Task(
+      id: id ?? this.id,
+      taskListId: taskListId ?? this.taskListId,
+      title: title ?? this.title,
+      isCompleted: isCompleted ?? this.isCompleted,
+      isImportant: isImportant ?? this.isImportant,
+      description: description ?? this.description,
+      location: location ?? this.location,
+      color: color ?? this.color,
+      tags: tags ?? this.tags,
+      dataFiles: dataFiles ?? this.dataFiles,
+      updateTimeStamp: updateTimeStamp ?? this.updateTimeStamp,
+    );
+  }
+
   String toJson() => json.encode(toMap());
   factory Task.fromJson(String source) => Task.fromMap(json.decode(source));
   // Implement toString to make it easier to see information about

@@ -231,90 +231,92 @@ class _ShowOrSetTimeIntervalsBottomSheetState
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
+                                  backgroundColor: widget.color,
                                   //title: Text('Dialog Title'),
                                   content: SingleChildScrollView(
-                                    child: Container(
-                                      color: widget.color,
-                                      child: Column(
-                                        children: [
+                                    //child: Container(
+                                    //color: widget.color,
+                                    child: Column(
+                                      children: [
+                                        ListTile(
+                                          title: Text(
+                                            widget.title,
+                                            style: TextStyle(
+                                                color: titleTextColor),
+                                          ),
+                                        ),
+                                        if (widget.description.isNotEmpty)
                                           ListTile(
+                                            dense: true,
+                                            leading: Icon(
+                                                Icons.description_outlined,
+                                                color: titleTextColor),
                                             title: Text(
-                                              widget.title,
+                                              widget.description,
                                               style: TextStyle(
                                                   color: titleTextColor),
                                             ),
                                           ),
-                                          if (widget.description.isNotEmpty)
-                                            ListTile(
-                                              leading: Icon(
-                                                  Icons.description_outlined,
+                                        if (widget.location.isNotEmpty)
+                                          ListTile(
+                                            dense: true,
+                                            leading: Icon(
+                                                Icons.location_on_outlined,
+                                                color: titleTextColor),
+                                            title: Text(
+                                              widget.location,
+                                              style: TextStyle(
                                                   color: titleTextColor),
-                                              title: Text(
-                                                widget.description,
-                                                style: TextStyle(
-                                                    color: titleTextColor),
-                                              ),
                                             ),
-                                          if (widget.location.isNotEmpty)
-                                            ListTile(
-                                              leading: Icon(
-                                                  Icons.location_on_outlined,
-                                                  color: titleTextColor),
-                                              title: Text(
-                                                widget.location,
-                                                style: TextStyle(
-                                                    color: titleTextColor),
-                                              ),
-                                            ),
-                                          if (widget.measurableTaskId != null)
-                                            ListTile(
-                                              title: Column(
-                                                children: [
-                                                  if (widget.targetType ==
-                                                      TargetType.about)
-                                                    Text(
-                                                      'Target: about ${widget.targetAtLeast} to ${widget.targetAtMost} ${widget.unit}',
-                                                      style: TextStyle(
-                                                          color:
-                                                              titleTextColor),
-                                                    ),
-                                                  if (widget.targetType ==
-                                                      TargetType.atLeast)
-                                                    Text(
-                                                      'Target: at least ${widget.targetAtLeast} ${widget.unit}',
-                                                      style: TextStyle(
-                                                          color:
-                                                              titleTextColor),
-                                                    ),
-                                                  if (widget.targetType ==
-                                                      TargetType.atMost)
-                                                    Text(
-                                                      'Target: at most ${widget.targetAtMost} ${widget.unit}',
-                                                      style: TextStyle(
-                                                          color:
-                                                              titleTextColor),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          if (widget.taskWithSubtasksId != null)
-                                            ...widget.subtasks.map(
-                                              (subtask) => ListTile(
-                                                  leading: Icon(
-                                                      subtask.isSubtaskCompleted
-                                                          ? Icons.check_box
-                                                          : Icons
-                                                              .check_box_outline_blank,
-                                                      color: titleTextColor),
-                                                  title: Text(
-                                                    subtask.title,
+                                          ),
+                                        if (widget.measurableTaskId != null)
+                                          ListTile(
+                                            dense: true,
+                                            title: Column(
+                                              children: [
+                                                if (widget.targetType ==
+                                                    TargetType.about)
+                                                  Text(
+                                                    'Target: about ${widget.targetAtLeast} to ${widget.targetAtMost} ${widget.unit}',
                                                     style: TextStyle(
                                                         color: titleTextColor),
-                                                  )),
-                                            )
-                                        ],
-                                      ),
+                                                  ),
+                                                if (widget.targetType ==
+                                                    TargetType.atLeast)
+                                                  Text(
+                                                    'Target: at least ${widget.targetAtLeast} ${widget.unit}',
+                                                    style: TextStyle(
+                                                        color: titleTextColor),
+                                                  ),
+                                                if (widget.targetType ==
+                                                    TargetType.atMost)
+                                                  Text(
+                                                    'Target: at most ${widget.targetAtMost} ${widget.unit}',
+                                                    style: TextStyle(
+                                                        color: titleTextColor),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        if (widget.taskWithSubtasksId != null)
+                                          ...widget.subtasks.map(
+                                            (subtask) => ListTile(
+                                                dense: true,
+                                                leading: Icon(
+                                                    subtask.isSubtaskCompleted
+                                                        ? Icons.check_box
+                                                        : Icons
+                                                            .check_box_outline_blank,
+                                                    color: titleTextColor),
+                                                title: Text(
+                                                  subtask.title,
+                                                  style: TextStyle(
+                                                      color: titleTextColor),
+                                                )),
+                                          )
+                                      ],
                                     ),
+                                    //),
                                   ),
                                   actions: <Widget>[
                                     TextButton(
@@ -1168,12 +1170,14 @@ class _TimeIntervalOfTaskOrEventPageState
   Task? _task;
   MeasurableTask? _measurableTask;
   TaskWithSubtasks? _taskWithSubtasks;
+  //bool _isExpanded = false;
+  final Map<String, bool> _isExpanded = {};
 
   String _formattedStartDate = '--/--/----';
   String _formattedStartTime = '--:--';
   String _formattedEndDate = '--/--/----';
   String _formattedEndTime = '--:--';
-  String _selectedTimeIntervals = 'all';
+  String _selectedTimeIntervals = 'today';
 
   @override
   void initState() {
@@ -1248,6 +1252,10 @@ class _TimeIntervalOfTaskOrEventPageState
           timeInterval.isLocationChanged = true;
         }
       }
+      for (var timeInterval in timeIntervals) {
+        _isExpanded[timeInterval.id] = false;
+      }
+
       timeIntervals.sort((a, b) {
         final aTimestamp = a.startTimestamp ?? a.endTimestamp;
         final bTimestamp = b.startTimestamp ?? b.endTimestamp;
@@ -1298,6 +1306,9 @@ class _TimeIntervalOfTaskOrEventPageState
             (timeInterval.targetAtMost != measurableTask.targetAtMost)) {
           timeInterval.isTargetChanged = true;
         }
+      }
+      for (var timeInterval in timeIntervals) {
+        _isExpanded[timeInterval.id] = false;
       }
       timeIntervals.sort((a, b) {
         final aTimestamp = a.startTimestamp ?? a.endTimestamp;
@@ -1357,6 +1368,9 @@ class _TimeIntervalOfTaskOrEventPageState
           timeInterval.isSubtasksChanged = true;
         }
       }
+      for (var timeInterval in timeIntervals) {
+        _isExpanded[timeInterval.id] = false;
+      }
 
       timeIntervals.sort((a, b) {
         final aTimestamp = a.startTimestamp ?? a.endTimestamp;
@@ -1405,16 +1419,6 @@ class _TimeIntervalOfTaskOrEventPageState
       });
     }
     await _databaseManager.updateTimeInterval(_timeInterval);
-
-    // final updatedTimeInterval =
-    //     await _databaseManager.timeInterval(timeInterval.id);
-    // final index =
-    //     _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
-    // if (index != -1) {
-    //   setState(() {
-    //     _timeIntervals[index] = updatedTimeInterval;
-    //   });
-    // }
   }
 
   Future<void> _deleteTimeInterval(TimeInterval timeInterval) async {
@@ -1434,16 +1438,6 @@ class _TimeIntervalOfTaskOrEventPageState
       });
     }
     await _databaseManager.updateTimeInterval(_timeInterval);
-
-    // final updatedTimeInterval =
-    //     await _databaseManager.timeInterval(timeInterval.id);
-    // final index =
-    //     _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
-    // if (index != -1) {
-    //   setState(() {
-    //     _timeIntervals[index] = updatedTimeInterval;
-    //   });
-    // }
   }
 
   Future<void> _onHasBeenDoneUpdate(TimeInterval timeInterval) async {
@@ -1478,15 +1472,6 @@ class _TimeIntervalOfTaskOrEventPageState
                 });
               }
               await _databaseManager.updateTimeInterval(_timeInterval);
-              // final updatedTimeInterval =
-              //     await _databaseManager.timeInterval(timeInterval.id);
-              // final index = _timeIntervals
-              //     .indexWhere((item) => item.id == updatedTimeInterval.id);
-              // if (index != -1) {
-              //   setState(() {
-              //     _timeIntervals[index] = updatedTimeInterval;
-              //   });
-              // }
               Navigator.pop(context);
             },
             child: Text('Update'),
@@ -1568,6 +1553,7 @@ class _TimeIntervalOfTaskOrEventPageState
               return Column(
                 children: [
                   ListTile(
+                    //contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
                     title: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1679,10 +1665,28 @@ class _TimeIntervalOfTaskOrEventPageState
                           // }
                         } else if (result == 'delete') {
                           _deleteTimeInterval(timeInterval);
+                        } else if (result == 'expand') {
+                          setState(() {
+                            _isExpanded[timeInterval.id]  = !_isExpanded[timeInterval.id]! ;
+                          });
                         }
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'expand',
+                          child: Row(
+                            children: [
+                              Icon(_isExpanded[timeInterval.id]!
+                                  ? Icons.chevron_right
+                                  : Icons.expand_more),
+                              const SizedBox(width: 8),
+                              _isExpanded[timeInterval.id]!
+                                  ? const Text('Hide details')
+                                  : const Text('Show details'),
+                            ],
+                          ),
+                        ),
                         PopupMenuItem<String>(
                             value: 'mark_completed',
                             child: Row(
@@ -1739,17 +1743,19 @@ class _TimeIntervalOfTaskOrEventPageState
                       ],
                     ),
                   ),
-                  if (timeInterval.isDescriptionChanged)
+                  if (_isExpanded[timeInterval.id]! && timeInterval.description.isNotEmpty)
                     ListTile(
+                        dense: true,
                         leading: Icon(Icons.description_outlined),
                         title: Text(timeInterval.description)),
-                  if (timeInterval.isLocationChanged)
+                  if (_isExpanded[timeInterval.id]! && timeInterval.location.isNotEmpty)
                     ListTile(
+                        dense: true,
                         leading: Icon(Icons.location_on_outlined),
                         title: Text(timeInterval.location)),
-                  if (timeInterval.measurableTaskId != null &&
-                      timeInterval.isTargetChanged)
+                  if (timeInterval.measurableTaskId != null && _isExpanded[timeInterval.id]!)
                     ListTile(
+                      dense: true,
                       title: Column(
                         children: [
                           if (timeInterval.targetType == TargetType.about)
@@ -1770,19 +1776,22 @@ class _TimeIntervalOfTaskOrEventPageState
                         ],
                       ),
                     ),
-                  if (timeInterval.measurableTaskId != null)
+                  if (timeInterval.measurableTaskId != null && _isExpanded[timeInterval.id]!)
                     ListTile(
+                      dense: true,
                       title: ActionChip(
                           label: Text(
                             'Has been done: ${timeInterval.howMuchHasBeenDone} ${timeInterval.unit}',
                           ),
                           onPressed: () => _onHasBeenDoneUpdate(timeInterval)),
                     ),
-                  if (timeInterval.taskWithSubtasksId != null //cnkm&&
+                  if (timeInterval.taskWithSubtasksId != null && _isExpanded[timeInterval.id]!
                       //timeInterval.isSubtasksChanged
                       )
-                    ...timeInterval.subtasks.map(
+                    ...timeInterval.subtasks.reversed.map(
                       (subtask) => CheckboxListTile(
+                        //contentPadding: EdgeInsets.symmetric(vertical: 0.0),
+                        dense: true,
                         side: BorderSide(
                             //color: labelColor,
                             ),

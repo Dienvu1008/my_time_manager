@@ -1,7 +1,7 @@
 name: my_time_manager
 description: A powerful application to manage your time
 publish_to: 'none' 
-version: 1.0.0+1
+version: 1.2.2+6
 environment:
   sdk: '>=3.0.1 <4.0.0'
 dependencies:
@@ -30,6 +30,9 @@ dependencies:
   google_maps_flutter: ^2.1.1
   file_picker: ^5.5.0
   image_picker: ^1.0.1
+  #device_calendar: ^0.1.1
+  table_calendar: ^3.0.9
+  
 
   
 dev_dependencies:

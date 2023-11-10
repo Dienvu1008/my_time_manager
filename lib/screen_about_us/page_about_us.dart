@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app/app_localizations.dart';
 import '../utils/constants.dart';
 import '../utils/utils.dart';
@@ -78,39 +79,58 @@ class AboutUsPage extends StatelessWidget {
                           style: textTheme.titleLarge),
                     ),
                     ListTile(
-                      leading: const Icon(Icons.bug_report_outlined),
-                      title: Text(localizations.reportAnIssue,
-                          style: textTheme.bodyMedium),
-                      subtitle: Text(localizations.havingAnIssueReportItHere,
-                          style: textTheme.bodySmall),
-                      onTap: //() => () async {
-                        () => launchURL(issueUrl)
-                        //Navigator.of(context).pop();
-                      //}, //showConfirmationDialog(context, issueUrl),
-                    ),
+                        leading: const Icon(Icons.bug_report_outlined),
+                        title: Text(localizations.reportAnIssue,
+                            style: textTheme.bodyMedium),
+                        subtitle: Text(localizations.havingAnIssueReportItHere,
+                            style: textTheme.bodySmall),
+                        onTap: () async {
+                          if (await canLaunchUrl(appIssueUrl)) {
+                            await launchURL(appIssueUrl);
+                          } else {
+                            await launchURL(issueUrl);
+                          }
+                        }),
                     ListTile(
                       leading: const Icon(Icons.update_outlined),
-                      title: Text("Free Version", style: textTheme.bodyMedium),
-                      subtitle: Text("1.0.0", style: textTheme.bodySmall),
+                      title: Text("Pro Version", style: textTheme.bodyMedium),
+                      subtitle: Text("1.2.2", style: textTheme.bodySmall),
+                      onTap: () => launchURL(proVersionUrl),
                     ),
                     ListTile(
                         leading: const Icon(Icons.policy_outlined),
                         title: Text(localizations.privacyPolicy,
                             style: textTheme.bodyMedium),
-                        onTap: //() => () async {
-                              () => launchURL(privacyUrl)
-                              //Navigator.of(context).pop();
-                            //} //showConfirmationDialog(context, privacyUrl),
-                        ),
+                        onTap: () async {
+                          if (await canLaunchUrl(appPrivacyUrl)) {
+                            await launchURL(appPrivacyUrl);
+                          } else {
+                            await launchURL(privacyUrl);
+                          }
+                        }),
                     ListTile(
-                        leading: const Icon(Icons.help_center_outlined),
-                        title: Text(localizations!.howToUse,
-                            style: textTheme.bodyMedium),
-                        onTap: //() => () async {
-                              () => launchURL(readMeUrl)
-                              //Navigator.of(context).pop();
-                            //} //showConfirmationDialog(context, readMeUrl),
-                        ),
+                      leading: const Icon(Icons.help_center_outlined),
+                      title: Text(localizations.howToUse,
+                          style: textTheme.bodyMedium),
+                      onTap: () async {
+                        if (await canLaunchUrl(appReadMeUrl)) {
+                          await launchURL(appReadMeUrl);
+                        } else {
+                          await launchURL(readMeUrl);
+                        }
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.emoji_food_beverage_outlined),
+                      title: Text('Support us', style: textTheme.bodyMedium),
+                      // onTap: () async {
+                      //   if (await canLaunchUrl(appReadMeUrl)) {
+                      //     await launchURL(appReadMeUrl);
+                      //   } else {
+                      //     await launchURL(readMeUrl);
+                      //   }
+                      // },
+                    ),
                     ListTile(
                       leading: const FaIcon(
                         FontAwesomeIcons.github,
@@ -132,71 +152,43 @@ class AboutUsPage extends StatelessWidget {
                           style: textTheme.titleLarge),
                     ),
                     ListTile(
-                        leading: const Icon(Icons.corporate_fare_outlined),
-                        title: Text(
-                          "TGB Soft",
-                          style: textTheme.bodyMedium,
-                        ),
-                        subtitle: Text("The True, The Good, And The Beautiful",
-                            style: textTheme.bodySmall),
-                        onTap: //() => () async {
-                              () => launchURL(pageFacebookUrl)
-                              //Navigator.of(context).pop();
-                            //}
-                        //showConfirmationDialog(context, pageFacebookUrl),
-                        ),
+                      leading: const Icon(Icons.corporate_fare_outlined),
+                      title: Text(
+                        "TGB Soft",
+                        style: textTheme.bodyMedium,
+                      ),
+                      subtitle: Text("The True, The Good, And The Beautiful",
+                          style: textTheme.bodySmall),
+                      onTap: () async {
+                        if (await canLaunchUrl(appPageFacebookUrl)) {
+                          await launchURL(appPageFacebookUrl);
+                        } else {
+                          await launchURL(pageFacebookUrl);
+                        }
+                      },
+                    ),
                     ListTile(
-                        leading: const Icon(Icons.perm_identity_outlined),
-                        title: Text("Điền Vũ", style: textTheme.bodyMedium),
-                        subtitle:
-                            Text("Dienvu1008", style: textTheme.bodySmall),
-                        onTap: //() => () async {
-                              () => launchURL(githubUrl)
-                              //Navigator.of(context).pop();
-                            //} //showConfirmationDialog(context, githubUrl),
-                        ),
+                      leading: const Icon(Icons.perm_identity_outlined),
+                      title: Text("Điền Vũ", style: textTheme.bodyMedium),
+                      subtitle: Text("Dienvu1008", style: textTheme.bodySmall),
+                      onTap: () async {
+                        if (await canLaunchUrl(appGithubUrl)) {
+                          await launchURL(appGithubUrl);
+                        } else {
+                          await launchURL(githubUrl);
+                        }
+                      },
+                    ),
                     ListTile(
                         leading: const Icon(Icons.email_outlined),
                         title: Text(localizations.sendAnEmail,
                             style: textTheme.bodyMedium),
                         subtitle: Text("dienvu1008@gmail.com",
                             style: textTheme.bodySmall),
-                        onTap: //() => () async {
-                              () => launchURL(emailUrl)
-                              //Navigator.of(context).pop();
-                            //} //showConfirmationDialog(context, emailUrl),
-                        ),
+                        onTap: () => launchURL(emailUrl)),
                   ],
                 ),
               ),
-              // Card(
-              //   child: Column(
-              //     crossAxisAlignment: CrossAxisAlignment.start,
-              //     children: <Widget>[
-              //       Padding(
-              //         padding: const EdgeInsets.only(top: 16.0, left: 16.0),
-              //         child: Text("Ask Question ?",
-              //             style: TextStyle(
-              //                 fontWeight: FontWeight.bold,
-              //                 fontSize: FONT_MEDIUM)),
-              //       ),
-              //       Padding(
-              //         padding: const EdgeInsets.all(16.0),
-              //         child: Row(
-              //           mainAxisAlignment: MainAxisAlignment.start,
-              //           children: <Widget>[
-              //             IconButton(
-              //               icon: const FaIcon(FontAwesomeIcons.facebook,
-              //                   size: 18.0),
-              //               onPressed: () => showConfirmationDialog(
-              //                   context, PAGE_FACEBOOK_URL),
-              //             )
-              //           ],
-              //         ),
-              //       ),
-              //     ],
-              //   ),
-              // ),
               Card(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

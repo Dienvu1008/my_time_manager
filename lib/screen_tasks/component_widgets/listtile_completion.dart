@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 class CompletionListTile extends StatefulWidget {
   final bool isCompleted;
   final ValueChanged<bool> onCompletionChanged;
+  final bool? isUsedForTimeInterval;
 
   CompletionListTile(
-      {required this.isCompleted, required this.onCompletionChanged});
+      {required this.isCompleted,
+      required this.onCompletionChanged,
+      this.isUsedForTimeInterval});
 
   @override
   _CompletionListTileState createState() => _CompletionListTileState();
@@ -33,7 +36,8 @@ class _CompletionListTileState extends State<CompletionListTile> {
           ),
           title: DropdownButtonHideUnderline(
             child: DropdownButton<bool>(
-              isDense: true,
+              //isDense: true,
+              isExpanded: true,
               value: _isCompleted,
               onChanged: (bool? newValue) {
                 setState(() {
@@ -43,9 +47,19 @@ class _CompletionListTileState extends State<CompletionListTile> {
               },
               items:
                   <bool>[true, false].map<DropdownMenuItem<bool>>((bool value) {
+                // return DropdownMenuItem<bool>(
+                //   value: value,
+                //   child: widget.isUsedForTimeInterval!
+                //   ? Expanded(child: Text(value? 'Completed in this time interval' : 'Incompleted in this time interval'))
+                //   : Expanded(child: Text(value ? 'Completed' : 'Incompleted'),)
+                // );
                 return DropdownMenuItem<bool>(
                   value: value,
-                  child: Text(value ? 'Completed' : 'Incompleted'),
+                  child: (widget.isUsedForTimeInterval ?? false)
+                      ? Text(value
+                              ? 'Completed in this time interval'
+                              : 'Incompleted in this time interval')
+                      : Text(value ? 'Completed' : 'Incompleted'),
                 );
               }).toList(),
             ),

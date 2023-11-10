@@ -230,7 +230,7 @@ class _AddOrEditMeasurableTaskPageState
             children: [
               TaskListListTile(
                 title: widget.taskList.title,
-                style: textTheme.titleMedium!,
+                style: textTheme.titleLarge!,
               ),
               TitleListTile(
                 titleController: _titleController,
@@ -253,8 +253,20 @@ class _AddOrEditMeasurableTaskPageState
                 onTargetTypeChanged: (value) =>
                     setState(() => _targetType = value),
               ),
+              if(widget.measurableTask != null)
+              ScheduleListTile(
+                title: widget.measurableTask!.title,
+                color: widget.measurableTask!.color,
+                description: widget.measurableTask!.description,
+                location: widget.measurableTask!.location,
+                targetAtLeast: widget.measurableTask!.targetAtLeast,
+                targetAtMost: widget.measurableTask!.targetAtMost,
+                targetType: widget.measurableTask!.targetType,
+                unit: widget.measurableTask!.unit,
+                subtasks: [],
+                measurableTaskId: _id,
+              ),
               LocationListTile(locationController: _locationController),
-              ScheduleListTile(measurableTaskId: _id,),
               CompletionListTile(
                 isCompleted: _isCompleted,
                 onCompletionChanged: (bool? newValue) {

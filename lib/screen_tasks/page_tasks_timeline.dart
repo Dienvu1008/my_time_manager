@@ -193,6 +193,7 @@ class TimeIntervalList extends StatelessWidget {
     final localizations = AppLocalizations.of(context);
 
     return ListView.builder(
+      //physics: const NeverScrollableScrollPhysics(),
       itemCount: timeIntervals.length,
       itemBuilder: (context, index) {
         final timeInterval = timeIntervals[index];

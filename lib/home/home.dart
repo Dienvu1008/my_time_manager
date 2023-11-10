@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/screen_calendar/complex_example.dart';
+import 'package:my_time_manager/screen_calendar/view_daily.dart';
+import 'package:my_time_manager/screen_calendar/view_monthly.dart';
+import 'package:my_time_manager/utils/widget_coming_soon.dart';
 import '../app/app_localizations.dart';
 import '../screen_about_us/page_about_us.dart';
 import '../screen_material_design/page_color_palettes.dart';
 import '../screen_material_design/page_component.dart';
-import '../screen_settings/page_settings.dart';
+import '../screen_settings/page_settings_user_interface.dart';
 import '../screen_tasks/page_tasks_overview.dart';
 import '../screen_tasks/page_tasks_timeline.dart';
 import '../screen_tasks/page_tasks_timetable.dart';
@@ -11,6 +15,7 @@ import '../utils/constants.dart';
 import '../screen_material_design/page_elevation.dart';
 import '../screen_material_design/page_typography.dart';
 import '../utils/utils.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class Home extends StatefulWidget {
   const Home({
@@ -80,8 +85,22 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   static final List<Widget> _tasksScreen = <Widget>[
     BlocTasksOverviewPage(),
-    TasksTimelinePage(),
+    //TasksTimelinePage(),
+    TableComplexExample(),
     TasksTimetablePage(),
+  ];
+
+  static final List<Widget> _calendarScreen = <Widget>[
+    TasksDayView(),
+    TasksTimetablePage(),
+    TasksMonthView(),
+
+    ComingSoonWidget(),
+    // DatePickerDialog(
+    //   initialDate: DateTime.now(),
+    //   firstDate: DateTime(1900),
+    //   lastDate: DateTime(2100),
+    // ),
   ];
 
   static final List<Widget> _materialDesignScreen = <Widget>[
@@ -201,6 +220,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     return _tasksScreen.elementAt(_selectedNavBarItemIndex);
   }
 
+  Widget createPageForCalendarScreen() {
+    return _calendarScreen.elementAt(_selectedNavBarItemIndex);
+  }
+
   PreferredSizeWidget createAppBar(String title) {
     return AppBar(
       title: Text(title),
@@ -279,6 +302,41 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+
+    // final Map<List<dynamic>, String> appBarTitles = {
+    //   [
+    //     ScreenSelected.tasksScreen.value,
+    //     PageOfTasksScreenSelected.tasksOverviewPage.value
+    //   ]: 'Overview',
+    //   [
+    //     ScreenSelected.tasksScreen.value,
+    //     PageOfTasksScreenSelected.tasksTimelinePage.value
+    //   ]: 'Timeline',
+    //   [
+    //     ScreenSelected.tasksScreen.value,
+    //     PageOfTasksScreenSelected.tasksTimetablePage.value
+    //   ]: 'Timetable',
+    //   [ScreenSelected.settingsScreen.value, null]: localizations!.settings,
+    //   [ScreenSelected.aboutUsScreen.value, null]: localizations.About,
+    //   [
+    //     ScreenSelected.materialDesignScreen.value,
+    //     PageOfMaterialDesignScreenSelected.component.value
+    //   ]: 'Components',
+    //   [
+    //     ScreenSelected.materialDesignScreen.value,
+    //     PageOfMaterialDesignScreenSelected.color.value
+    //   ]: 'Colors',
+    //   [
+    //     ScreenSelected.materialDesignScreen.value,
+    //     PageOfMaterialDesignScreenSelected.typography.value
+    //   ]: 'Typography',
+    //   [
+    //     ScreenSelected.materialDesignScreen.value,
+    //     PageOfMaterialDesignScreenSelected.elevation.value
+    //   ]: 'Elevation',
+    //   [null, null]: '',
+    // };
+
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
@@ -342,6 +400,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                                                         .typography.value)
                                             ? 'Typography'
                                             : 'Elevation'),
+
+            // appBar: createAppBar(appBarTitles[[
+            //   _selectedDrawerItemIndex,
+            //   _selectedNavBarItemIndex
+            // ]]!),
             drawer: Drawer(
               //backgroundColor: Theme.of(context).colorScheme.background,
               child: ListView(
@@ -366,7 +429,9 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                     title: Text(localizations.calendar),
                     selected: _selectedDrawerItemIndex ==
                         ScreenSelected.calendarScreen.value,
-                    onTap: () => showComingSoonDialog(context),
+                    //onTap: () => showComingSoonDialog(context),
+                    onTap: () => _onDrawerItemTapped(
+                        ScreenSelected.calendarScreen.value),
                   ),
                   ListTile(
                     leading: const Icon(Icons.timelapse_outlined),
@@ -420,6 +485,12 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                     onTap: () =>
                         _onDrawerItemTapped(ScreenSelected.aboutUsScreen.value),
                   ),
+                  // ListTile(
+                  //     leading: const Icon(Icons.upgrade_outlined),
+                  //     title: const Text(
+                  //       "Upgrade to the Pro version",
+                  //     ),
+                  //     onTap: () => launchURL(proVersionUrl)),
                 ],
               ),
             ),
@@ -463,8 +534,12 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                       )
                     : _selectedDrawerItemIndex == ScreenSelected.aboutUsScreen.value
                         ? AboutUsPage()
-                        : createPageForMaterialDesignScreen(
-                          PageOfMaterialDesignScreenSelected.values[_selectedNavBarItemIndex], controller.value == 1),
+                        : _selectedDrawerItemIndex == ScreenSelected.calendarScreen.value
+                            ? createPageForCalendarScreen()
+                            : createPageForMaterialDesignScreen(PageOfMaterialDesignScreenSelected.values[_selectedNavBarItemIndex], controller.value == 1),
+            // : _selectedDrawerItemIndex == ScreenSelected.calendarScreen.value
+            // ? DatePickerDialog()
+            // :,
             navigationRail: NavigationRail(
               extended: showLargeSizeLayout,
               destinations:
@@ -476,7 +551,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                           : _selectedDrawerItemIndex ==
                                   ScreenSelected.aboutUsScreen.value
                               ? navRailAboutUsScreenDestinations
-                              : navRailMaterialDesignScreenDestinations,
+                              : _selectedDrawerItemIndex ==
+                                      ScreenSelected.calendarScreen.value
+                                  ? navRailCalendarScreenDestinations
+                                  : navRailMaterialDesignScreenDestinations,
               selectedIndex: _selectedNavBarItemIndex,
               onDestinationSelected: (index) {
                 setState(() {
@@ -519,8 +597,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                     _onNavBarItemTapped(_selectedNavBarItemIndex);
                   });
                 },
-                selectedNavBarItemIndex: _selectedNavBarItemIndex,
                 selectedDrawerItemIndex: _selectedDrawerItemIndex,
+                selectedNavBarItemIndex: _selectedNavBarItemIndex,
               ),
             ));
       },
@@ -1072,6 +1150,7 @@ class _AppNavigationBarsState extends State<AppNavigationBars> {
     navBarSettingsScreenDestinations,
     navBarAboutUsScreenDestinations,
     navBarMaterialDesignScreenDestinations,
+    navBarCalendarScreenDestinations,
   ];
 
   @override
@@ -1180,6 +1259,23 @@ final List<NavigationRailDestination> navRailMaterialDesignScreenDestinations =
         )
         .toList();
 
+final List<NavigationRailDestination> navRailCalendarScreenDestinations =
+    navBarCalendarScreenDestinations
+        .map(
+          (destination) => NavigationRailDestination(
+            icon: Tooltip(
+              message: destination.label,
+              child: destination.icon,
+            ),
+            selectedIcon: Tooltip(
+              message: destination.label,
+              child: destination.selectedIcon,
+            ),
+            label: Text(destination.label),
+          ),
+        )
+        .toList();
+
 const List<NavigationDestination> navBarTasksScreenDestinations = [
   NavigationDestination(
     tooltip: '',
@@ -1257,6 +1353,33 @@ const List<NavigationDestination> navBarMaterialDesignScreenDestinations = [
     icon: Icon(Icons.invert_colors_on_outlined),
     label: 'Elevation',
     selectedIcon: Icon(Icons.opacity),
+  )
+];
+
+const List<NavigationDestination> navBarCalendarScreenDestinations = [
+  NavigationDestination(
+    tooltip: '',
+    icon: Icon(Icons.calendar_view_day_outlined),
+    label: 'Day',
+    selectedIcon: Icon(Icons.calendar_view_day),
+  ),
+  NavigationDestination(
+    tooltip: '',
+    icon: Icon(Icons.calendar_view_week_outlined),
+    label: 'Week',
+    selectedIcon: Icon(Icons.calendar_view_week),
+  ),
+  NavigationDestination(
+    tooltip: '',
+    icon: Icon(Icons.calendar_view_month_outlined),
+    label: 'Month',
+    selectedIcon: Icon(Icons.calendar_view_month),
+  ),
+  NavigationDestination(
+    tooltip: '',
+    icon: Icon(Icons.calendar_month_outlined),
+    label: 'Year',
+    selectedIcon: Icon(Icons.calendar_month),
   )
 ];
 

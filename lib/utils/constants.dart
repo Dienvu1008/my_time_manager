@@ -40,11 +40,11 @@ enum ColorSeed {
   purple("Purple", Colors.purple),
   deeppurple("Deep Purple", Colors.deepPurple),
   indigo('Indigo', Colors.indigo),
-  lightblue("Lightblue", Colors.lightBlue),
+  lightblue("Light Blue", Colors.lightBlue),
   blue('Blue', Colors.blue),
   cyan("Cyan", Colors.cyan),
   teal('Teal', Colors.teal),
-  lightgreen("Lightgreen", Colors.lightGreen),
+  lightgreen("Light Green", Colors.lightGreen),
   green('Green', Colors.green),
   lime("Lime", Colors.lime),
   amber("Amber", Colors.amber),
@@ -54,22 +54,56 @@ enum ColorSeed {
   pink('Pink', Colors.pink),
   red("Red", Colors.red),
   grey("Grey", Colors.grey),
+  blueGrey("Blue Grey", Colors.blueGrey),
   brown("Brown", Colors.brown),
   black("Black", Colors.black),
   white("White", Colors.white);
-  // baseColor('M3 Baseline', Color(0xff6750a4)),
-  // indigo('Indigo', Colors.indigo),
-  // blue('Blue', Colors.blue),
-  // teal('Teal', Colors.teal),
-  // green('Green', Colors.green),
-  // yellow('Yellow', Colors.yellow),
-  // orange('Orange', Colors.orange),
-  // deepOrange('Deep Orange', Colors.deepOrange),
-  // pink('Pink', Colors.pink);
+
+  // aliceBlue('Alice Blue', Colors.aliceBlue),
+  // antiqueWhite('Antique White', Color(0xFAEBD7)),
+  // aqua('Aqua', Color(0x00FFFF)),
+  // aquamarine('Aquamarine', Color(0x7FFFD4)),
+  // azure('Azure', Color(0xF0FFFF)),
+  // beige('Beige', Color(0xF5F5DC)),
+  // bisque('Bisque', Color(0xFFE4C4)),
+  // blanchedAlmond('Blanched Almond', Color(0xFFEBCD)),
+  // blueViolet('Blue Violet', Color(0x8A2BE2)),
+  // burlyWood('Burly Wood', Color(0xDEB887)),
+  // cadetBlue('Cadet Blue', Color(0x5F9EA0)),
+  // chartreuse('Chartreuse', Color(0x7FFF00)),
+  // coral('Coral', Color(0xFF7F50)),
+  // cornflowerBlue('Cornflower Blue', Color(0x6495ED)),
+  // cornsilk('Cornsilk', Color(0xFFF8DC)),
+  // crimson('Crimson', Color(0xDC143C)),
+  // darkBlue('Dark Blue', Color(0x00008B)),
+  // darkCyan('Dark  Cyan', Color(0x008B8B)),
+  // darkGoldenRod('Dark Golden Rod', Color(0xB8860B)),
+  // darkGray('Dark Gray', Color(0xA9A9A9)),
+  // darkGreen('Dark Green', Color(0x006400));
 
   const ColorSeed(this.label, this.color);
   final String label;
   final Color color;
+}
+
+MaterialColor createMaterialColor(Color color) {
+  List strengths = <double>[.05];
+  Map<int, Color> swatch = {};
+  final int r = color.red, g = color.green, b = color.blue;
+
+  for (int i = 1; i < 10; i++) {
+    strengths.add(0.1 * i);
+  }
+  strengths.forEach((strength) {
+    final double ds = 0.5 - strength;
+    swatch[(strength * 1000).round()] = Color.fromRGBO(
+      r + ((ds < 0 ? r : (255 - r)) * ds).round(),
+      g + ((ds < 0 ? g : (255 - g)) * ds).round(),
+      b + ((ds < 0 ? b : (255 - b)) * ds).round(),
+      1,
+    );
+  });
+  return MaterialColor(color.value, swatch);
 }
 
 enum ScreenSelected {
@@ -81,7 +115,8 @@ enum ScreenSelected {
   focusTimerScreen(5),
   contactsScreen(6),
   statsScreen(7),
-  notesScreen(8),;
+  notesScreen(8),
+  ;
 
   const ScreenSelected(this.value);
   final int value;
@@ -137,15 +172,29 @@ enum AppLanguage {
 }
 
 Uri githubUrl = Uri.parse('https://github.com/Dienvu1008');
+Uri appGithubUrl = Uri.parse('github://github.com/Dienvu1008');
 Uri authorFacebookUrl =
     Uri.parse("https://www.facebook.com/profile.php?id=100074416023246");
+Uri appAuthorFacebookUrl = Uri.parse("fb://www.facebook.com/profile.php?id=100074416023246");
 Uri pageFacebookUrl =
     Uri.parse("https://www.facebook.com/profile.php?id=100083919462769");
+Uri appPageFacebookUrl =
+    Uri.parse("fb://www.facebook.com/profile.php?id=100083919462769");
 Uri emailUrl = Uri.parse(
     "mailto:<dienvu1008@gmail.com>?subject=MyTimeManager%20Query&body=Hi");
 Uri readMeUrl = Uri.parse(
     "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README.md");
+Uri appReadMeUrl = Uri.parse(
+    "github://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README.md");
 Uri privacyUrl = Uri.parse(
     "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/PRIVACY.md");
+Uri appPrivacyUrl = Uri.parse(
+    "github://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/PRIVACY.md");
 Uri issueUrl =
     Uri.parse("https://github.com/Dienvu1008/My-Time-Manager-Infor/issues");
+Uri appIssueUrl =
+    Uri.parse("github://github.com/Dienvu1008/My-Time-Manager-Infor/issues");
+Uri proVersionUrl =
+    Uri.parse("market://details?id=com.dienvu.mytimemanager.pro");
+Uri freeVersionUrl =
+    Uri.parse("market://details?id=com.dienvu.mytimemanager.free");

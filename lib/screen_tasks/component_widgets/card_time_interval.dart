@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_time_manager/data/database/database_manager.dart';
+import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_measurable_task.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task_with_subtasks.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
+import 'package:my_time_manager/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TimeIntervalCard extends StatefulWidget {
@@ -28,15 +36,15 @@ class TimeIntervalCard extends StatefulWidget {
 }
 
 class _TimeIntervalCardState extends State<TimeIntervalCard> {
-  static Color contrastColor(Color color) {
-    final brightness = ThemeData.estimateBrightnessForColor(color);
-    switch (brightness) {
-      case Brightness.dark:
-        return Colors.white;
-      case Brightness.light:
-        return Colors.black;
-    }
-  }
+  // static Color contrastColor(Color color) {
+  //   final brightness = ThemeData.estimateBrightnessForColor(color);
+  //   switch (brightness) {
+  //     case Brightness.dark:
+  //       return Colors.white;
+  //     case Brightness.light:
+  //       return Colors.black;
+  //   }
+  // }
 
   bool _isExpanded = true;
   String _formattedStartDate = '--/--/----';
@@ -106,6 +114,33 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
 
     return Card(
       color: backgroundColor,
+      //   child: Container(
+      // decoration: BoxDecoration(
+      //   gradient: LinearGradient(
+      //     colors: widget.timeInterval.startDate != null && widget.timeInterval.endDate == null
+      //         ? [backgroundColor, Colors.white]
+      //         : [Colors.white, backgroundColor],
+      //     begin: Alignment.topCenter,
+      //     end: Alignment.bottomCenter,
+      //   ),
+      // child: Container(
+      //   decoration: BoxDecoration(
+      //     color: widget.timeInterval.startDate != null &&
+      //             widget.timeInterval.endDate != null
+      //         ? backgroundColor
+      //         : null,
+      //     gradient: widget.timeInterval.startDate != null &&
+      //             widget.timeInterval.endDate != null
+      //         ? null
+      //         : LinearGradient(
+      //             colors: widget.timeInterval.startDate != null &&
+      //                     widget.timeInterval.endDate == null
+      //                 ? [backgroundColor, Colors.white]
+      //                 : [Colors.white, backgroundColor],
+      //             begin: Alignment.topCenter,
+      //             end: Alignment.bottomCenter,
+      //           ),
+      //   ),
       child: Row(
         children: [
           Expanded(
@@ -116,12 +151,27 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ListTile(
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0.1),
+                    dense: true,
                     title: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Wrap(
                           spacing: 8.0,
                           children: <Widget>[
+                            if (widget.timeInterval.isImportant == true)
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(
+                                      5), // bo tròn viền tại đây
+                                ),
+                                child: const Text(
+                                  'important',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 10),
+                                ),
+                              ),
                             if (widget.timeInterval.isGone == true)
                               Container(
                                 decoration: BoxDecoration(
@@ -224,21 +274,66 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                     ),
                     trailing: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert_outlined, color: labelColor),
-                      onSelected: (String result) {
-                        if (result == 'option1') {
-                          widget.onTimeIntervalEdit(widget.timeInterval);
-                        } else if (result == 'option2') {
+                      onSelected: (String result) async {
+                        if (result == 'sync_from_task') {
+                          showComingSoonDialog(context);
+                        } else if (result == 'delete_time_interval') {
                           widget.onTimeIntervalDelete(widget.timeInterval);
                         } else if (result == 'option3') {
                           widget.onTimeIntervalToggleComplete(
                               widget.timeInterval);
-                        } else if (result == 'option4') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => AddOrEditTimeIntervalPage(
-                                    timeInterval: widget.timeInterval)),
-                          );
+                        } else if (result == 'go_to_main_task') {
+                          final DatabaseManager databaseManager =
+                              DatabaseManager();
+                          if (widget.timeInterval.taskWithSubtasksId != null) {
+                            final id = widget.timeInterval.taskWithSubtasksId;
+                            final TaskWithSubtasks taskWithSubtasks =
+                                await databaseManager.taskWithSubtasks(id!);
+                            final TaskList taskList = await databaseManager
+                                .taskList(taskWithSubtasks.taskListId);
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    AddOrEditTaskWithSubtasksPage(
+                                  taskList: taskList,
+                                  taskWithSubtasks: taskWithSubtasks,
+                                ),
+                              ),
+                            );
+                          } else if (widget.timeInterval.measurableTaskId !=
+                              null) {
+                            final id = widget.timeInterval.measurableTaskId;
+                            final MeasurableTask measurableTask =
+                                await databaseManager.measurableTask(id!);
+                            final TaskList taskList = await databaseManager
+                                .taskList(measurableTask.taskListId);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    AddOrEditMeasurableTaskPage(
+                                  taskList: taskList,
+                                  measurableTask: measurableTask,
+                                ),
+                              ),
+                            );
+                          } else if (widget.timeInterval.taskId != null) {
+                            final id = widget.timeInterval.taskId;
+                            final Task task = await databaseManager.task(id!);
+                            final TaskList taskList =
+                                await databaseManager.taskList(task.taskListId);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddOrEditTaskPage(
+                                  taskList: taskList,
+                                  task: task,
+                                ),
+                              ),
+                            );
+                          }
                         } else if (result == 'option5') {
                           setState(() => _isExpanded = !_isExpanded);
                           _saveIsExpanded();
@@ -301,25 +396,28 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                           ),
                         ),
                         const PopupMenuItem<String>(
-                          value: 'option1',
+                          value: 'sync_from_task',
                           child: Row(
                             children: [
                               Icon(Icons.copy_outlined),
                               SizedBox(width: 8),
-                              Expanded(child:Text('Sync details from task to this time interval'),)
+                              Expanded(
+                                child: Text(
+                                    'Sync details from task to this time interval'),
+                              )
                             ],
                           ),
                         ),
-                        // const PopupMenuItem<String>(
-                        //   value: 'option4',
-                        //   child: Row(
-                        //     children: [
-                        //       Icon(Icons.hourglass_empty),
-                        //       SizedBox(width: 8),
-                        //       Text('Add time interval'),
-                        //     ],
-                        //   ),
-                        // ),
+                        const PopupMenuItem<String>(
+                          value: 'go_to_main_task',
+                          child: Row(
+                            children: [
+                              Icon(Icons.read_more_outlined),
+                              SizedBox(width: 8),
+                              Text('Go to main task'),
+                            ],
+                          ),
+                        ),
                         const PopupMenuItem<String>(
                           value: 'option1',
                           child: Row(
@@ -331,7 +429,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                           ),
                         ),
                         const PopupMenuItem<String>(
-                          value: 'option2',
+                          value: 'delete_time_interval',
                           child: Row(
                             children: [
                               Icon(Icons.delete_outlined),
@@ -358,61 +456,70 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                   ),
                   if (_isExpanded &&
                       widget.timeInterval.taskWithSubtasksId != null)
-                    ...widget.timeInterval.subtasks.map(
-                      (subtask) => CheckboxListTile(
-                        side: BorderSide(
-                          color: labelColor,
-                        ),
-                        activeColor: labelColor,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: subtask.isSubtaskCompleted,
-                        onChanged: (value) {
-                          subtask.isSubtaskCompleted = value ?? false;
-                          widget.onSubtasksChanged(widget.timeInterval);
-                        },
-                        title: Text(
-                          subtask.title,
-                          style: TextStyle(
-                            decoration: subtask.isSubtaskCompleted
-                                ? TextDecoration.lineThrough
-                                : TextDecoration.none,
-                            color: labelColor,
-                          ),
-                        ),
-                        secondary: IconButton(
-                          icon: Icon(
-                            Icons.delete_outlined,
-                            color: labelColor,
-                          ),
-                          onPressed: () async {
-                            final result = await showDialog<bool>(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Text('Delete Subtask'),
-                                  content: Text(
-                                      'Are you sure you want to delete this subtask?'),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: Text('Delete'),
-                                    ),
-                                  ],
-                                );
+                    SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: Column(
+                        children: [
+                          ...widget.timeInterval.subtasks.map(
+                            (subtask) => CheckboxListTile(
+                              side: BorderSide(
+                                color: labelColor,
+                              ),
+                              activeColor: labelColor,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              value: subtask.isSubtaskCompleted,
+                              onChanged: (value) {
+                                subtask.isSubtaskCompleted = value ?? false;
+                                widget.onSubtasksChanged(widget.timeInterval);
                               },
-                            );
-                            if (result == true) {
-                              widget.timeInterval.subtasks.remove(subtask);
-                              widget.onSubtasksChanged(widget.timeInterval);
-                            }
-                          },
-                        ),
+                              title: Text(
+                                subtask.title,
+                                style: TextStyle(
+                                  decoration: subtask.isSubtaskCompleted
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
+                                  color: labelColor,
+                                ),
+                              ),
+                              secondary: IconButton(
+                                icon: Icon(
+                                  Icons.delete_outlined,
+                                  color: labelColor,
+                                ),
+                                onPressed: () async {
+                                  final result = await showDialog<bool>(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: Text('Delete Subtask'),
+                                        content: Text(
+                                            'Are you sure you want to delete this subtask?'),
+                                        actions: <Widget>[
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: Text('Delete'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  if (result == true) {
+                                    widget.timeInterval.subtasks
+                                        .remove(subtask);
+                                    widget
+                                        .onSubtasksChanged(widget.timeInterval);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -421,6 +528,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
           ),
         ],
       ),
+      //),
     );
     //}
     //;

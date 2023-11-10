@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 launchURL(Uri url) async {
-if (await canLaunchUrl(url)) {
-  await launchUrl(url);
-} else {
-  throw 'Could not launch $url';
-}
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url);
+  } else {
+    throw 'Could not launch $url';
+  }
 }
 
 void showComingSoonDialog(BuildContext context) {
@@ -29,3 +29,12 @@ void showComingSoonDialog(BuildContext context) {
   );
 }
 
+Color contrastColor(Color color) {
+  final brightness = ThemeData.estimateBrightnessForColor(color);
+  switch (brightness) {
+    case Brightness.dark:
+      return Colors.white;
+    case Brightness.light:
+      return Colors.black;
+  }
+}

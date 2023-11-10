@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
+import 'package:my_time_manager/utils/utils.dart';
 
 class MeasurableTaskCard extends StatefulWidget {
   final MeasurableTask measurableTask;
@@ -10,6 +9,8 @@ class MeasurableTaskCard extends StatefulWidget {
   final Function(MeasurableTask) onMeasurableTaskDelete;
   final Function(MeasurableTask) onMeasurableTaskToggleComplete;
   final Function(MeasurableTask) onHasBeenDoneUpdate;
+  final bool Function(MeasurableTask) isMeasurableTaskCardExpanded;
+  final Function(MeasurableTask) onMeasurableTaskCardExpanded;
 
   const MeasurableTaskCard({
     Key? key,
@@ -18,6 +19,8 @@ class MeasurableTaskCard extends StatefulWidget {
     required this.onMeasurableTaskDelete,
     required this.onMeasurableTaskToggleComplete,
     required this.onHasBeenDoneUpdate,
+    required this.isMeasurableTaskCardExpanded,
+    required this.onMeasurableTaskCardExpanded,
   }) : super(key: key);
 
   @override
@@ -25,39 +28,41 @@ class MeasurableTaskCard extends StatefulWidget {
 }
 
 class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
-  static Color contrastColor(Color color) {
-    final brightness = ThemeData.estimateBrightnessForColor(color);
-    switch (brightness) {
-      case Brightness.dark:
-        return Colors.white;
-      case Brightness.light:
-        return Colors.black;
-    }
-  }
+  // static Color contrastColor(Color color) {
+  //   final brightness = ThemeData.estimateBrightnessForColor(color);
+  //   switch (brightness) {
+  //     case Brightness.dark:
+  //       return Colors.white;
+  //     case Brightness.light:
+  //       return Colors.black;
+  //   }
+  // }
 
-  bool _isExpanded = true;
+  // Phần chương trình này sẽ gây ra việc nháy màn hình khi mở rộng TaskListCard hoặc chuyển từ widget khác về overview
 
-  @override
-  void initState() {
-    super.initState();
-    _loadIsExpanded();
-  }
+  // bool _isExpanded = true;
 
-  void _loadIsExpanded() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final isExpanded =
-        prefs.getBool('isExpanded_${widget.measurableTask.id}') ?? true;
-    if (mounted) {
-      setState(() {
-        _isExpanded = isExpanded;
-      });
-    }
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _loadIsExpanded();
+  // }
 
-  void _saveIsExpanded() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isExpanded_${widget.measurableTask.id}', _isExpanded);
-  }
+  // void _loadIsExpanded() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   final isExpanded =
+  //       prefs.getBool('isExpanded_${widget.measurableTask.id}') ?? true;
+  //   if (mounted) {
+  //     setState(() {
+  //       _isExpanded = isExpanded;
+  //     });
+  //   }
+  // }
+
+  // void _saveIsExpanded() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   prefs.setBool('isExpanded_${widget.measurableTask.id}', _isExpanded);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -79,59 +84,60 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ListTile(
-                    title: Text(
-                      widget.measurableTask.title,
-                      style: TextStyle(
-                        color: labelColor,
-                        decoration: widget.measurableTask.isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
-                      ),
-                    ),
-                    subtitle: 
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (widget.measurableTask.description.isNotEmpty ||
-                            widget.measurableTask.description != '')
+                    //dense: true,
+                    //contentPadding: const EdgeInsets.symmetric(vertical: 0.0), 
+                    // title: Text(
+                    //   widget.measurableTask.title,
+                    //   style: TextStyle(
+                    //     color: labelColor,
+                    //     decoration: widget.measurableTask.isCompleted
+                    //         ? TextDecoration.lineThrough
+                    //         : null,
+                    //   ),
+                    // ),
+                    title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.measurableTask.isImportant)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(
+                                    5), // bo tròn viền tại đây
+                              ),
+                              child: const Text(
+                                'important',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 10),
+                              ),
+                            ),
                           Text(
+                            widget.measurableTask.title,
+                            style: TextStyle(
+                              color: labelColor,
+                              decoration: widget.measurableTask.isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                        ]),
+                    subtitle: widget.measurableTask.description.isNotEmpty
+                        ? Text(
                             widget.measurableTask.description,
                             style: TextStyle(color: labelColor),
-                          ),
-                        Visibility(
-                          visible: _isExpanded,
-                          child: Column(
-                            children: [
-                              // if (widget
-                              //         .measurableTask.description.isNotEmpty ||
-                              //     widget.measurableTask.description != '')
-                              //   Text(
-                              //     widget.measurableTask.description,
-                              //     style: TextStyle(color: labelColor),
-                              //   ),
-                              if (widget.measurableTask.targetType ==
-                                  TargetType.about)
-                                Text(
-                                  'Target: about ${widget.measurableTask.targetAtLeast} to ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
-                                  style: TextStyle(color: labelColor),
-                                ),
-                              if (widget.measurableTask.targetType ==
-                                  TargetType.atLeast)
-                                Text(
-                                  'Target: at least ${widget.measurableTask.targetAtLeast} ${widget.measurableTask.unit}',
-                                  style: TextStyle(color: labelColor),
-                                ),
-                              if (widget.measurableTask.targetType ==
-                                  TargetType.atMost)
-                                Text(
-                                  'Target: at most ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
-                                  style: TextStyle(color: labelColor),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                          )
+                        : null,
+                    // Column(
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     if (widget.measurableTask.description.isNotEmpty ||
+                    //         widget.measurableTask.description != '')
+                    //       Text(
+                    //         widget.measurableTask.description,
+                    //         style: TextStyle(color: labelColor),
+                    //       ),
+                    //   ],
+                    // ),
                     trailing: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert, color: labelColor),
                       onSelected: (String result) {
@@ -148,24 +154,48 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                             isScrollControlled: true,
                             showDragHandle: true,
                             builder: (BuildContext context) =>
-                                SetTimeIntervalBottomSheet(
+                                ShowOrSetTimeIntervalsBottomSheet(
+                              title: widget.measurableTask.title,
+                              color: widget.measurableTask.color,
+                              description: widget.measurableTask.description,
+                              location: widget.measurableTask.location,
+                              targetAtLeast:
+                                  widget.measurableTask.targetAtLeast,
+                              targetAtMost: widget.measurableTask.targetAtMost,
+                              targetType: widget.measurableTask.targetType,
+                              unit: widget.measurableTask.unit,
+                              subtasks: [],
                               measurableTaskId: widget.measurableTask.id,
+                              isSetTimeIntervalPage: true,
                             ),
                           );
                         } else if (result == 'option6') {
-                          setState(() => _isExpanded = !_isExpanded);
-                          _saveIsExpanded();
+                          widget.onMeasurableTaskCardExpanded(
+                              widget.measurableTask);
+                          // setState(() => _isExpanded = !_isExpanded);
+                          // _saveIsExpanded();
                         } else if (result == 'planned') {
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
                             showDragHandle: true,
                             builder: (BuildContext context) =>
-                                ShowTimeIntervalsBottomSheet(
+                                ShowOrSetTimeIntervalsBottomSheet(
+                              title: widget.measurableTask.title,
+                              color: widget.measurableTask.color,
+                              description: widget.measurableTask.description,
+                              location: widget.measurableTask.location,
+                              targetAtLeast:
+                                  widget.measurableTask.targetAtLeast,
+                              targetAtMost: widget.measurableTask.targetAtMost,
+                              targetType: widget.measurableTask.targetType,
+                              unit: widget.measurableTask.unit,
+                              subtasks: [],
                               measurableTaskId: widget.measurableTask.id,
+                              isSetTimeIntervalPage: false,
                             ),
                           );
-                        }
+                        } else if (result == 'focus_timer') { showComingSoonDialog(context);}
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
@@ -173,11 +203,15 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                           value: 'option6',
                           child: Row(
                             children: [
-                              Icon(_isExpanded
-                                  ? Icons.chevron_right
-                                  : Icons.expand_more),
+                              Icon(//_isExpanded
+                                  widget.isMeasurableTaskCardExpanded(
+                                          widget.measurableTask)
+                                      ? Icons.chevron_right
+                                      : Icons.expand_more),
                               const SizedBox(width: 8),
-                              _isExpanded
+                              //_isExpanded
+                              widget.isMeasurableTaskCardExpanded(
+                                      widget.measurableTask)
                                   ? const Text('Hide target infor')
                                   : const Text('Show target infor'),
                             ],
@@ -208,17 +242,7 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                           ),
                         ),
                         const PopupMenuItem<String>(
-                          value: 'option4',
-                          child: Row(
-                            children: [
-                              Icon(Icons.hourglass_empty),
-                              SizedBox(width: 8),
-                              Text('Schedule'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'option5',
+                          value: 'focus_timer',
                           child: Row(
                             children: [
                               Icon(Icons.timelapse_outlined),
@@ -250,9 +274,89 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                       ],
                     ),
                   ),
-                  Visibility(
-                    visible: _isExpanded,
-                    child: ListTile(
+                  if (widget
+                      .isMeasurableTaskCardExpanded(widget.measurableTask))
+                    ListTile(
+                      dense: true,
+                      //contentPadding: const EdgeInsets.symmetric(horizontal: 0.0), 
+                      //contentPadding: EdgeInsets.symmetric(vertical: 0.0), 
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.measurableTask.targetType ==
+                              TargetType.about)
+                            Text(
+                              'Target: about ${widget.measurableTask.targetAtLeast} to ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
+                              style: TextStyle(color: labelColor),
+                            ),
+                          if (widget.measurableTask.targetType ==
+                              TargetType.atLeast)
+                            Text(
+                              'Target: at least ${widget.measurableTask.targetAtLeast} ${widget.measurableTask.unit}',
+                              style: TextStyle(color: labelColor),
+                            ),
+                          if (widget.measurableTask.targetType ==
+                              TargetType.atMost)
+                            Text(
+                              'Target: at most ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
+                              style: TextStyle(color: labelColor),
+                            ),
+                        ],
+                      ),
+                    ),
+                  // Visibility(
+                  //   visible: widget.isMeasurableTaskCardExpanded(
+                  //       widget.measurableTask), //_isExpanded,
+                  //   child: Column(
+                  //     children: [
+                  //       // if (widget
+                  //       //         .measurableTask.description.isNotEmpty ||
+                  //       //     widget.measurableTask.description != '')
+                  //       //   Text(
+                  //       //     widget.measurableTask.description,
+                  //       //     style: TextStyle(color: labelColor),
+                  //       //   ),
+                  //       if (widget.measurableTask.targetType ==
+                  //           TargetType.about)
+                  //         Text(
+                  //           'Target: about ${widget.measurableTask.targetAtLeast} to ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
+                  //           style: TextStyle(color: labelColor),
+                  //         ),
+                  //       if (widget.measurableTask.targetType ==
+                  //           TargetType.atLeast)
+                  //         Text(
+                  //           'Target: at least ${widget.measurableTask.targetAtLeast} ${widget.measurableTask.unit}',
+                  //           style: TextStyle(color: labelColor),
+                  //         ),
+                  //       if (widget.measurableTask.targetType ==
+                  //           TargetType.atMost)
+                  //         Text(
+                  //           'Target: at most ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
+                  //           style: TextStyle(color: labelColor),
+                  //         ),
+                  //     ],
+                  //   ),
+                  // ),
+
+                  // Visibility(
+                  //   visible: widget.isMeasurableTaskCardExpanded(
+                  //       widget.measurableTask), //_isExpanded,
+                  //   child: ListTile(
+                  //     title: ActionChip(
+                  //       label: Text(
+                  //         'Has been done: ${widget.measurableTask.howMuchHasBeenDone} ${widget.measurableTask.unit}',
+                  //       ),
+                  //       onPressed: () =>
+                  //           widget.onHasBeenDoneUpdate(widget.measurableTask),
+                  //     ),
+                  //   ),
+                  // )
+                  if (widget
+                      .isMeasurableTaskCardExpanded(widget.measurableTask))
+                    ListTile(
+                      dense: true,
+                      //contentPadding: const EdgeInsets.symmetric(horizontal: 0.0), 
+                      //contentPadding: EdgeInsets.symmetric(vertical: 0.0), 
                       title: ActionChip(
                         label: Text(
                           'Has been done: ${widget.measurableTask.howMuchHasBeenDone} ${widget.measurableTask.unit}',
@@ -261,7 +365,6 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                             widget.onHasBeenDoneUpdate(widget.measurableTask),
                       ),
                     ),
-                  )
                 ],
               ),
             ),

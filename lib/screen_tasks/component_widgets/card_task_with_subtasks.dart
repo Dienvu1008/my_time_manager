@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
+import 'package:my_time_manager/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskWithSubtasksCard extends StatefulWidget {
@@ -10,6 +11,8 @@ class TaskWithSubtasksCard extends StatefulWidget {
   final Function(TaskWithSubtasks) onTaskWithSubtasksDelete;
   final Function(TaskWithSubtasks) onTaskWithSubtasksToggleComplete;
   final Function(TaskWithSubtasks) onSubtasksChanged;
+  final bool Function(TaskWithSubtasks) isTaskWithSubtasksCardExpanded;
+  final Function(TaskWithSubtasks) onTaskWithSubtasksCardExpanded;
   const TaskWithSubtasksCard({
     Key? key,
     required this.taskWithSubtasks,
@@ -17,6 +20,8 @@ class TaskWithSubtasksCard extends StatefulWidget {
     required this.onTaskWithSubtasksDelete,
     required this.onTaskWithSubtasksToggleComplete,
     required this.onSubtasksChanged,
+    required this.isTaskWithSubtasksCardExpanded,
+    required this.onTaskWithSubtasksCardExpanded,
   }) : super(key: key);
 
   @override
@@ -24,40 +29,39 @@ class TaskWithSubtasksCard extends StatefulWidget {
 }
 
 class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
-  static Color contrastColor(Color color) {
-    final brightness = ThemeData.estimateBrightnessForColor(color);
-    switch (brightness) {
-      case Brightness.dark:
-        return Colors.white;
-      case Brightness.light:
-        return Colors.black;
-    }
-  }
+  // static Color contrastColor(Color color) {
+  //   final brightness = ThemeData.estimateBrightnessForColor(color);
+  //   switch (brightness) {
+  //     case Brightness.dark:
+  //       return Colors.white;
+  //     case Brightness.light:
+  //       return Colors.black;
+  //   }
+  // }
 
-  bool _isExpanded = true;
-  //bool _isLoading = true;
+  //bool _isExpanded = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadIsExpanded();
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _loadIsExpanded();
+  // }
 
-  void _loadIsExpanded() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final isExpanded =
-        prefs.getBool('isExpanded_${widget.taskWithSubtasks.id}') ?? true;
-    if (mounted) {
-      setState(() {
-        _isExpanded = isExpanded;
-      });
-    }
-  }
+  // void _loadIsExpanded() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   final isExpanded =
+  //       prefs.getBool('isExpanded_${widget.taskWithSubtasks.id}') ?? true;
+  //   if (mounted) {
+  //     setState(() {
+  //       _isExpanded = isExpanded;
+  //     });
+  //   }
+  // }
 
-  void _saveIsExpanded() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isExpanded_${widget.taskWithSubtasks.id}', _isExpanded);
-  }
+  // void _saveIsExpanded() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   prefs.setBool('isExpanded_${widget.taskWithSubtasks.id}', _isExpanded);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -79,15 +83,41 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ListTile(
-                    title: Text(
-                      widget.taskWithSubtasks.title,
-                      style: TextStyle(
-                        color: labelColor,
-                        decoration: widget.taskWithSubtasks.isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
-                      ),
-                    ),
+                    // title: Text(
+                    //   widget.taskWithSubtasks.title,
+                    //   style: TextStyle(
+                    //     color: labelColor,
+                    //     decoration: widget.taskWithSubtasks.isCompleted
+                    //         ? TextDecoration.lineThrough
+                    //         : null,
+                    //   ),
+                    // ),
+                    title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.taskWithSubtasks.isImportant)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(
+                                    5), // bo tròn viền tại đây
+                              ),
+                              child: const Text(
+                                'important',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 10),
+                              ),
+                            ),
+                          Text(
+                            widget.taskWithSubtasks.title,
+                            style: TextStyle(
+                              color: labelColor,
+                              decoration: widget.taskWithSubtasks.isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                        ]),
                     subtitle: widget.taskWithSubtasks.description.isNotEmpty
                         ? Text(
                             widget.taskWithSubtasks.description,
@@ -118,24 +148,45 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                             isScrollControlled: true,
                             showDragHandle: true,
                             builder: (BuildContext context) =>
-                                SetTimeIntervalBottomSheet(
+                                ShowOrSetTimeIntervalsBottomSheet(
+                              title: widget.taskWithSubtasks.title,
+                              color: widget.taskWithSubtasks.color,
+                              description: widget.taskWithSubtasks.description,
+                              location: widget.taskWithSubtasks.location,
+                              targetType: TargetType.about,
+                              targetAtLeast: double.negativeInfinity,
+                              targetAtMost: double.infinity,
+                              unit: '',
+                              subtasks: widget.taskWithSubtasks.subtasks,
                               taskWithSubtasksId: widget.taskWithSubtasks.id,
+                              isSetTimeIntervalPage: true,
                             ),
                           );
                         } else if (result == 'option5') {
-                          setState(() => _isExpanded = !_isExpanded);
-                          _saveIsExpanded();
+                          widget.onTaskWithSubtasksCardExpanded(widget.taskWithSubtasks);
+                          // setState(() => _isExpanded = !_isExpanded);
+                          // _saveIsExpanded();
                         } else if (result == 'planned') {
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
                             showDragHandle: true,
                             builder: (BuildContext context) =>
-                                ShowTimeIntervalsBottomSheet(
-                                    taskWithSubtasksId:
-                                        widget.taskWithSubtasks.id),
+                                ShowOrSetTimeIntervalsBottomSheet(
+                              title: widget.taskWithSubtasks.title,
+                              color: widget.taskWithSubtasks.color,
+                              description: widget.taskWithSubtasks.description,
+                              location: widget.taskWithSubtasks.location,
+                              targetType: TargetType.about,
+                              targetAtLeast: double.negativeInfinity,
+                              targetAtMost: double.infinity,
+                              unit: '',
+                              subtasks: widget.taskWithSubtasks.subtasks,
+                              taskWithSubtasksId: widget.taskWithSubtasks.id,
+                              isSetTimeIntervalPage: false,
+                            ),
                           );
-                        }
+                        } else if (result == 'focus_timer') { showComingSoonDialog(context);}
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
@@ -143,11 +194,13 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                           value: 'option5',
                           child: Row(
                             children: [
-                              Icon(_isExpanded
+                              Icon(//_isExpanded
+                              widget.isTaskWithSubtasksCardExpanded(widget.taskWithSubtasks) == true
                                   ? Icons.chevron_right
                                   : Icons.expand_more),
                               const SizedBox(width: 8),
-                              _isExpanded
+                              //_isExpanded
+                              widget.isTaskWithSubtasksCardExpanded(widget.taskWithSubtasks) == true
                                   ? const Text('Hide sub-tasks')
                                   : const Text('Show sub-tasks'),
                             ],
@@ -177,18 +230,18 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                             ],
                           ),
                         ),
+                        // const PopupMenuItem<String>(
+                        //   value: 'option4',
+                        //   child: Row(
+                        //     children: [
+                        //       Icon(Icons.hourglass_empty),
+                        //       SizedBox(width: 8),
+                        //       Text('Schedule'),
+                        //     ],
+                        //   ),
+                        // ),
                         const PopupMenuItem<String>(
-                          value: 'option4',
-                          child: Row(
-                            children: [
-                              Icon(Icons.hourglass_empty),
-                              SizedBox(width: 8),
-                              Text('Schedule'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'option6',
+                          value: 'focus_timer',
                           child: Row(
                             children: [
                               Icon(Icons.timelapse_outlined),
@@ -220,9 +273,11 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                       ],
                     ),
                   ),
-                  if (_isExpanded)
-                    ...widget.taskWithSubtasks.subtasks.map(
+                  //if (_isExpanded)
+                  if (widget.isTaskWithSubtasksCardExpanded(widget.taskWithSubtasks) == true)
+                    ...widget.taskWithSubtasks.subtasks.reversed.map(
                       (subtask) => CheckboxListTile(
+                        dense: true,
                         side: BorderSide(
                           color: labelColor,
                         ),

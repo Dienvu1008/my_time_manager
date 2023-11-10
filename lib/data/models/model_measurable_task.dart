@@ -109,4 +109,40 @@ class MeasurableTask {
             ? DateTime.parse(map['updateTimeStamp'])
             : null);
   }
+
+  MeasurableTask copyWith({
+    String? id,
+    String? taskListId,
+    String? title,
+    String? description,
+    String? location,
+    Color? color,
+    double? targetAtLeast,
+    double? targetAtMost,
+    TargetType? targetType,
+    String? unit,
+    bool? isCompleted,
+    bool? isImportant,
+    double? howMuchHasBeenDone,
+    List<String>? dataFiles,
+    DateTime? updateTimeStamp,
+  }) {
+    return MeasurableTask(
+      id: id ?? this.id,
+      taskListId: taskListId ?? this.taskListId,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      location: location ?? this.location,
+      color: color ?? this.color,
+      targetAtLeast: targetAtLeast ?? this.targetAtLeast,
+      targetAtMost: targetAtMost ?? this.targetAtMost,
+      targetType: targetType ?? this.targetType,
+      unit: unit ?? this.unit,
+      isCompleted: isCompleted ?? this.isCompleted,
+      isImportant: isImportant ?? this.isImportant,
+      howMuchHasBeenDone: howMuchHasBeenDone ?? this.howMuchHasBeenDone,
+      dataFiles: dataFiles ?? this.dataFiles,
+      updateTimeStamp: updateTimeStamp ?? this.updateTimeStamp,
+    );
+  }
 }

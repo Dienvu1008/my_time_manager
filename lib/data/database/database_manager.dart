@@ -1,3 +1,4 @@
+import 'package:my_time_manager/data/database/sample_data.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
@@ -60,6 +61,9 @@ class DatabaseManager {
     await onCreateTableTasksWithSubtasks(db);
     await onCreateTableEvents(db);
     await onCreateTableTimeIntervals(db);
+    
+    addSampleData();
+
 
     // Run the CREATE {tasks} TABLE statement on the database.
     // await db.execute(
@@ -68,14 +72,14 @@ class DatabaseManager {
     //     id TEXT PRIMARY KEY,
     //     taskListId TEXT,
     //     isCompleted INTEGER NOT NULL,
-    //     isImportant INTEGER NOT NULL,  
-    //     title TEXT, 
+    //     isImportant INTEGER NOT NULL,
+    //     title TEXT,
     //     description TEXT,
-    //     location TEXT, 
+    //     location TEXT,
     //     color INTEGER,
     //     tags TEXT,
     //     dataFiles TEXT,
-    //     updateTimeStamp TEXT, 
+    //     updateTimeStamp TEXT,
     //     FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
     //   ''',
     // );
@@ -86,10 +90,10 @@ class DatabaseManager {
     //     id TEXT PRIMARY KEY,
     //     taskListId TEXT,
     //     isCompleted INTEGER NOT NULL,
-    //     isImportant INTEGER NOT NULL,  
-    //     title TEXT, 
+    //     isImportant INTEGER NOT NULL,
+    //     title TEXT,
     //     description TEXT,
-    //     location TEXT, 
+    //     location TEXT,
     //     color INTEGER,
     //     targetAtLeast REAL,
     //     targetAtMost REAL,
@@ -98,7 +102,7 @@ class DatabaseManager {
     //     unit TEXT,
     //     tags TEXT,
     //     dataFiles TEXT,
-    //     updateTimeStamp TEXT, 
+    //     updateTimeStamp TEXT,
     //     FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
     //   ''',
     // );
@@ -126,15 +130,15 @@ class DatabaseManager {
     //   CREATE TABLE events (
     //     id TEXT PRIMARY KEY,
     //     taskListId TEXT,
-    //     title TEXT, 
+    //     title TEXT,
     //     description TEXT,
-    //     location TEXT, 
+    //     location TEXT,
     //     color INTEGER,
     //     startTimeStamp INTEGER,
     //     endTimeStamp INTEGER,
     //     tags TEXT,
     //     dataFiles TEXT,
-    //     updateTimeStamp TEXT, 
+    //     updateTimeStamp TEXT,
     //     FOREIGN KEY (taskListId) REFERENCES tasklists(id) ON DELETE CASCADE)
     //   ''',
     // );
@@ -149,7 +153,7 @@ class DatabaseManager {
     //   taskWithSubtasksId TEXT,
     //   location TEXT,
     //   color INTEGER,
-    //   title TEXT, 
+    //   title TEXT,
     //   notes TEXT,
     //   startDate TEXT,
     //   endDate TEXT,
@@ -175,31 +179,31 @@ class DatabaseManager {
     // );
 
     await db.execute('''
-  CREATE TRIGGER update_timeintervals_of_task_title_color
-  AFTER UPDATE OF title, color ON tasks
+  CREATE TRIGGER update_timeintervals_of_task_title_color_isImportant
+  AFTER UPDATE OF title, color, isImportant ON tasks
   BEGIN
     UPDATE timeintervals
-    SET title = NEW.title, color = NEW.color
+    SET title = NEW.title, color = NEW.color, isImportant = NEW.isImportant
     WHERE taskId = OLD.id;
   END;
 ''');
 
     await db.execute('''
-  CREATE TRIGGER update_timeintervals_of_measurableTask_title_color
-  AFTER UPDATE OF title, color ON measurabletasks
+  CREATE TRIGGER update_timeintervals_of_measurableTask_title_color_isImportant
+  AFTER UPDATE OF title, color, isImportant ON measurabletasks
   BEGIN
     UPDATE timeintervals
-    SET title = NEW.title, color = NEW.color
+    SET title = NEW.title, color = NEW.color, isImportant = NEW.isImportant
     WHERE measurableTaskId = OLD.id;
   END;
 ''');
 
     await db.execute('''
-  CREATE TRIGGER update_timeintervals_of_taskWithSubtasks_title_color
-  AFTER UPDATE OF title, color ON taskswithsubtasks
+  CREATE TRIGGER update_timeintervals_of_taskWithSubtasks_title_color_isImportant
+  AFTER UPDATE OF title, color, isImportant ON taskswithsubtasks
   BEGIN
     UPDATE timeintervals
-    SET title = NEW.title, color = NEW.color
+    SET title = NEW.title, color = NEW.color, isImportant = NEW.isImportant
     WHERE taskWithSubtasksId = OLD.id;
   END;
 ''');
@@ -239,29 +243,104 @@ class DatabaseManager {
 
     await db.insert(
       'tasklists',
-      {'id': 'a', 'title': 'work', 'description': ''},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-    await db.insert(
-      'tasklists',
-      {'id': 'b', 'title': 'habit tracking', 'description': ''},
+      {
+        'id': 'a',
+        'title': 'Enjoy your life',
+        'description': 'Do something that make you happy'
+      },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
-    for (int i = 1; i <= 100; i++) {
-      await db.insert(
-        'tasks',
-        {
-          'id': 'a$i',
-          'title': 'Task $i',
-          'description': 'Description for task $i',
-          'color': 0xFF0000FF,
-          'isCompleted': 0,
-          'taskListId': 'a',
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
+    await db.insert(
+      'tasks',
+      {
+        'id': 'a1',
+        'title': 'Eat what you find tasty',
+        'description': '',
+        'color': 0xFF0000FF,
+        'isCompleted': 0,
+        'isImportant': 1,
+        'taskListId': 'a',
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    await db.insert(
+      'tasks',
+      {
+        'id': 'a2',
+        'title':
+            'Sit in a beautiful and quiet cafe, observing everything around you',
+        'description': '',
+        'color': 0xFF0000FF,
+        'isCompleted': 0,
+        'isImportant': 0,
+        'taskListId': 'a',
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    await db.insert(
+      'tasks',
+      {
+        'id': 'a3',
+        'title': 'Have a good sleep at night',
+        'description': '',
+        'color': 0xFF0000FF,
+        'isCompleted': 0,
+        'isImportant': 1,
+        'taskListId': 'a',
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    await db.insert(
+      'tasks',
+      {
+        'id': 'a4',
+        'title': 'Take a deep breath, make your mind be at peace',
+        'description': '',
+        'color': 0xFF0000FF,
+        'isCompleted': 0,
+        'isImportant': 1,
+        'taskListId': 'a',
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    await db.insert(
+      'tasks',
+      {
+        'id': 'a5',
+        'title': 'Talk frequently with the person you feel comfortable with',
+        'description': '',
+        'color': 0xFF0000FF,
+        'isCompleted': 0,
+        'isImportant': 1,
+        'taskListId': 'a',
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    await db.insert(
+      'tasklists',
+      {
+        'id': 'b',
+        'title': 'Challenge',
+        'description': 'Workout and maintain your good habits'
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    await db.insert(
+      'tasklists',
+      {
+        'id': 'c',
+        'title': 'Study',
+        'description': 'Flutter Dart, Machine Learning, Electrical Engineering'
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<void> deleteDatabase() async {
@@ -284,6 +363,7 @@ class DatabaseManager {
       taskList.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    printTaskLists();
   }
 
   Future<void> insertTask(Task task) async {
@@ -303,6 +383,7 @@ class DatabaseManager {
       measurableTask.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    printMeasurableTasks();
   }
 
   Future<void> insertTaskWithSubtasks(TaskWithSubtasks taskWithSubtasks) async {
@@ -312,6 +393,7 @@ class DatabaseManager {
       taskWithSubtasks.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    printTasksWithSubtasks();
   }
 
   Future<void> insertTimeInterval(TimeInterval timeInterval) async {
@@ -418,7 +500,7 @@ class DatabaseManager {
     return Event.fromMap(maps[0]);
   }
 
-    Future<TimeInterval> timeInterval(String id) async {
+  Future<TimeInterval> timeInterval(String id) async {
     final db = await _databaseManager.database;
     final List<Map<String, dynamic>> maps =
         await db.query('timeintervals', where: 'id = ?', whereArgs: [id]);
@@ -635,6 +717,30 @@ class DatabaseManager {
     }
   }
 
+  Future<void> printMeasurableTasks() async {
+    final db = await _databaseManager.database;
+    List<Map> result = await db.query('measurabletasks');
+    for (var row in result) {
+      print(row);
+    }
+  }
+
+  Future<void> printTasksWithSubtasks() async {
+    final db = await _databaseManager.database;
+    List<Map> result = await db.query('taskswithsubtasks');
+    for (var row in result) {
+      print(row);
+    }
+  }
+
+  Future<void> printTaskLists() async {
+    final db = await _databaseManager.database;
+    List<Map> result = await db.query('tasklists');
+    for (var row in result) {
+      print(row);
+    }
+  }
+
   Future<void> onCreateTableTaskLists(Database db) async {
     // Run the CREATE {task lists} TABLE statement on the database.
     await db.execute(
@@ -747,6 +853,7 @@ class DatabaseManager {
     CREATE TABLE timeintervals (
       id TEXT PRIMARY KEY,
       isCompleted INTEGER NOT NULL,
+      isImportant INTEGER NOT NULL,
       taskId TEXT,
       measurableTaskId TEXT,
       taskWithSubtasksId TEXT,

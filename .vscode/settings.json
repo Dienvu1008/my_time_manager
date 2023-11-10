@@ -2,5 +2,6 @@
     "cSpell.enableFiletypes": [
         "!dart"
     ],
-    "cSpell.enabled": false
+    "cSpell.enabled": false,
+    "cmake.sourceDirectory": "F:/Workspace/Flutter Projects/my_time_manager/linux"
 }

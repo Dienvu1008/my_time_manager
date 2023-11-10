@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
+import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_completion.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description.dart';
@@ -120,7 +121,7 @@ class _AddOrEditTaskWithSubtasksPageState
               children: [
                 TaskListListTile(
                   title: widget.taskList.title,
-                  style: textTheme.titleMedium!,
+                  style: textTheme.titleLarge!,
                 ),
                 TitleListTile(
                   titleController: _titleController,
@@ -134,28 +135,9 @@ class _AddOrEditTaskWithSubtasksPageState
                 ),
                 DescriptionListTile(
                     descriptionController: _descriptionController),
-                CompletionListTile(
-                  isCompleted: _isCompleted,
-                  onCompletionChanged: (bool? newValue) {
-                    setState(() {
-                      _isCompleted = newValue!;
-                    });
-                  },
-                ),
-                ImportanceListTile(
-                  isImportant: _isImportant,
-                  onImportanceChanged: (bool? newValue) {
-                    setState(() {
-                      _isImportant = newValue!;
-                    });
-                  },
-                ),
-                LocationListTile(
-                  locationController: _locationController,
-                ),
-                ScheduleListTile(taskWithSubtasksId: _id),
                 const SizedBox(height: 12.0),
-                ..._subtasks.map((subtask) => CheckboxListTile(
+                ..._subtasks.reversed.map((subtask) => CheckboxListTile(
+                  dense:true,
                       controlAffinity: ListTileControlAffinity.leading,
                       value: subtask.isSubtaskCompleted,
                       onChanged: (value) => setState(
@@ -213,7 +195,7 @@ class _AddOrEditTaskWithSubtasksPageState
                         },
                       ),
                     )),
-                const SizedBox(height: 24.0),
+                const SizedBox(height: 12.0),
                 Row(children: [
                   ElevatedButton(
                     onPressed: () => _showAddSubtaskDialog(context),
@@ -227,6 +209,39 @@ class _AddOrEditTaskWithSubtasksPageState
                     ),
                   )
                 ]),
+                const SizedBox(height: 12),
+                const Divider(height: 4),
+                if (widget.taskWithSubtasks != null)
+                  ScheduleListTile(
+                      title: widget.taskWithSubtasks!.title,
+                      color: widget.taskWithSubtasks!.color,
+                      description: widget.taskWithSubtasks!.description,
+                      location: widget.taskWithSubtasks!.location,
+                      targetType: TargetType.about,
+                      targetAtLeast: double.negativeInfinity,
+                      targetAtMost: double.infinity,
+                      unit:'',
+                      subtasks: widget.taskWithSubtasks!.subtasks ,
+                      taskWithSubtasksId: _id),
+                LocationListTile(
+                  locationController: _locationController,
+                ),
+                CompletionListTile(
+                  isCompleted: _isCompleted,
+                  onCompletionChanged: (bool? newValue) {
+                    setState(() {
+                      _isCompleted = newValue!;
+                    });
+                  },
+                ),
+                ImportanceListTile(
+                  isImportant: _isImportant,
+                  onImportanceChanged: (bool? newValue) {
+                    setState(() {
+                      _isImportant = newValue!;
+                    });
+                  },
+                ),
               ],
             ),
           ),

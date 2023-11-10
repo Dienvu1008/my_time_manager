@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
+import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_set_time_intervals.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_time_intervals.dart';
+import 'package:my_time_manager/utils/utils.dart';
 
 class TaskCard extends StatefulWidget {
   final Task task;
@@ -23,15 +25,15 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard> {
-  static Color contrastColor(Color color) {
-    final brightness = ThemeData.estimateBrightnessForColor(color);
-    switch (brightness) {
-      case Brightness.dark:
-        return Colors.white;
-      case Brightness.light:
-        return Colors.black;
-    }
-  }
+  // static Color contrastColor(Color color) {
+  //   final brightness = ThemeData.estimateBrightnessForColor(color);
+  //   switch (brightness) {
+  //     case Brightness.dark:
+  //       return Colors.white;
+  //     case Brightness.light:
+  //       return Colors.black;
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -59,17 +61,51 @@ class _TaskCardState extends State<TaskCard> {
               child: GestureDetector(
                 onTap: () => widget.onTaskEdit(widget.task),
                 child: ListTile(
-                    title: Text(
-                      widget.task.title,
-                      style: TextStyle(
-                        color: labelColor,
-                        decoration: widget.task.isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
-                      ),
-                    ),
+                    title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.task.isImportant)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(
+                                    5), // bo tròn viền tại đây
+                              ),
+                              child: const Text(
+                                'important',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 10),
+                              ),
+                            ),
+                          Text(
+                            widget.task.title,
+                            style: TextStyle(
+                              color: labelColor,
+                              decoration: widget.task.isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                        ]),
                     subtitle: widget.task.description.isNotEmpty
-                        ? Text(
+                        ?
+                        // Row(
+                        //     children: <Widget>[
+                        //       Icon(
+                        //         Icons
+                        //             .description,
+                        //         color: labelColor,
+                        //       ),
+                        //       const SizedBox(
+                        //           width: 10),
+                        //       Text(
+                        //         widget.task.description,
+                        //         style: TextStyle(color: labelColor),
+                        //       ),
+                        //     ],
+                        //   )
+
+                        Text(
                             widget.task.description,
                             style: TextStyle(color: labelColor),
                           )
@@ -90,25 +126,38 @@ class _TaskCardState extends State<TaskCard> {
                           //       builder: (context) =>
                           //           TimeIntervalPage(task: widget.task)),
                           // );
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            showDragHandle: true,
-                            builder: (BuildContext context) =>
-                                SetTimeIntervalBottomSheet(
-                              taskId: widget.task.id,
-                            ),
-                          );
+
+                          // showModalBottomSheet(
+                          //   context: context,
+                          //   isScrollControlled: true,
+                          //   showDragHandle: true,
+                          //   builder: (BuildContext context) =>
+                          //       SetTimeIntervalBottomSheet(
+                          //     taskId: widget.task.id,
+                          //   ),
+                          // );
                         } else if (result == 'planned') {
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
                             showDragHandle: true,
                             builder: (BuildContext context) =>
-                                ShowTimeIntervalsBottomSheet(
+                                ShowOrSetTimeIntervalsBottomSheet(
+                              title: widget.task.title,
+                              color: widget.task.color,
+                              description: widget.task.description,
+                              location: widget.task.location,
+                              targetType: TargetType.about,
+                              targetAtLeast: double.negativeInfinity,
+                              targetAtMost: double.infinity,
+                              unit: '',
+                              subtasks: [],
                               taskId: widget.task.id,
+                              isSetTimeIntervalPage: false,
                             ),
                           );
+                        } else if (result == 'focus_timer') {
+                          showComingSoonDialog(context);
                         }
                       },
                       itemBuilder: (BuildContext context) =>
@@ -137,16 +186,16 @@ class _TaskCardState extends State<TaskCard> {
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
-                          value: 'schedule',
-                          child: Row(
-                            children: [
-                              Icon(Icons.hourglass_empty_outlined),
-                              SizedBox(width: 8),
-                              Text('Schedule'),
-                            ],
-                          ),
-                        ),
+                        // const PopupMenuItem<String>(
+                        //   value: 'schedule',
+                        //   child: Row(
+                        //     children: [
+                        //       Icon(Icons.hourglass_empty_outlined),
+                        //       SizedBox(width: 8),
+                        //       Text('Schedule'),
+                        //     ],
+                        //   ),
+                        // ),
                         const PopupMenuItem<String>(
                           value: 'focus_timer',
                           child: Row(
