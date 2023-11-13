@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
 import 'package:my_time_manager/utils/utils.dart';
@@ -66,6 +67,7 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final measurableTaskColor = widget.measurableTask.color;
     final myColorScheme = Theme.of(context).brightness == Brightness.dark
         ? ColorScheme.dark(primary: measurableTaskColor)
@@ -85,7 +87,7 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                 children: [
                   ListTile(
                     //dense: true,
-                    //contentPadding: const EdgeInsets.symmetric(vertical: 0.0), 
+                    //contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
                     // title: Text(
                     //   widget.measurableTask.title,
                     //   style: TextStyle(
@@ -105,9 +107,9 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                                 borderRadius: BorderRadius.circular(
                                     5), // bo tròn viền tại đây
                               ),
-                              child: const Text(
-                                'important',
-                                style: TextStyle(
+                              child: Text(
+                                localizations!.important,
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 10),
                               ),
                             ),
@@ -121,23 +123,12 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                             ),
                           ),
                         ]),
-                    subtitle: widget.measurableTask.description.isNotEmpty
-                        ? Text(
-                            widget.measurableTask.description,
-                            style: TextStyle(color: labelColor),
-                          )
-                        : null,
-                    // Column(
-                    //   crossAxisAlignment: CrossAxisAlignment.start,
-                    //   children: [
-                    //     if (widget.measurableTask.description.isNotEmpty ||
-                    //         widget.measurableTask.description != '')
-                    //       Text(
+                    // subtitle: widget.measurableTask.description.isNotEmpty
+                    //     ? Text(
                     //         widget.measurableTask.description,
                     //         style: TextStyle(color: labelColor),
-                    //       ),
-                    //   ],
-                    // ),
+                    //       )
+                    //     : null,
                     trailing: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert, color: labelColor),
                       onSelected: (String result) {
@@ -195,7 +186,9 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                               isSetTimeIntervalPage: false,
                             ),
                           );
-                        } else if (result == 'focus_timer') { showComingSoonDialog(context);}
+                        } else if (result == 'focus_timer') {
+                          showComingSoonDialog(context);
+                        }
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
@@ -212,8 +205,8 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                               //_isExpanded
                               widget.isMeasurableTaskCardExpanded(
                                       widget.measurableTask)
-                                  ? const Text('Hide target infor')
-                                  : const Text('Show target infor'),
+                                  ? Expanded(child: Text(localizations!.hideTargetInfor))
+                                  : Expanded(child: Text(localizations!.showTargetInfor),)
                             ],
                           ),
                         ),
@@ -226,48 +219,48 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                                   : Icons.check_box_outline_blank),
                               const SizedBox(width: 8),
                               widget.measurableTask.isCompleted
-                                  ? const Text('Mark as incompleted')
-                                  : const Text('Mark as completed'),
+                                  ? Expanded(child: Text(localizations.markAsIncompleted))
+                                  : Expanded(child: Text(localizations.markAsCompleted),)
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'planned',
                           child: Row(
                             children: [
-                              Icon(Icons.event_note_outlined),
-                              SizedBox(width: 8),
-                              Text('Planned'),
+                              const Icon(Icons.event_note_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.planned),)
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'focus_timer',
                           child: Row(
                             children: [
-                              Icon(Icons.timelapse_outlined),
-                              SizedBox(width: 8),
-                              Text('Focus right now?'),
+                              const Icon(Icons.timelapse_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.focusRightNow),)
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'option1',
                           child: Row(
                             children: [
-                              Icon(Icons.edit_outlined),
-                              SizedBox(width: 8),
-                              Text('Edit Task'),
+                              const Icon(Icons.edit_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.editTask),)
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'option2',
                           child: Row(
                             children: [
-                              Icon(Icons.delete_outlined),
-                              SizedBox(width: 8),
-                              Text('Delete Task'),
+                              const Icon(Icons.delete_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.deleteTask),)
                             ],
                           ),
                         ),
@@ -278,27 +271,27 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                       .isMeasurableTaskCardExpanded(widget.measurableTask))
                     ListTile(
                       dense: true,
-                      //contentPadding: const EdgeInsets.symmetric(horizontal: 0.0), 
-                      //contentPadding: EdgeInsets.symmetric(vertical: 0.0), 
+                      //contentPadding: const EdgeInsets.symmetric(horizontal: 0.0),
+                      //contentPadding: EdgeInsets.symmetric(vertical: 0.0),
                       title: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (widget.measurableTask.targetType ==
                               TargetType.about)
                             Text(
-                              'Target: about ${widget.measurableTask.targetAtLeast} to ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
+                              '${localizations!.targetAbout} ${widget.measurableTask.targetAtLeast} ${localizations.to} ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
                               style: TextStyle(color: labelColor),
                             ),
                           if (widget.measurableTask.targetType ==
                               TargetType.atLeast)
                             Text(
-                              'Target: at least ${widget.measurableTask.targetAtLeast} ${widget.measurableTask.unit}',
+                              '${localizations!.targetAtLeast} ${widget.measurableTask.targetAtLeast} ${widget.measurableTask.unit}',
                               style: TextStyle(color: labelColor),
                             ),
                           if (widget.measurableTask.targetType ==
                               TargetType.atMost)
                             Text(
-                              'Target: at most ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
+                              '${localizations!.targetAtMost} ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
                               style: TextStyle(color: labelColor),
                             ),
                         ],
@@ -355,12 +348,16 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                       .isMeasurableTaskCardExpanded(widget.measurableTask))
                     ListTile(
                       dense: true,
-                      //contentPadding: const EdgeInsets.symmetric(horizontal: 0.0), 
-                      //contentPadding: EdgeInsets.symmetric(vertical: 0.0), 
+                      //contentPadding: const EdgeInsets.symmetric(horizontal: 0.0),
+                      //contentPadding: EdgeInsets.symmetric(vertical: 0.0),
                       title: ActionChip(
                         label: Text(
-                          'Has been done: ${widget.measurableTask.howMuchHasBeenDone} ${widget.measurableTask.unit}',
+                          '${localizations!.hasBeenDone} ${widget.measurableTask.howMuchHasBeenDone} ${widget.measurableTask.unit}',
                         ),
+
+                        // Text(
+                        //   localizations!.hasBeenDone ${widget.measurableTask.howMuchHasBeenDone} ${widget.measurableTask.unit},
+                        // ),
                         onPressed: () =>
                             widget.onHasBeenDoneUpdate(widget.measurableTask),
                       ),

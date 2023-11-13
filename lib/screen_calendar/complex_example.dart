@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/screen_calendar/src/shared/utils.dart';
@@ -184,7 +185,8 @@ class _TableComplexExampleState extends State<TableComplexExample> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Has been done:'),
+        
+        title: Text(AppLocalizations.of(context)!.hasBeenDone),
         content: TextFormField(
           controller: _hasBeenDoneController,
           //decoration: InputDecoration(labelText: 'has been done'),
@@ -194,7 +196,7 @@ class _TableComplexExampleState extends State<TableComplexExample> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Hủy'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -216,7 +218,7 @@ class _TableComplexExampleState extends State<TableComplexExample> {
               }
               Navigator.pop(context);
             },
-            child: Text('Update'),
+            child: Text(AppLocalizations.of(context)!.update),
           ),
         ],
       ),
@@ -257,6 +259,16 @@ class _TableComplexExampleState extends State<TableComplexExample> {
                     curve: Curves.easeOut,
                   );
                 },
+                onSelectionModeChanged: (String value) {
+                  setState(() {
+                    if (value == 'multi') {
+                      _rangeSelectionMode = RangeSelectionMode.toggledOff;
+                    } else if (value == 'range') {
+                      _rangeSelectionMode = RangeSelectionMode.toggledOn;
+                    }
+                  });
+                },
+                rangeSelectionMode: _rangeSelectionMode,
               );
             },
           ),
@@ -288,27 +300,7 @@ class _TableComplexExampleState extends State<TableComplexExample> {
             child: ValueListenableBuilder<List<TimeInterval>>(
               valueListenable: _selectedTimeIntervals,
               builder: (context, value, _) {
-                // return ListView.builder(
-                //   itemCount: value.length,
-                //   itemBuilder: (context, index) {
-                //     return Container(
-                //       margin: const EdgeInsets.symmetric(
-                //         horizontal: 12.0,
-                //         vertical: 4.0,
-                //       ),
-                //       decoration: BoxDecoration(
-                //         border: Border.all(),
-                //         borderRadius: BorderRadius.circular(12.0),
-                //       ),
-                //       child: ListTile(
-                //         onTap: () => print('${value[index]}'),
-                //         title: Text('${value[index]}'),
-                //       ),
-                //     );
-                //   },
-                // );
                 return ListView.builder(
-                  //physics: const NeverScrollableScrollPhysics(),
                   itemCount: value.length,
                   itemBuilder: (context, index) {
                     final timeInterval = value[index];
@@ -325,10 +317,6 @@ class _TableComplexExampleState extends State<TableComplexExample> {
                     //     : '--/--/----';
 
                     return TimeIntervalCard(
-                      //onSubtasksChanged: onSubtasksChanged,
-                      //onTimeIntervalDelete: onTimeIntervalDelete,
-                      //onTimeIntervalEdit: onTimeIntervalEdit,
-                      //onTimeIntervalToggleComplete: onTimeIntervalToggleComplete,
                       timeInterval: timeInterval,
                       onHasBeenDoneUpdate: _onHasBeenDoneUpdate,
                       onSubtasksChanged: _onSubtasksChanged,
@@ -360,7 +348,6 @@ class _TableComplexExampleState extends State<TableComplexExample> {
                           (TimeInterval timeInterval) {
                         _onTimeIntervalToggleCompleted(timeInterval);
                       },
-                      //onHasBeenDoneUpdate: onHasBeenDoneUpdate,
                     );
                   },
                 );
@@ -379,6 +366,8 @@ class _CalendarHeader extends StatelessWidget {
   final VoidCallback onRightArrowTap;
   final VoidCallback onTodayButtonTap;
   final VoidCallback onClearButtonTap;
+  final void Function(String) onSelectionModeChanged;
+  final RangeSelectionMode rangeSelectionMode;
   final bool clearButtonVisible;
 
   const _CalendarHeader({
@@ -389,10 +378,13 @@ class _CalendarHeader extends StatelessWidget {
     required this.onTodayButtonTap,
     required this.onClearButtonTap,
     required this.clearButtonVisible,
+    required this.onSelectionModeChanged,
+    required this.rangeSelectionMode,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final headerText =
         DateFormat.yMMM(Localizations.localeOf(context).languageCode)
             .format(focusedDay);
@@ -403,7 +395,7 @@ class _CalendarHeader extends StatelessWidget {
         children: [
           const SizedBox(width: 16.0),
           SizedBox(
-            width: 140.0,
+            width: 120.0,
             child: Text(
               headerText,
               style: TextStyle(fontSize: 18.0),
@@ -420,6 +412,34 @@ class _CalendarHeader extends StatelessWidget {
               visualDensity: VisualDensity.compact,
               onPressed: onClearButtonTap,
             ),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.settings_outlined, size: 18.0),
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: 'multi',
+                child: Text(
+                  localizations!.selectMultipleDays,
+                  style: TextStyle(
+                    color: rangeSelectionMode == RangeSelectionMode.toggledOff
+                        ? Colors.blue
+                        : null,
+                  ),
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'range',
+                child: Text(
+                  localizations!.selectDateRange,
+                  style: TextStyle(
+                    color: rangeSelectionMode == RangeSelectionMode.toggledOn
+                        ? Colors.blue
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+            onSelected: onSelectionModeChanged,
+          ),
           const Spacer(),
           IconButton(
             icon: Icon(Icons.chevron_left),

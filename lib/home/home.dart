@@ -360,7 +360,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
             appBar: createAppBar((_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value &&
                     _selectedNavBarItemIndex ==
                         PageOfTasksScreenSelected.tasksOverviewPage.value)
-                ? 'Overview' //localizations!.tasks
+                ? localizations!.overview
                 : (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value &&
                         _selectedNavBarItemIndex ==
                             PageOfTasksScreenSelected.tasksTimelinePage.value)
@@ -375,7 +375,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                             ? localizations!.settings
                             : (_selectedDrawerItemIndex ==
                                     ScreenSelected.aboutUsScreen.value)
-                                ? localizations!.About
+                                ? localizations!.aboutUs
                                 : (_selectedDrawerItemIndex ==
                                             ScreenSelected
                                                 .materialDesignScreen.value &&
@@ -479,7 +479,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                   ),
                   ListTile(
                     leading: const Icon(Icons.info_outlined),
-                    title: Text(localizations.About),
+                    title: Text(localizations.aboutUs),
                     selected: _selectedDrawerItemIndex ==
                         ScreenSelected.aboutUsScreen.value,
                     onTap: () =>

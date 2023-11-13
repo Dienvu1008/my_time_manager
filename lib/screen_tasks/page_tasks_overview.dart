@@ -801,7 +801,7 @@ class TaskListCardOptions extends StatelessWidget {
                     await addTaskWithSubtasks(taskWithSubtasks);
                   }
                 },
-                child: Text(localizations.addANewTaskWithSubtasks),
+                child: Text(localizations.addANewTaskWithSubTasks),//Text(localizations.addANewTaskWithSubtasks),
                 ),
             MenuItemButton(
               // onPressed: () async {
@@ -821,8 +821,8 @@ class TaskListCardOptions extends StatelessWidget {
           ],
           child: Row(
             children: [
-              Icon(Icons.add_outlined),
-              SizedBox(
+              const Icon(Icons.add_outlined),
+              const SizedBox(
                 width: 5,
               ),
               Text(localizations.addToThisList)
@@ -833,8 +833,8 @@ class TaskListCardOptions extends StatelessWidget {
           onPressed: onTaskListEdit,
           child: Row(
             children: [
-              Icon(Icons.edit_outlined),
-              SizedBox(
+              const Icon(Icons.edit_outlined),
+              const SizedBox(
                 width: 5,
               ),
               Text(localizations.editThisList)
@@ -845,8 +845,8 @@ class TaskListCardOptions extends StatelessWidget {
           onPressed: onTaskListDelete,
           child: Row(
             children: [
-              Icon(Icons.delete_outline),
-              SizedBox(
+              const Icon(Icons.delete_outline),
+              const SizedBox(
                 width: 5,
               ),
               Text(localizations.deleteThisList)

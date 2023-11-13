@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
 
 class TargetBlockListTile extends StatefulWidget {
@@ -32,6 +33,7 @@ class _TargetBlockListTileState extends State<TargetBlockListTile> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Column(
       children: [
         const SizedBox(height: 12),
@@ -48,15 +50,15 @@ class _TargetBlockListTileState extends State<TargetBlockListTile> {
                     .map((e) => DropdownMenuItem(
                           value: e,
                           child: Text(e == TargetType.atLeast
-                              ? 'at least'
+                              ? localizations!.atLeast
                               : e == TargetType.atMost
-                                  ? 'at most'
-                                  : 'about'),
+                                  ? localizations!.atMost
+                                  : localizations!.about),
                         ))
                     .toList(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                     border: OutlineInputBorder(),
-                    labelText: 'Target Type',
+                    labelText: localizations!.targetType,
                     floatingLabelBehavior: FloatingLabelBehavior.auto),
                 validator: (value) {
                   if (value == null) {
@@ -70,9 +72,9 @@ class _TargetBlockListTileState extends State<TargetBlockListTile> {
             Expanded(
               child: TextFormField(
                 controller: widget.unitController,
-                decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Unit',
+                decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: localizations.unit,
                     floatingLabelBehavior: FloatingLabelBehavior.auto),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -92,9 +94,9 @@ class _TargetBlockListTileState extends State<TargetBlockListTile> {
               Expanded(
                 child: TextFormField(
                   controller: widget.targetAtLeastController,
-                  decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'min.',
+                  decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: localizations.minimum,
                       floatingLabelBehavior: FloatingLabelBehavior.auto),
                   keyboardType: const TextInputType.numberWithOptions(
                       decimal: true, signed: false),
@@ -115,9 +117,9 @@ class _TargetBlockListTileState extends State<TargetBlockListTile> {
               Expanded(
                 child: TextFormField(
                   controller: widget.targetAtMostController,
-                  decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'max.',
+                  decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: localizations.maximum,
                       floatingLabelBehavior: FloatingLabelBehavior.auto),
                   keyboardType: const TextInputType.numberWithOptions(
                       decimal: true, signed: false),
@@ -140,9 +142,9 @@ class _TargetBlockListTileState extends State<TargetBlockListTile> {
             Expanded(
               child: TextFormField(
                 controller: widget.hasBeenDoneController,
-                decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Has been done',
+                decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: localizations.hasBeenDone,
                     floatingLabelBehavior: FloatingLabelBehavior.auto),
                 keyboardType: const TextInputType.numberWithOptions(
                     decimal: true, signed: false),

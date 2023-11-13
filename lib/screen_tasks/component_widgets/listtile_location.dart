@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/utils/utils.dart';
 
 class LocationListTile extends StatefulWidget {
@@ -13,6 +14,7 @@ class LocationListTile extends StatefulWidget {
 class _LocationListTileState extends State<LocationListTile> {
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Column(
       children: [
         ListTile(
@@ -23,13 +25,13 @@ class _LocationListTileState extends State<LocationListTile> {
           title: TextField(
             controller: widget.locationController,
             maxLines: null,
-            decoration: const InputDecoration(
-              hintText: 'Location',
+            decoration: InputDecoration(
+              hintText: localizations!.location,
               border: InputBorder.none,
             ),
           ),
           trailing: ElevatedButton(
-            child: Text('MAP'),
+            child: Text(localizations.map),
             onPressed: () => {
               launchURL(Uri.parse(
                   'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(widget.locationController.text)}')),

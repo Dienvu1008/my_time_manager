@@ -198,3 +198,5 @@ Uri proVersionUrl =
     Uri.parse("market://details?id=com.dienvu.mytimemanager.pro");
 Uri freeVersionUrl =
     Uri.parse("market://details?id=com.dienvu.mytimemanager.free");
+Uri supportUsUrl =
+    Uri.parse("https://github.com/Dienvu1008/My-Time-Manager-Infor/issues");

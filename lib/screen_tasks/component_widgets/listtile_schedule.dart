@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
@@ -34,6 +35,7 @@ class ScheduleListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Column(
       children: [
         ListTile(
@@ -41,7 +43,7 @@ class ScheduleListTile extends StatelessWidget {
             padding: EdgeInsets.only(left: 0.0, right: 4.0),
             child: Icon(Icons.event_note_outlined),
           ),
-          title: Text('Planned'),
+          title: Text(localizations!.planned),
           onTap: () {
             showModalBottomSheet(
               context: context,
@@ -66,7 +68,7 @@ class ScheduleListTile extends StatelessWidget {
             );
           },
           trailing: ElevatedButton(
-            child: Text('Schedule'),
+            child: Text(localizations.schedule),
             onPressed: () => {
               showModalBottomSheet(
                 context: context,

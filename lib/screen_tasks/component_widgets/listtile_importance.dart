@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 
 class ImportanceListTile extends StatefulWidget {
   final bool isImportant;
@@ -22,6 +23,7 @@ class _ImportanceListTileState extends State<ImportanceListTile> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Column(
       children: [
         ListTile(
@@ -45,7 +47,7 @@ class _ImportanceListTileState extends State<ImportanceListTile> {
                   <bool>[true, false].map<DropdownMenuItem<bool>>((bool value) {
                 return DropdownMenuItem<bool>(
                   value: value,
-                  child: Text(value ? 'Important' : 'Not Important'),
+                  child: Text(value ? localizations!.important : localizations!.notImportant),
                 );
               }).toList(),
             ),

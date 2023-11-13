@@ -25,7 +25,7 @@ class AboutUsPage extends StatelessWidget {
               },
             ),
             TextButton(
-              child: Text(localizations.Open),
+              child: Text(localizations.open),
               onPressed: () async {
                 launchURL(url);
                 Navigator.of(context).pop();
@@ -122,7 +122,7 @@ class AboutUsPage extends StatelessWidget {
                     ),
                     ListTile(
                       leading: const Icon(Icons.emoji_food_beverage_outlined),
-                      title: Text('Support us', style: textTheme.bodyMedium),
+                      title: Text(localizations.supportUs, style: textTheme.bodyMedium),
                       // onTap: () async {
                       //   if (await canLaunchUrl(appReadMeUrl)) {
                       //     await launchURL(appReadMeUrl);

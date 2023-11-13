@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
@@ -36,15 +37,6 @@ class TimeIntervalCard extends StatefulWidget {
 }
 
 class _TimeIntervalCardState extends State<TimeIntervalCard> {
-  // static Color contrastColor(Color color) {
-  //   final brightness = ThemeData.estimateBrightnessForColor(color);
-  //   switch (brightness) {
-  //     case Brightness.dark:
-  //       return Colors.white;
-  //     case Brightness.light:
-  //       return Colors.black;
-  //   }
-  // }
 
   bool _isExpanded = true;
   String _formattedStartDate = '--/--/----';
@@ -76,6 +68,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final timeIntervalColor = widget.timeInterval.color;
     final myColorScheme = Theme.of(context).brightness == Brightness.dark
         ? ColorScheme.dark(primary: timeIntervalColor)
@@ -144,7 +137,6 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
       child: Row(
         children: [
           Expanded(
-            //flex: 19,
             child: GestureDetector(
               onTap: () => widget.onTimeIntervalEdit(widget.timeInterval),
               child: Column(
@@ -166,9 +158,9 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                   borderRadius: BorderRadius.circular(
                                       5), // bo tròn viền tại đây
                                 ),
-                                child: const Text(
-                                  'important',
-                                  style: TextStyle(
+                                child: Text(
+                                  localizations!.important,
+                                  style: const TextStyle(
                                       color: Colors.white, fontSize: 10),
                                 ),
                               ),
@@ -179,9 +171,9 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                   borderRadius: BorderRadius.circular(
                                       5), // bo tròn viền tại đây
                                 ),
-                                child: const Text(
-                                  'gone',
-                                  style: TextStyle(
+                                child: Text(
+                                  localizations!.gone,
+                                  style: const TextStyle(
                                       color: Colors.white, fontSize: 10),
                                 ),
                               ),
@@ -192,9 +184,9 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                   borderRadius: BorderRadius.circular(
                                       5), // bo tròn viền tại đây
                                 ),
-                                child: const Text(
-                                  'in progress',
-                                  style: TextStyle(
+                                child: Text(
+                                  localizations!.inProgress,
+                                  style: const TextStyle(
                                       color: Colors.white, fontSize: 10),
                                 ),
                               ),
@@ -205,9 +197,9 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                   borderRadius: BorderRadius.circular(
                                       5), // bo tròn viền tại đây
                                 ),
-                                child: const Text(
-                                  'today',
-                                  style: TextStyle(
+                                child: Text(
+                                  localizations!.today,
+                                  style: const TextStyle(
                                       color: Colors.white, fontSize: 10),
                                 ),
                               ),
@@ -220,8 +212,8 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                     decoration: TextDecoration.lineThrough)
                                 : textTheme.labelMedium,
                             text: _formattedStartDate == _formattedEndDate
-                                ? 'From $_formattedStartDate: $_formattedStartTime to $_formattedEndTime'
-                                : 'From $_formattedStartDate: $_formattedStartTime to $_formattedEndDate: $_formattedEndTime',
+                                ? '${localizations!.from} $_formattedStartDate: $_formattedStartTime ${localizations.to} $_formattedEndTime'
+                                : '${localizations!.from} $_formattedStartDate: $_formattedStartTime ${localizations.to} $_formattedEndDate: $_formattedEndTime',
                           ),
                         ),
                       ],
@@ -238,11 +230,11 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                 : null,
                           ),
                         ),
-                        if (widget.timeInterval.description.isNotEmpty)
-                          Text(
-                            widget.timeInterval.description,
-                            style: TextStyle(color: labelColor),
-                          ),
+                        // if (widget.timeInterval.description.isNotEmpty)
+                        //   Text(
+                        //     widget.timeInterval.description,
+                        //     style: TextStyle(color: labelColor),
+                        //   ),
                         Visibility(
                           visible:
                               widget.timeInterval.measurableTaskId != null &&
@@ -252,19 +244,19 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                               if (widget.timeInterval.targetType ==
                                   TargetType.about)
                                 Text(
-                                  'Target: about ${widget.timeInterval.targetAtLeast} to ${widget.timeInterval.targetAtMost} ${widget.timeInterval.unit}',
+                                  '${localizations.targetAbout} ${widget.timeInterval.targetAtLeast} ${localizations.to} ${widget.timeInterval.targetAtMost} ${widget.timeInterval.unit}',
                                   style: TextStyle(color: labelColor),
                                 ),
                               if (widget.timeInterval.targetType ==
                                   TargetType.atLeast)
                                 Text(
-                                  'Target: at least ${widget.timeInterval.targetAtLeast} ${widget.timeInterval.unit}',
+                                  '${localizations.targetAtLeast} ${widget.timeInterval.targetAtLeast} ${widget.timeInterval.unit}',
                                   style: TextStyle(color: labelColor),
                                 ),
                               if (widget.timeInterval.targetType ==
                                   TargetType.atMost)
                                 Text(
-                                  'Target: at most ${widget.timeInterval.targetAtMost} ${widget.timeInterval.unit}',
+                                  '${localizations.targetAtMost} ${widget.timeInterval.targetAtMost} ${widget.timeInterval.unit}',
                                   style: TextStyle(color: labelColor),
                                 ),
                             ],
@@ -356,8 +348,8 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                     : Icons.expand_more),
                                 const SizedBox(width: 8),
                                 _isExpanded
-                                    ? const Text('Hide sub-tasks')
-                                    : const Text('Show sub-tasks'),
+                                    ? Text(localizations.hideSubTasks)
+                                    : Text(localizations.showSubTasks),
                               ],
                             ),
                           ),
@@ -371,8 +363,8 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                     : Icons.expand_more),
                                 const SizedBox(width: 8),
                                 _isExpanded
-                                    ? const Text('Hide target infor')
-                                    : const Text('Show target infor'),
+                                    ? Text(localizations.hideTargetInfor)
+                                    : Text(localizations.showTargetInfor),
                               ],
                             ),
                           ),
@@ -385,56 +377,56 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                   : Icons.check_box_outline_blank),
                               const SizedBox(width: 8),
                               widget.timeInterval.isCompleted
-                                  ? const Expanded(
+                                  ? Expanded(
                                       child: Text(
-                                          'Mark as incompleted in this time interval'))
-                                  : const Expanded(
+                                          localizations.markAsIncompletedInThisTimeInterval))
+                                  : Expanded(
                                       child: Text(
-                                          'Mark as completed in this time interval'),
+                                          localizations.markAsCompletedInThisTimeInterval),
                                     )
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'sync_from_task',
                           child: Row(
                             children: [
-                              Icon(Icons.copy_outlined),
-                              SizedBox(width: 8),
+                              const Icon(Icons.copy_outlined),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                    'Sync details from task to this time interval'),
+                                    localizations.syncDetailsFromTaskToThisTimeInterval),
                               )
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'go_to_main_task',
                           child: Row(
                             children: [
-                              Icon(Icons.read_more_outlined),
-                              SizedBox(width: 8),
-                              Text('Go to main task'),
+                              const Icon(Icons.read_more_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.goToMainTask),)
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'option1',
                           child: Row(
                             children: [
-                              Icon(Icons.edit_outlined),
-                              SizedBox(width: 8),
-                              Text('Edit this time interval'),
+                              const Icon(Icons.edit_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.editThisTimeInterval),)
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'delete_time_interval',
                           child: Row(
                             children: [
-                              Icon(Icons.delete_outlined),
-                              SizedBox(width: 8),
-                              Text('Delete this time interval'),
+                              const Icon(Icons.delete_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.deleteThisTimeInterval),)
                             ],
                           ),
                         ),
@@ -447,7 +439,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                     child: ListTile(
                       title: ActionChip(
                         label: Text(
-                          'Has been done: ${widget.timeInterval.howMuchHasBeenDone} ${widget.timeInterval.unit}',
+                          '${localizations.hasBeenDone} ${widget.timeInterval.howMuchHasBeenDone} ${widget.timeInterval.unit}',
                         ),
                         onPressed: () =>
                             widget.onHasBeenDoneUpdate(widget.timeInterval),
@@ -491,19 +483,19 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                     context: context,
                                     builder: (BuildContext context) {
                                       return AlertDialog(
-                                        title: Text('Delete Subtask'),
+                                        title: Text(localizations.deleteSubtask),
                                         content: Text(
-                                            'Are you sure you want to delete this subtask?'),
+                                            localizations.areYouSureYouWantToDeleteThisSubtask),
                                         actions: <Widget>[
                                           TextButton(
                                             onPressed: () =>
                                                 Navigator.pop(context, false),
-                                            child: Text('Cancel'),
+                                            child: Text(localizations.cancel),
                                           ),
                                           TextButton(
                                             onPressed: () =>
                                                 Navigator.pop(context, true),
-                                            child: Text('Delete'),
+                                            child: Text(localizations.delete),
                                           ),
                                         ],
                                       );

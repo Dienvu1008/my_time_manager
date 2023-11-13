@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 
 class DescriptionListTile extends StatelessWidget {
   final TextEditingController descriptionController;
@@ -7,6 +8,7 @@ class DescriptionListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Column(
       children: [
         ListTile(
@@ -17,8 +19,8 @@ class DescriptionListTile extends StatelessWidget {
           title: TextField(
             controller: descriptionController,
             maxLines: null,
-            decoration: const InputDecoration(
-              hintText: 'Description',
+            decoration: InputDecoration(
+              hintText: localizations!.description,
               border: InputBorder.none,
             ),
           ),

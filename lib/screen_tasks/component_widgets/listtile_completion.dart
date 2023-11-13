@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 
 class CompletionListTile extends StatefulWidget {
   final bool isCompleted;
@@ -25,6 +26,7 @@ class _CompletionListTileState extends State<CompletionListTile> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Column(
       children: [
         ListTile(
@@ -56,10 +58,10 @@ class _CompletionListTileState extends State<CompletionListTile> {
                 return DropdownMenuItem<bool>(
                   value: value,
                   child: (widget.isUsedForTimeInterval ?? false)
-                      ? Text(value
-                              ? 'Completed in this time interval'
-                              : 'Incompleted in this time interval')
-                      : Text(value ? 'Completed' : 'Incompleted'),
+                      ? Expanded(child: Text(value
+                              ? localizations!.markAsCompletedInThisTimeInterval
+                              : localizations!.markAsIncompletedInThisTimeInterval))
+                      : Expanded(child: Text(value ? localizations!.markAsCompleted : localizations!.markAsIncompleted),)
                 );
               }).toList(),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
@@ -65,6 +66,7 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final taskWithSubtasksColor = widget.taskWithSubtasks.color;
     final myColorScheme = Theme.of(context).brightness == Brightness.dark
         ? ColorScheme.dark(primary: taskWithSubtasksColor)
@@ -102,9 +104,9 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                                 borderRadius: BorderRadius.circular(
                                     5), // bo tròn viền tại đây
                               ),
-                              child: const Text(
-                                'important',
-                                style: TextStyle(
+                              child: Text(
+                                localizations!.important,
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 10),
                               ),
                             ),
@@ -118,12 +120,12 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                             ),
                           ),
                         ]),
-                    subtitle: widget.taskWithSubtasks.description.isNotEmpty
-                        ? Text(
-                            widget.taskWithSubtasks.description,
-                            style: TextStyle(color: labelColor),
-                          )
-                        : null,
+                    // subtitle: widget.taskWithSubtasks.description.isNotEmpty
+                    //     ? Text(
+                    //         widget.taskWithSubtasks.description,
+                    //         style: TextStyle(color: labelColor),
+                    //       )
+                    //     : null,
                     trailing: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert_outlined, color: labelColor),
                       onSelected: (String result) {
@@ -137,12 +139,6 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                           widget.onTaskWithSubtasksToggleComplete(
                               widget.taskWithSubtasks);
                         } else if (result == 'option4') {
-                          // Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //       builder: (context) => TimeIntervalPage(
-                          //           taskWithSubtasks: widget.taskWithSubtasks)),
-                          // );
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
@@ -164,8 +160,6 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                           );
                         } else if (result == 'option5') {
                           widget.onTaskWithSubtasksCardExpanded(widget.taskWithSubtasks);
-                          // setState(() => _isExpanded = !_isExpanded);
-                          // _saveIsExpanded();
                         } else if (result == 'planned') {
                           showModalBottomSheet(
                             context: context,
@@ -201,8 +195,8 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                               const SizedBox(width: 8),
                               //_isExpanded
                               widget.isTaskWithSubtasksCardExpanded(widget.taskWithSubtasks) == true
-                                  ? const Text('Hide sub-tasks')
-                                  : const Text('Show sub-tasks'),
+                                  ? Expanded(child: Text(localizations!.hideSubTasks))
+                                  : Expanded(child: Text(localizations!.showSubTasks),)
                             ],
                           ),
                         ),
@@ -215,18 +209,18 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                                   : Icons.check_box_outline_blank),
                               const SizedBox(width: 8),
                               widget.taskWithSubtasks.isCompleted
-                                  ? const Text('Mark as incompleted')
-                                  : const Text('Mark as completed'),
+                                  ? Expanded(child: Text(localizations.markAsIncompleted))
+                                  : Expanded(child: Text(localizations.markAsCompleted),)
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'planned',
                           child: Row(
                             children: [
-                              Icon(Icons.event_note_outlined),
-                              SizedBox(width: 8),
-                              Text('Planned'),
+                              const Icon(Icons.event_note_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.planned),)
                             ],
                           ),
                         ),
@@ -240,33 +234,33 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                         //     ],
                         //   ),
                         // ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'focus_timer',
                           child: Row(
                             children: [
-                              Icon(Icons.timelapse_outlined),
-                              SizedBox(width: 8),
-                              Text('Focus right now?'),
+                              const Icon(Icons.timelapse_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.focusRightNow),)
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'option1',
                           child: Row(
                             children: [
-                              Icon(Icons.edit_outlined),
-                              SizedBox(width: 8),
-                              Text('Edit Task'),
+                              const Icon(Icons.edit_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.editTask),)
                             ],
                           ),
                         ),
-                        const PopupMenuItem<String>(
+                        PopupMenuItem<String>(
                           value: 'option2',
                           child: Row(
                             children: [
-                              Icon(Icons.delete_outlined),
-                              SizedBox(width: 8),
-                              Text('Delete Task'),
+                              const Icon(Icons.delete_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(localizations.deleteTask),)
                             ],
                           ),
                         ),
@@ -308,19 +302,19 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
-                                  title: Text('Delete Subtask'),
+                                  title: Text(localizations!.deleteSubtask),
                                   content: Text(
-                                      'Are you sure you want to delete this subtask?'),
+                                      localizations.areYouSureYouWantToDeleteThisSubtask),
                                   actions: <Widget>[
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.pop(context, false),
-                                      child: Text('Cancel'),
+                                      child: Text(localizations.cancel),
                                     ),
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.pop(context, true),
-                                      child: Text('Delete'),
+                                      child: Text(localizations.delete),
                                     ),
                                   ],
                                 );
