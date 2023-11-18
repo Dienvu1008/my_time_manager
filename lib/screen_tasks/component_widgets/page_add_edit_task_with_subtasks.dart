@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
@@ -94,6 +95,7 @@ class _AddOrEditTaskWithSubtasksPageState
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final textTheme = Theme.of(context)
         .textTheme
         .apply(displayColor: Theme.of(context).colorScheme.onSurface);
@@ -102,7 +104,7 @@ class _AddOrEditTaskWithSubtasksPageState
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title:
-              widget.taskWithSubtasks == null ? Text('Add new task') : Text(''),
+              widget.taskWithSubtasks == null ? Text(localizations!.addANewTask) : Text(''),
           centerTitle: true,
           actions: [
             IconButton(
@@ -151,21 +153,21 @@ class _AddOrEditTaskWithSubtasksPageState
                             context: context,
                             builder: (BuildContext context) {
                               return AlertDialog(
-                                title: Text('Edit Subtask'),
+                                title: Text(localizations!.editSubtask),
                                 content: TextField(
                                   controller: _controller,
                                   decoration:
-                                      InputDecoration(labelText: 'Title'),
+                                      InputDecoration(labelText: localizations.title),
                                 ),
                                 actions: <Widget>[
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: Text('Cancel'),
+                                    child: Text(localizations.cancel),
                                   ),
                                   TextButton(
                                     onPressed: () => Navigator.pop(
                                         context, _controller.text),
-                                    child: Text('Save'),
+                                    child: Text(localizations.save),
                                   ),
                                 ],
                               );
@@ -199,12 +201,12 @@ class _AddOrEditTaskWithSubtasksPageState
                 Row(children: [
                   ElevatedButton(
                     onPressed: () => _showAddSubtaskDialog(context),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add),
-                        SizedBox(width: 4),
-                        Text('Add Subtask'),
+                        const Icon(Icons.add),
+                        const SizedBox(width: 4),
+                        Text(localizations!.addSubtask),
                       ],
                     ),
                   )
@@ -254,15 +256,15 @@ class _AddOrEditTaskWithSubtasksPageState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Thêm subtask'),
+        title: Text(AppLocalizations.of(context)!.addSubtask),
         content: TextField(
           controller: _subtaskTitleController,
-          decoration: InputDecoration(labelText: 'Tiêu đề'),
+          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.title),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Hủy'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -274,7 +276,7 @@ class _AddOrEditTaskWithSubtasksPageState
               });
               Navigator.pop(context);
             },
-            child: Text('Thêm'),
+            child: Text(AppLocalizations.of(context)!.add),
           ),
         ],
       ),

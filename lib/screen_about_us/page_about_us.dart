@@ -44,7 +44,7 @@ class AboutUsPage extends StatelessWidget {
         final localizations = AppLocalizations.of(context);
         return AlertDialog(
           title: Text(localizations!.openSourceAnnouncement),
-          content: Text(localizations.appBecomingOpenSource),
+          content: Text(localizations.thisAppWillBecomeOpenSourceWeWillMakeTheSourceCodePublicAfterCleaningUpTheCode),
           actions: [
             TextButton(
               child: Text(localizations.ok),
@@ -94,7 +94,7 @@ class AboutUsPage extends StatelessWidget {
                     ListTile(
                       leading: const Icon(Icons.update_outlined),
                       title: Text("Pro Version", style: textTheme.bodyMedium),
-                      subtitle: Text("1.2.2", style: textTheme.bodySmall),
+                      subtitle: Text("1.3.0", style: textTheme.bodySmall),
                       onTap: () => launchURL(proVersionUrl),
                     ),
                     ListTile(
@@ -113,23 +113,59 @@ class AboutUsPage extends StatelessWidget {
                       title: Text(localizations.howToUse,
                           style: textTheme.bodyMedium),
                       onTap: () async {
-                        if (await canLaunchUrl(appReadMeUrl)) {
-                          await launchURL(appReadMeUrl);
+                        Uri url;
+                        Uri appUrl;
+                        switch (Localizations.localeOf(context).languageCode) {
+                          case 'en':
+                            url = readMeUrl;
+                            appUrl = appReadMeUrl;
+                            break;
+                          case 'vi':
+                            url = readMeViUrl;
+                            appUrl = appReadMeViUrl;
+                            break;
+                          case 'de':
+                            url = readMeDeUrl;
+                            appUrl = appReadMeDeUrl;
+                            break;
+                          default:
+                            url =
+                                readMeUrl; // fallback to English URL if the language is not supported
+                            appUrl = appReadMeUrl;
+                        }
+                        if (await canLaunchUrl(appUrl)) {
+                          await launchURL(appUrl);
                         } else {
-                          await launchURL(readMeUrl);
+                          await launchURL(url);
                         }
                       },
                     ),
                     ListTile(
                       leading: const Icon(Icons.emoji_food_beverage_outlined),
-                      title: Text(localizations.supportUs, style: textTheme.bodyMedium),
-                      // onTap: () async {
-                      //   if (await canLaunchUrl(appReadMeUrl)) {
-                      //     await launchURL(appReadMeUrl);
-                      //   } else {
-                      //     await launchURL(readMeUrl);
-                      //   }
-                      // },
+                      title: Text(localizations.supportUs,
+                          style: textTheme.bodyMedium),
+                      onTap: () async {
+                        Uri url;
+                        switch (Localizations.localeOf(context).languageCode) {
+                          case 'en':
+                            url = supportUsEnUrl;
+                            break;
+                          case 'vi':
+                            url = supportUsViUrl;
+                            break;
+                          case 'de':
+                            url = supportUsDeUrl;
+                            break;
+                          default:
+                            url =
+                                supportUsEnUrl; // fallback to English URL if the language is not supported
+                        }
+                        if (await canLaunchUrl(url)) {
+                          await launchURL(url);
+                        } else {
+                          throw 'Could not launch $url';
+                        }
+                      },
                     ),
                     ListTile(
                       leading: const FaIcon(

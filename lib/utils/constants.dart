@@ -155,16 +155,19 @@ enum PageOfCalendarScreenSelected {
 }
 
 enum AppLanguage {
+  czech('Czech', 'CS'),
   german('German', 'DE'),
   english('English', 'EN'),
-  // french('French', 'FR'),
-  // italian('Italian', 'IT'),
-  // japanese('Japanese', 'JA'),
-  // korean('Korean', 'KO'),
-  // russian('Russian', 'RU'),
+  spanish('Spanish', 'ES'),
+  french('French', 'FR'),
+  italian('Italian', 'IT'),
+  japanese('Japanese', 'JA'),
+  korean('Korean', 'KO'),
+  norwegian('Norwegian', 'NO'),
+  russian('Russian', 'RU'),
+  swedish('Swedish', 'SV'),
   vietnamese('Vietnamese', 'VI'),
-  //chinese('Chinese', 'ZH')
-  ;
+  chinese('Chinese', 'ZH');
 
   const AppLanguage(this.language, this.short_language);
   final String language;
@@ -175,7 +178,8 @@ Uri githubUrl = Uri.parse('https://github.com/Dienvu1008');
 Uri appGithubUrl = Uri.parse('github://github.com/Dienvu1008');
 Uri authorFacebookUrl =
     Uri.parse("https://www.facebook.com/profile.php?id=100074416023246");
-Uri appAuthorFacebookUrl = Uri.parse("fb://www.facebook.com/profile.php?id=100074416023246");
+Uri appAuthorFacebookUrl =
+    Uri.parse("fb://www.facebook.com/profile.php?id=100074416023246");
 Uri pageFacebookUrl =
     Uri.parse("https://www.facebook.com/profile.php?id=100083919462769");
 Uri appPageFacebookUrl =
@@ -186,6 +190,14 @@ Uri readMeUrl = Uri.parse(
     "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README.md");
 Uri appReadMeUrl = Uri.parse(
     "github://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README.md");
+Uri readMeDeUrl = Uri.parse(
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README-de.md");
+Uri appReadMeDeUrl = Uri.parse(
+    "github://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README-de.md");
+Uri readMeViUrl = Uri.parse(
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README-vi.md");
+Uri appReadMeViUrl = Uri.parse(
+    "github://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/README-vi.md");
 Uri privacyUrl = Uri.parse(
     "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/PRIVACY.md");
 Uri appPrivacyUrl = Uri.parse(
@@ -198,5 +210,11 @@ Uri proVersionUrl =
     Uri.parse("market://details?id=com.dienvu.mytimemanager.pro");
 Uri freeVersionUrl =
     Uri.parse("market://details?id=com.dienvu.mytimemanager.free");
-Uri supportUsUrl =
-    Uri.parse("https://github.com/Dienvu1008/My-Time-Manager-Infor/issues");
+Uri supportUsEnUrl = Uri.parse(
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/SUPPORT-US-en.md");
+Uri supportUsDeUrl = Uri.parse(
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/SUPPORT-US-de.md");
+Uri supportUsViUrl = Uri.parse(
+    "https://github.com/Dienvu1008/My-Time-Manager-Infor/blob/master/SUPPORT-US-vi.md");
+Uri paypalUrl = Uri.parse("https://www.paypal.com/paypalme/dienvu1008");
+Uri appPaypalUrl = Uri.parse("paypal://www.paypal.com/paypalme/dienvu1008");

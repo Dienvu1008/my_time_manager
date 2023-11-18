@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:uuid/uuid.dart';
@@ -26,12 +27,12 @@ class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Thông báo'),
-          content: const Text('Bạn chưa nhập tiêu đề cho danh sách'),
+          title: Text(AppLocalizations.of(context)!.notification),
+          content: Text(AppLocalizations.of(context)!.enterTitleForList),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Đóng'),
+              child: Text(AppLocalizations.of(context)!.close),
             ),
           ],
         ),
@@ -73,13 +74,14 @@ class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     double bottom = MediaQuery.of(context).viewInsets.bottom;
     return Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title: widget.taskList == null
-              ? const Text('Add a new list')
-              : const Text('Edit this list'),
+              ? Text(localizations!.addNewList)
+              : Text(localizations!.editThisList),
           centerTitle: true,
           actions: [
             IconButton(
@@ -99,9 +101,9 @@ class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
                 TextField(
                   controller: _titleController,
                   maxLines: null,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Title',
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: localizations.title,
                     floatingLabelBehavior: FloatingLabelBehavior.auto,
                   ),
                 ),
@@ -109,9 +111,9 @@ class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
                 TextField(
                   controller: _descriptionController,
                   maxLines: null,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Description',
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: localizations.description,
                     floatingLabelBehavior: FloatingLabelBehavior.auto,
                   ),
                 ),

@@ -49,19 +49,15 @@ class _CompletionListTileState extends State<CompletionListTile> {
               },
               items:
                   <bool>[true, false].map<DropdownMenuItem<bool>>((bool value) {
-                // return DropdownMenuItem<bool>(
-                //   value: value,
-                //   child: widget.isUsedForTimeInterval!
-                //   ? Expanded(child: Text(value? 'Completed in this time interval' : 'Incompleted in this time interval'))
-                //   : Expanded(child: Text(value ? 'Completed' : 'Incompleted'),)
-                // );
                 return DropdownMenuItem<bool>(
                   value: value,
                   child: (widget.isUsedForTimeInterval ?? false)
-                      ? Expanded(child: Text(value
-                              ? localizations!.markAsCompletedInThisTimeInterval
-                              : localizations!.markAsIncompletedInThisTimeInterval))
-                      : Expanded(child: Text(value ? localizations!.markAsCompleted : localizations!.markAsIncompleted),)
+                      ? Text(value
+                          ? localizations!.markAsCompletedInThisTimeInterval
+                          : localizations!.markAsIncompletedInThisTimeInterval)
+                      : Text(value
+                          ? localizations!.markAsCompleted
+                          : localizations!.markAsIncompleted),
                 );
               }).toList(),
             ),

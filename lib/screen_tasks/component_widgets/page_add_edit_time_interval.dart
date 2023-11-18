@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
@@ -165,8 +166,8 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
         _isEndTimeUndefined) {
       showDialog(
         context: context,
-        builder: (context) => const AlertDialog(
-          content: Text('Please enter at least one date'),
+        builder: (context) => AlertDialog(
+          content: Text(AppLocalizations.of(context)!.enterAtLeastOneDate),
         ),
       );
     } else {
@@ -233,13 +234,13 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Thông báo'),
-            content: const Text(
-                'Bạn đang nhập dữ liệu mục tiêu nhỏ nhất lớn hơn mục tiêu lớn nhất'),
+            title: Text(AppLocalizations.of(context)!.notification),
+            content: Text(
+                AppLocalizations.of(context)!.minTargetGreaterThanMaxTarget),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Đóng'),
+                child: Text(AppLocalizations.of(context)!.close),
               ),
             ],
           ),
@@ -367,12 +368,12 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Lỗi'),
+              title: Text(AppLocalizations.of(context)!.error),
               content: Text(
-                  'Thời gian bắt đầu không được phép xảy ra sau thời gian kết thúc.'),
+                  AppLocalizations.of(context)!.startTimeAfterEndTime),
               actions: <Widget>[
                 TextButton(
-                  child: Text('Đóng'),
+                  child: Text(AppLocalizations.of(context)!.close),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -405,6 +406,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     // final textTheme = Theme.of(context)
     //     .textTheme
     //     .apply(displayColor: Theme.of(context).colorScheme.onSurface);
@@ -423,7 +425,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
         appBar: AppBar(
           title: widget.timeInterval == null
               ? Text('Add new time interval')
-              : Text('Edit this time interval'),
+              : Text(localizations!.editThisTimeInterval),
           centerTitle: true,
           actions: [
             IconButton(
@@ -455,9 +457,9 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                                 borderRadius: BorderRadius.circular(
                                     5), // bo tròn viền tại đây
                               ),
-                              child: const Text(
-                                'important',
-                                style: TextStyle(
+                              child: Text(
+                                localizations!.important,
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 10),
                               ),
                             ),
@@ -468,9 +470,9 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                                 borderRadius: BorderRadius.circular(
                                     5), // bo tròn viền tại đây
                               ),
-                              child: const Text(
-                                'gone',
-                                style: TextStyle(
+                              child: Text(
+                                localizations!.gone,
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 10),
                               ),
                             ),
@@ -481,9 +483,9 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                                 borderRadius: BorderRadius.circular(
                                     5), // bo tròn viền tại đây
                               ),
-                              child: const Text(
-                                'in progress',
-                                style: TextStyle(
+                              child: Text(
+                                localizations!.inProgress,
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 10),
                               ),
                             ),
@@ -494,9 +496,9 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                                 borderRadius: BorderRadius.circular(
                                     5), // bo tròn viền tại đây
                               ),
-                              child: const Text(
-                                'today',
-                                style: TextStyle(
+                              child: Text(
+                                localizations!.today,
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 10),
                               ),
                             ),
@@ -506,7 +508,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                   ),
                 ),
                 ListTile(
-                  contentPadding: EdgeInsets.symmetric(vertical: 0.0),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
                   title: TextField(
                     controller: _titleController,
                     style: TextStyle(
@@ -518,7 +520,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                     maxLines: null,
                     enabled: false, // This disables the TextField
                     decoration: InputDecoration(
-                      hintText: 'Title',
+                      hintText: localizations!.title,
                       filled:
                           true, // This is important, it enables the color fill
                       fillColor:
@@ -575,21 +577,21 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
-                                  title: Text('Edit Subtask'),
+                                  title: Text(localizations.editSubtask),
                                   content: TextField(
                                     controller: _controller,
                                     decoration:
-                                        InputDecoration(labelText: 'Title'),
+                                        InputDecoration(labelText: localizations.title),
                                   ),
                                   actions: <Widget>[
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
-                                      child: Text('Cancel'),
+                                      child: Text(localizations.cancel),
                                     ),
                                     TextButton(
                                       onPressed: () => Navigator.pop(
                                           context, _controller.text),
-                                      child: Text('Save'),
+                                      child: Text(localizations.save),
                                     ),
                                   ],
                                 );
@@ -624,12 +626,12 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                   Row(children: [
                     ElevatedButton(
                       onPressed: () => _showAddSubtaskDialog(context),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.add),
-                          SizedBox(width: 4),
-                          Text('Add Subtask'),
+                          const Icon(Icons.add),
+                          const SizedBox(width: 4),
+                          Text(localizations.addSubtask),
                         ],
                       ),
                     ),
@@ -662,15 +664,15 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Thêm subtask'),
+        title: Text(AppLocalizations.of(context)!.addSubtask),
         content: TextField(
           controller: _subtaskTitleController,
-          decoration: InputDecoration(labelText: 'Tiêu đề'),
+          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.title),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Hủy'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -682,7 +684,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
               });
               Navigator.pop(context);
             },
-            child: Text('Thêm'),
+            child: Text(AppLocalizations.of(context)!.add),
           ),
         ],
       ),

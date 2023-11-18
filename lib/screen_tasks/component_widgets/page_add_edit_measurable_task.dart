@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
@@ -147,12 +148,12 @@ class _AddOrEditMeasurableTaskPageState
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Thông báo'),
-          content: const Text('Bạn chưa nhập tiêu đề của nhiệm vụ'),
+          title: Text(AppLocalizations.of(context)!.notification),
+          content: Text(AppLocalizations.of(context)!.enterTaskTitle),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Đóng'),
+              child: Text(AppLocalizations.of(context)!.close),
             ),
           ],
         ),
@@ -164,13 +165,13 @@ class _AddOrEditMeasurableTaskPageState
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Thông báo'),
-          content: const Text(
-              'Bạn đang nhập dữ liệu mục tiêu nhỏ nhất lớn hơn mục tiêu lớn nhất'),
+          title: Text(AppLocalizations.of(context)!.notification),
+          content: Text(
+              AppLocalizations.of(context)!.minTargetGreaterThanMaxTarget),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Đóng'),
+              child: Text(AppLocalizations.of(context)!.close),
             ),
           ],
         ),
@@ -203,6 +204,7 @@ class _AddOrEditMeasurableTaskPageState
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final textTheme = Theme.of(context)
         .textTheme
         .apply(displayColor: Theme.of(context).colorScheme.onSurface);
@@ -211,7 +213,7 @@ class _AddOrEditMeasurableTaskPageState
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: widget.measurableTask == null
-            ? Text('Add new measurable task')
+            ? Text(localizations!.addANewMeasureableTask)
             : Text(''),
         centerTitle: true,
         actions: [

@@ -316,7 +316,7 @@ class _TaskListCardState extends State<TaskListCard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Has been done:'),
+        title: Text(AppLocalizations.of(context)!.hasBeenDone),
         content: TextFormField(
           controller: _hasBeenDoneController,
           //decoration: InputDecoration(labelText: 'has been done'),
@@ -326,7 +326,7 @@ class _TaskListCardState extends State<TaskListCard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Hủy'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -353,7 +353,7 @@ class _TaskListCardState extends State<TaskListCard> {
               // }
               Navigator.pop(context);
             },
-            child: Text('Update'),
+            child: Text(AppLocalizations.of(context)!.update),
           ),
         ],
       ),

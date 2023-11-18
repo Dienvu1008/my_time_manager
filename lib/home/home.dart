@@ -3,6 +3,7 @@ import 'package:my_time_manager/screen_calendar/complex_example.dart';
 import 'package:my_time_manager/screen_calendar/view_daily.dart';
 import 'package:my_time_manager/screen_calendar/view_monthly.dart';
 import 'package:my_time_manager/utils/widget_coming_soon.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app/app_localizations.dart';
 import '../screen_about_us/page_about_us.dart';
 import '../screen_material_design/page_color_palettes.dart';
@@ -399,7 +400,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                                                     PageOfMaterialDesignScreenSelected
                                                         .typography.value)
                                             ? 'Typography'
-                                            : 'Elevation'),
+                                            : ''),
 
             // appBar: createAppBar(appBarTitles[[
             //   _selectedDrawerItemIndex,
@@ -440,13 +441,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                         ScreenSelected.focusTimerScreen.value,
                     onTap: () => showComingSoonDialog(context),
                   ),
-                  // ListTile(
-                  //   leading: const Icon(Icons.notes_outlined),
-                  //   title: Text(localizations.notes),
-                  //   selected: _selectedDrawerItemIndex ==
-                  //       ScreenSelected.notesScreen.value,
-                  //   onTap: () => showComingSoonDialog(context),
-                  // ),
+                  ListTile(
+                    leading: const Icon(Icons.notes_outlined),
+                    title: Text(localizations.notes),
+                    selected: _selectedDrawerItemIndex ==
+                        ScreenSelected.notesScreen.value,
+                    onTap: () => showComingSoonDialog(context),
+                  ),
                   // ListTile(
                   //   leading: const Icon(Icons.contacts_outlined),
                   //   title: Text(localizations.myContacts),
@@ -484,6 +485,34 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                         ScreenSelected.aboutUsScreen.value,
                     onTap: () =>
                         _onDrawerItemTapped(ScreenSelected.aboutUsScreen.value),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.emoji_food_beverage_outlined),
+                    title: Text(
+                      localizations.supportUs,
+                    ),
+                    onTap: () async {
+                      Uri url;
+                      switch (Localizations.localeOf(context).languageCode) {
+                        case 'en':
+                          url = supportUsEnUrl;
+                          break;
+                        case 'vi':
+                          url = supportUsViUrl;
+                          break;
+                        case 'de':
+                          url = supportUsDeUrl;
+                          break;
+                        default:
+                          url =
+                              supportUsEnUrl; // fallback to English URL if the language is not supported
+                      }
+                      if (await canLaunchUrl(url)) {
+                        await launchURL(url);
+                      } else {
+                        throw 'Could not launch $url';
+                      }
+                    },
                   ),
                   // ListTile(
                   //     leading: const Icon(Icons.upgrade_outlined),
@@ -797,6 +826,7 @@ class _LanguageButton extends StatelessWidget {
             value: index,
             enabled: currentLanguage != languageSelected,
             child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.start,
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 10),
@@ -819,6 +849,7 @@ class _LanguageButton extends StatelessWidget {
               ],
             ),
           );
+
         });
       },
       onSelected: handleLanguageSelect,

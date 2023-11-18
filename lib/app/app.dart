@@ -16,8 +16,37 @@ class App extends StatelessWidget {
       child: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) {
           return MaterialApp(
+            // locale: Locale(
+            //   ['de','en', 'vi', ][state.language.index],
+            // ),
+            // localizationsDelegates: const [
+            //   AppLocalizationsDelegate(),
+            //   GlobalMaterialLocalizations.delegate,
+            //   GlobalWidgetsLocalizations.delegate,
+            //   GlobalCupertinoLocalizations.delegate,
+            // ],
+            // supportedLocales: const [
+            //   Locale('de'),
+            //   Locale('en'),
+            //   Locale('vi'),
+            // ],
+
             locale: Locale(
-              ['de','en', 'vi', ][state.language.index],
+              [
+                'cs',
+                'de',
+                'en',
+                'es',
+                'fr',
+                'it',
+                'ja',
+                'ko',
+                'no',
+                'ru',
+                'sv',
+                'vi',
+                'zh'
+              ][state.language.index],
             ),
             localizationsDelegates: const [
               AppLocalizationsDelegate(),
@@ -26,10 +55,21 @@ class App extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: const [
+              Locale('cs'),
               Locale('de'),
               Locale('en'),
+              Locale('es'),
+              Locale('fr'),
+              Locale('it'),
+              Locale('ja'),
+              Locale('ko'),
+              Locale('no'),
+              Locale('ru'),
+              Locale('sv'),
               Locale('vi'),
+              Locale('zh'),
             ],
+
             debugShowCheckedModeBanner: false, // remove debug banner
             title: 'Material 3',
             themeMode: state.themeMode,
@@ -118,7 +158,8 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   static const colorKey = 'color';
   static const useDesignVersionKey = 'useMaterial3';
   static const displayBrightnessButtonInAppBar = 'showBrightnessButtonInAppBar';
-  static const displayMaterialDesignButtonInAppBar = 'showMaterialDesignButtonInAppBar';
+  static const displayMaterialDesignButtonInAppBar =
+      'showMaterialDesignButtonInAppBar';
   static const displayColorSeedButtonInAppBar = 'showColorSeedButtonInAppBar';
   static const displayColorImageButtonInAppBar = 'showColorImageButtonInAppBar';
   static const displayLanguagesButtonInAppBar = 'showLanguagesButtonInAppBar';
@@ -218,7 +259,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
     on<ToggleMaterialVersion>((event, emit) {
       sharedPreferences.setString(useDesignVersionKey,
-          event.useMaterial3 ?'useMaterial3': 'useMaterial2');
+          event.useMaterial3 ? 'useMaterial3' : 'useMaterial2');
       emit(state.copyWith(useMaterial3: !event.useMaterial3));
     });
 
@@ -475,7 +516,7 @@ class AppState {
     //   launchCount: launchCount ?? this.launchCount,
     // );
 
-        return AppState(
+    return AppState(
       useMaterial3: useMaterial3 ?? this.useMaterial3,
       showBrightnessButtonInAppBar:
           showBrightnessButtonInAppBar ?? this.showBrightnessButtonInAppBar,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 launchURL(Uri url) async {
@@ -14,11 +15,11 @@ void showComingSoonDialog(BuildContext context) {
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: Text("Coming Soon"),
-        content: Text("This feature will be available soon."),
+        title: Text(AppLocalizations.of(context)!.comingSoon),
+        content: Text(AppLocalizations.of(context)!.featureAvailableSoon),
         actions: [
           TextButton(
-            child: Text("OK"),
+            child: Text(AppLocalizations.of(context)!.ok),
             onPressed: () {
               Navigator.of(context).pop();
             },

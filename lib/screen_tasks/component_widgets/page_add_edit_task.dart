@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
@@ -74,12 +75,12 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Thông báo'),
-          content: const Text('Bạn chưa nhập tiêu đề của nhiệm vụ'),
+          title: Text(AppLocalizations.of(context)!.notification),
+          content: Text(AppLocalizations.of(context)!.enterTaskTitle),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Đóng'),
+              child: Text(AppLocalizations.of(context)!.close),
             ),
           ],
         ),
@@ -108,6 +109,7 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final textTheme = Theme.of(context)
         .textTheme
         .apply(displayColor: Theme.of(context).colorScheme.onSurface);
@@ -116,7 +118,7 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title:
-              widget.task == null ? const Text('Add new task') : const Text(''),
+              widget.task == null ? Text(localizations!.addANewTask) : const Text(''),
           centerTitle: true,
           actions: [
             IconButton(
@@ -167,7 +169,7 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
                     padding: EdgeInsets.only(left: 0.0, right: 4.0),
                     child: Icon(Icons.attach_file_outlined),
                   ),
-                  title: Text('Attach File'),
+                  title: Text(localizations!.attachFile),
                   onTap: () {
                     showModalBottomSheet(
                       context: context,
@@ -175,12 +177,12 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
                         return Column(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            const ListTile(
-                              title: Text('Upload from'),
+                            ListTile(
+                              title: Text(localizations.uploadFrom),
                             ),
                             ListTile(
                               leading: const Icon(Icons.folder_open_outlined),
-                              title: Text('Device files'),
+                              title: Text(localizations.deviceFiles),
                               onTap: () async {
                                 Navigator.pop(context);
                                 // Thêm mã để xử lý khi người dùng chọn "Device files"
@@ -203,7 +205,7 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
                             ),
                             ListTile(
                               leading: Icon(Icons.camera_alt_outlined),
-                              title: Text('Camera'),
+                              title: Text(localizations.camera),
                               onTap: () async {
                                 Navigator.pop(context);
                                 // Thêm mã để xử lý khi người dùng chọn "Camera"

@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 
 class ComingSoonWidget extends StatelessWidget {
   const ComingSoonWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Expanded(
+    final localizations = AppLocalizations.of(context);
+    return Expanded(
         child: Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Text(
-            'Coming Soon',
-            style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+            localizations!.comingSoon,
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Text(
-            'This feature will be available soon',
+            localizations.featureAvailableSoon,
             style: TextStyle(fontSize: 20),
             textAlign: TextAlign.center,
           ),
