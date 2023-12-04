@@ -38,7 +38,7 @@ class TimeIntervalCard extends StatefulWidget {
 
 class _TimeIntervalCardState extends State<TimeIntervalCard> {
 
-  bool _isExpanded = true;
+  bool _isExpanded = false;
   String _formattedStartDate = '--/--/----';
   String _formattedStartTime = '--:--';
   String _formattedEndDate = '--/--/----';
@@ -47,24 +47,24 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
   @override
   void initState() {
     super.initState();
-    _loadIsExpanded();
+    //_loadIsExpanded();
   }
 
-  void _loadIsExpanded() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final isExpanded =
-        prefs.getBool('isExpanded_${widget.timeInterval.id}') ?? true;
-    if (mounted) {
-      setState(() {
-        _isExpanded = isExpanded;
-      });
-    }
-  }
+  // void _loadIsExpanded() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   final isExpanded =
+  //       prefs.getBool('isExpanded_${widget.timeInterval.id}') ?? true;
+  //   if (mounted) {
+  //     setState(() {
+  //       _isExpanded = isExpanded;
+  //     });
+  //   }
+  // }
 
-  void _saveIsExpanded() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isExpanded_${widget.timeInterval.id}', _isExpanded);
-  }
+  // void _saveIsExpanded() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   prefs.setBool('isExpanded_${widget.timeInterval.id}', _isExpanded);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -328,11 +328,11 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                           }
                         } else if (result == 'option5') {
                           setState(() => _isExpanded = !_isExpanded);
-                          _saveIsExpanded();
+                          //_saveIsExpanded();
                           //widget.onSubtasksDisplayChanged;
                         } else if (result == 'option6') {
                           setState(() => _isExpanded = !_isExpanded);
-                          _saveIsExpanded();
+                          //_saveIsExpanded();
                           //widget.onSubtasksDisplayChanged;
                         }
                       },

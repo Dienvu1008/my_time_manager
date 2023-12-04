@@ -166,8 +166,8 @@ class _AddOrEditMeasurableTaskPageState
         context: context,
         builder: (context) => AlertDialog(
           title: Text(AppLocalizations.of(context)!.notification),
-          content: Text(
-              AppLocalizations.of(context)!.minTargetGreaterThanMaxTarget),
+          content:
+              Text(AppLocalizations.of(context)!.minTargetGreaterThanMaxTarget),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -244,8 +244,7 @@ class _AddOrEditMeasurableTaskPageState
                   });
                 },
               ),
-              DescriptionListTile(
-                  descriptionController: _descriptionController),
+
               TargetBlockListTile(
                 unitController: _unitController,
                 targetAtLeastController: _targetAtLeastController,
@@ -255,19 +254,21 @@ class _AddOrEditMeasurableTaskPageState
                 onTargetTypeChanged: (value) =>
                     setState(() => _targetType = value),
               ),
-              if(widget.measurableTask != null)
-              ScheduleListTile(
-                title: widget.measurableTask!.title,
-                color: widget.measurableTask!.color,
-                description: widget.measurableTask!.description,
-                location: widget.measurableTask!.location,
-                targetAtLeast: widget.measurableTask!.targetAtLeast,
-                targetAtMost: widget.measurableTask!.targetAtMost,
-                targetType: widget.measurableTask!.targetType,
-                unit: widget.measurableTask!.unit,
-                subtasks: [],
-                measurableTaskId: _id,
-              ),
+              DescriptionListTile(
+                  descriptionController: _descriptionController),
+              if (widget.measurableTask != null)
+                ScheduleListTile(
+                  title: widget.measurableTask!.title,
+                  color: widget.measurableTask!.color,
+                  description: widget.measurableTask!.description,
+                  location: widget.measurableTask!.location,
+                  targetAtLeast: widget.measurableTask!.targetAtLeast,
+                  targetAtMost: widget.measurableTask!.targetAtMost,
+                  targetType: widget.measurableTask!.targetType,
+                  unit: widget.measurableTask!.unit,
+                  subtasks: [],
+                  measurableTaskId: _id,
+                ),
               LocationListTile(locationController: _locationController),
               CompletionListTile(
                 isCompleted: _isCompleted,

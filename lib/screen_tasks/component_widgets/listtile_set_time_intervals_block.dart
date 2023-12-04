@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+//Các yếu tố chính của một TimeInterval là ngày bắt đầu, giờ bắt đầu, ngày kết thúc, giờ kết thúc.
+//Một TimeInterval cần có ít nhất một ngày bắt đầu hoặc ngày kết thúc được xác định.
+//Nếu TimeInterval có cả hai ngày bắt đầu và ngày kết thúc được xác định thì ngày bắt đầu không được phép xảy ra sau ngày kết thúc.
+
+//Nếu TimeInterval có ngày bắt đầu và ngày kết thúc là cùng một ngày, 
+//giờ bắt đầu và giờ kết thúc được xác định thì giờ bắt đầu không được phép xảy ra sau giờ kết thúc.
+
+//Nếu ngày bắt đầu không được xác định rõ thì thời gian bắt đầu cũng sẽ không được xác định.
+//Nếu ngày kết thúc không được xác định rõ thì thời gian kết thúc cũng sẽ không được xác định.
+
 class SetTimeIntervalBlockListTile extends StatefulWidget {
   final TextEditingController startDateController;
   bool isStartDateUndefined;
@@ -13,18 +23,17 @@ class SetTimeIntervalBlockListTile extends StatefulWidget {
   final String languageCode;
   final formKey;
 
-  SetTimeIntervalBlockListTile({
-    required this.startDateController,
-    required this.isStartDateUndefined,
-    required this.endDateController,
-    required this.isEndDateUndefined,
-    required this.startTimeController,
-    required this.endTimeController,
-    required this.isStartTimeUndefined,
-    required this.isEndTimeUndefined,
-    required this.languageCode,
-    required this.formKey
-  });
+  SetTimeIntervalBlockListTile(
+      {required this.startDateController,
+      required this.isStartDateUndefined,
+      required this.endDateController,
+      required this.isEndDateUndefined,
+      required this.startTimeController,
+      required this.endTimeController,
+      required this.isStartTimeUndefined,
+      required this.isEndTimeUndefined,
+      required this.languageCode,
+      required this.formKey});
 
   @override
   _SetTimeIntervalBlockListTileState createState() =>
@@ -35,10 +44,9 @@ class _SetTimeIntervalBlockListTileState
     extends State<SetTimeIntervalBlockListTile> {
   @override
   Widget build(BuildContext context) {
+
     return Form(
         key: widget.formKey,
-        //child:
-        //SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 10),
@@ -205,9 +213,9 @@ class _SetTimeIntervalBlockListTileState
                       fontSize: 12.0,
                     ),
                     controller: widget.startTimeController,
-                    readOnly: widget.isStartTimeUndefined,
-                    enabled: !widget.isStartDateUndefined &&
-                        widget.startDateController.text.isNotEmpty,
+                    //readOnly: widget.isStartTimeUndefined,
+                    // enabled: !widget.isStartDateUndefined &&
+                    //     widget.startDateController.text.isNotEmpty,
                     maxLines: 1,
                     onTap: () async {
                       if (!widget.isStartDateUndefined &&
@@ -292,9 +300,9 @@ class _SetTimeIntervalBlockListTileState
                     ),
                     maxLines: 1,
                     controller: widget.endTimeController,
-                    readOnly: widget.isEndTimeUndefined,
-                    enabled: !widget.isEndDateUndefined &&
-                        widget.endDateController.text.isNotEmpty,
+                    //readOnly: widget.isEndTimeUndefined,
+                    // enabled: !widget.isEndDateUndefined &&
+                    //     widget.endDateController.text.isNotEmpty,
                     onTap: (() async {
                       if (!widget.isEndDateUndefined &&
                           !widget.isEndTimeUndefined) {

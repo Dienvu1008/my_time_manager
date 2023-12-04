@@ -93,9 +93,9 @@ class AboutUsPage extends StatelessWidget {
                         }),
                     ListTile(
                       leading: const Icon(Icons.update_outlined),
-                      title: Text("Pro Version", style: textTheme.bodyMedium),
-                      subtitle: Text("1.3.0", style: textTheme.bodySmall),
-                      onTap: () => launchURL(proVersionUrl),
+                      title: Text("Free Version", style: textTheme.bodyMedium),
+                      subtitle: Text("1.3.1", style: textTheme.bodySmall),
+                      onTap: () => launchURL(freeVersionUrl),
                     ),
                     ListTile(
                         leading: const Icon(Icons.policy_outlined),

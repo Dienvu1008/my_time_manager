@@ -16,21 +16,6 @@ class App extends StatelessWidget {
       child: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) {
           return MaterialApp(
-            // locale: Locale(
-            //   ['de','en', 'vi', ][state.language.index],
-            // ),
-            // localizationsDelegates: const [
-            //   AppLocalizationsDelegate(),
-            //   GlobalMaterialLocalizations.delegate,
-            //   GlobalWidgetsLocalizations.delegate,
-            //   GlobalCupertinoLocalizations.delegate,
-            // ],
-            // supportedLocales: const [
-            //   Locale('de'),
-            //   Locale('en'),
-            //   Locale('vi'),
-            // ],
-
             locale: Locale(
               [
                 'cs',

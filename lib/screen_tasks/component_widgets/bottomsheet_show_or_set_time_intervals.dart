@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
@@ -704,17 +705,21 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
 
   Future<void> _onSave() async {
     if (_formKey.currentState!.validate()) {
-      if (_isStartDateUndefined &&
-          _isEndDateUndefined &&
-          _isStartTimeUndefined &&
-          _isEndTimeUndefined) {
+      if ((_isStartDateUndefined &&
+              _isEndDateUndefined &&
+              _isStartTimeUndefined &&
+              _isEndTimeUndefined) ||
+          (_startDateController.text.isEmpty &&
+              _endDateController.text.isEmpty) ||
+          (_startDateController.text == 'undefined' &&
+              _endDateController.text == 'undefined')) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            content: Text('Please enter at least one date'),
+            content: Text(AppLocalizations.of(context)!.enterAtLeastOneDate),
             actions: [
               TextButton(
-                child: Text("OK"),
+                child: Text(AppLocalizations.of(context)!.ok),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -744,10 +749,6 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
               ),
             );
           } else {
-            // _startDate = DateFormat('EEE, dd MMM, yyyy',
-            //         Localizations.localeOf(context).languageCode)
-            //     .parse(_startDateController.text);
-
             _startDate = !_isStartDateUndefined
                 ? (() {
                     try {
@@ -902,95 +903,6 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
           }
         }
 
-        // if (!_isStartDateUndefined) {
-        //   if (_startDateController.text.isEmpty) {
-        //     showDialog(
-        //       context: context,
-        //       builder: (context) => AlertDialog(
-        //         content: Text('Please enter start date'),
-        //         actions: [
-        //           TextButton(
-        //             child: Text("OK"),
-        //             onPressed: () {
-        //               Navigator.of(context).pop();
-        //             },
-        //           ),
-        //         ],
-        //       ),
-        //     );
-        //   } else {
-        //     _startDate = DateFormat('EEE, dd MMM, yyyy',
-        //             Localizations.localeOf(context).languageCode)
-        //         .parse(_startDateController.text);
-        //   }
-        // }
-
-        // final startDate = !_isStartDateUndefined
-        //     ? DateFormat('EEE, dd MMM, yyyy',
-        //             Localizations.localeOf(context).languageCode)
-        //         .parse(_startDateController.text)
-        //     : null;
-        // final endDate = !_isEndDateUndefined
-        //     ? DateFormat('EEE, dd MMM, yyyy',
-        //             Localizations.localeOf(context).languageCode)
-        //         .parse(_endDateController.text)
-        //     : null;
-        // final startTime = !_isStartTimeUndefined
-        //     ? TimeOfDay.fromDateTime(
-        //         DateFormat('HH:mm').parse(_startTimeController.text))
-        //     : null;
-        // final endTime = !_isEndTimeUndefined
-        //     ? TimeOfDay.fromDateTime(
-        //         DateFormat('HH:mm').parse(_endTimeController.text))
-        //     : null;
-
-        // final startDate = !_isStartDateUndefined
-        //     ? (() {
-        //         try {
-        //           return DateFormat('EEE, dd MMM, yyyy',
-        //                   Localizations.localeOf(context).languageCode)
-        //               .parse(_startDateController.text);
-        //         } catch (_) {
-        //           // Chuỗi ngày không hợp lệ hoặc không thể phân tích được, trả về null
-        //           return null;
-        //         }
-        //       })()
-        //     : null;
-        // final endDate = !_isEndDateUndefined
-        //     ? (() {
-        //         try {
-        //           return DateFormat('EEE, dd MMM, yyyy',
-        //                   Localizations.localeOf(context).languageCode)
-        //               .parse(_endDateController.text);
-        //         } catch (_) {
-        //           // Chuỗi ngày không hợp lệ hoặc không thể phân tích được, trả về null
-        //           return null;
-        //         }
-        //       })()
-        //     : null;
-        // final startTime = !_isStartTimeUndefined
-        //     ? (() {
-        //         try {
-        //           return TimeOfDay.fromDateTime(
-        //               DateFormat('HH:mm').parse(_startTimeController.text));
-        //         } catch (_) {
-        //           // Chuỗi thời gian không hợp lệ hoặc không thể phân tích được, trả về null
-        //           return null;
-        //         }
-        //       })()
-        //     : null;
-        // final endTime = !_isEndTimeUndefined
-        //     ? (() {
-        //         try {
-        //           return TimeOfDay.fromDateTime(
-        //               DateFormat('HH:mm').parse(_endTimeController.text));
-        //         } catch (_) {
-        //           // Chuỗi thời gian không hợp lệ hoặc không thể phân tích được, trả về null
-        //           return null;
-        //         }
-        //       })()
-        //     : null;
-
         final timeInterval = TimeInterval(
           taskId: widget.taskId,
           measurableTaskId: widget.measurableTaskId,
@@ -1015,10 +927,6 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
           isEndDateUndefined: _isEndDateUndefined,
           isStartTimeUndefined: _isStartTimeUndefined,
           isEndTimeUndefined: _isEndTimeUndefined,
-          // isStartDateUndefined: _startDate == null || _isStartDateUndefined,
-          // isEndDateUndefined: _endDate == null || _isEndDateUndefined,
-          // isStartTimeUndefined: _startTime == null || _isStartTimeUndefined,
-          // isEndTimeUndefined: _endTime == null || _isEndTimeUndefined,
         );
         if ((timeInterval.startTimestamp != null &&
                 timeInterval.endTimestamp != null &&
@@ -1232,10 +1140,6 @@ class _TimeIntervalOfTaskOrEventPageState
         }
       }
     }
-    // Update the UI.
-    //setState(() {
-    // Your UI update code here.
-    //});
   }
 
   Future<void> _init() async {
@@ -1642,32 +1546,14 @@ class _TimeIntervalOfTaskOrEventPageState
                               });
                             }
                           }
-
                           // Call the async function
                           editTimeInterval();
-
-                          // await Navigator.of(context).push(
-                          //   MaterialPageRoute(
-                          //     builder: (_) => AddOrEditTimeIntervalPage(
-                          //       timeInterval: timeInterval,
-                          //     ),
-                          //     fullscreenDialog: false,
-                          //   ),
-                          // );
-                          // final updatedTimeInterval = await _databaseManager
-                          //     .timeInterval(timeInterval.id);
-                          // final index = _timeIntervals.indexWhere(
-                          //     (item) => item.id == updatedTimeInterval.id);
-                          // if (index != -1) {
-                          // setState(() {
-                          //   _timeIntervals[index] = updatedTimeInterval;
-                          // });
-                          // }
                         } else if (result == 'delete') {
                           _deleteTimeInterval(timeInterval);
                         } else if (result == 'expand') {
                           setState(() {
-                            _isExpanded[timeInterval.id]  = !_isExpanded[timeInterval.id]! ;
+                            _isExpanded[timeInterval.id] =
+                                !_isExpanded[timeInterval.id]!;
                           });
                         }
                       },
@@ -1743,17 +1629,20 @@ class _TimeIntervalOfTaskOrEventPageState
                       ],
                     ),
                   ),
-                  if (_isExpanded[timeInterval.id]! && timeInterval.description.isNotEmpty)
+                  if (_isExpanded[timeInterval.id]! &&
+                      timeInterval.description.isNotEmpty)
                     ListTile(
                         dense: true,
                         leading: Icon(Icons.description_outlined),
                         title: Text(timeInterval.description)),
-                  if (_isExpanded[timeInterval.id]! && timeInterval.location.isNotEmpty)
+                  if (_isExpanded[timeInterval.id]! &&
+                      timeInterval.location.isNotEmpty)
                     ListTile(
                         dense: true,
                         leading: Icon(Icons.location_on_outlined),
                         title: Text(timeInterval.location)),
-                  if (timeInterval.measurableTaskId != null && _isExpanded[timeInterval.id]!)
+                  if (timeInterval.measurableTaskId != null &&
+                      _isExpanded[timeInterval.id]!)
                     ListTile(
                       dense: true,
                       title: Column(
@@ -1776,7 +1665,8 @@ class _TimeIntervalOfTaskOrEventPageState
                         ],
                       ),
                     ),
-                  if (timeInterval.measurableTaskId != null && _isExpanded[timeInterval.id]!)
+                  if (timeInterval.measurableTaskId != null &&
+                      _isExpanded[timeInterval.id]!)
                     ListTile(
                       dense: true,
                       title: ActionChip(
@@ -1785,7 +1675,8 @@ class _TimeIntervalOfTaskOrEventPageState
                           ),
                           onPressed: () => _onHasBeenDoneUpdate(timeInterval)),
                     ),
-                  if (timeInterval.taskWithSubtasksId != null && _isExpanded[timeInterval.id]!
+                  if (timeInterval.taskWithSubtasksId != null &&
+                          _isExpanded[timeInterval.id]!
                       //timeInterval.isSubtasksChanged
                       )
                     ...timeInterval.subtasks.reversed.map(

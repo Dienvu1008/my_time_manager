@@ -103,8 +103,9 @@ class _AddOrEditTaskWithSubtasksPageState
     return Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
-          title:
-              widget.taskWithSubtasks == null ? Text(localizations!.addANewTask) : Text(''),
+          title: widget.taskWithSubtasks == null
+              ? Text(localizations!.addANewTask)
+              : Text(''),
           centerTitle: true,
           actions: [
             IconButton(
@@ -135,11 +136,9 @@ class _AddOrEditTaskWithSubtasksPageState
                     });
                   },
                 ),
-                DescriptionListTile(
-                    descriptionController: _descriptionController),
                 const SizedBox(height: 12.0),
                 ..._subtasks.reversed.map((subtask) => CheckboxListTile(
-                  dense:true,
+                      dense: true,
                       controlAffinity: ListTileControlAffinity.leading,
                       value: subtask.isSubtaskCompleted,
                       onChanged: (value) => setState(
@@ -156,8 +155,8 @@ class _AddOrEditTaskWithSubtasksPageState
                                 title: Text(localizations!.editSubtask),
                                 content: TextField(
                                   controller: _controller,
-                                  decoration:
-                                      InputDecoration(labelText: localizations.title),
+                                  decoration: InputDecoration(
+                                      labelText: localizations.title),
                                 ),
                                 actions: <Widget>[
                                   TextButton(
@@ -213,6 +212,8 @@ class _AddOrEditTaskWithSubtasksPageState
                 ]),
                 const SizedBox(height: 12),
                 const Divider(height: 4),
+                DescriptionListTile(
+                    descriptionController: _descriptionController),
                 if (widget.taskWithSubtasks != null)
                   ScheduleListTile(
                       title: widget.taskWithSubtasks!.title,
@@ -222,8 +223,8 @@ class _AddOrEditTaskWithSubtasksPageState
                       targetType: TargetType.about,
                       targetAtLeast: double.negativeInfinity,
                       targetAtMost: double.infinity,
-                      unit:'',
-                      subtasks: widget.taskWithSubtasks!.subtasks ,
+                      unit: '',
+                      subtasks: widget.taskWithSubtasks!.subtasks,
                       taskWithSubtasksId: _id),
                 LocationListTile(
                   locationController: _locationController,
@@ -259,7 +260,8 @@ class _AddOrEditTaskWithSubtasksPageState
         title: Text(AppLocalizations.of(context)!.addSubtask),
         content: TextField(
           controller: _subtaskTitleController,
-          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.title),
+          decoration:
+              InputDecoration(labelText: AppLocalizations.of(context)!.title),
         ),
         actions: [
           TextButton(

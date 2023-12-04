@@ -514,12 +514,12 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                       }
                     },
                   ),
-                  // ListTile(
-                  //     leading: const Icon(Icons.upgrade_outlined),
-                  //     title: const Text(
-                  //       "Upgrade to the Pro version",
-                  //     ),
-                  //     onTap: () => launchURL(proVersionUrl)),
+                  ListTile(
+                      leading: const Icon(Icons.upgrade_outlined),
+                      title: const Text(
+                        "Upgrade to the Pro version",
+                      ),
+                      onTap: () => launchURL(proVersionUrl)),
                 ],
               ),
             ),

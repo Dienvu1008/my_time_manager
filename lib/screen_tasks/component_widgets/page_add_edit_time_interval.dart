@@ -10,6 +10,7 @@ import 'package:my_time_manager/screen_tasks/component_widgets/listtile_location
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_set_time_intervals_block.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_target_block.dart';
 import 'package:my_time_manager/utils/constants.dart';
+import 'package:my_time_manager/utils/utils.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/models/model_time_interval.dart';
@@ -159,264 +160,278 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
   }
 
   Future<void> _onSave() async {
-    //if (_formKey.currentState!.validate()) {
-    if (_isStartDateUndefined &&
-        _isEndDateUndefined &&
-        _isStartTimeUndefined &&
-        _isEndTimeUndefined) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          content: Text(AppLocalizations.of(context)!.enterAtLeastOneDate),
-        ),
-      );
-    } else {
-      final id = _id;
-      final title = _titleController.text;
-      final description = _descriptionController.text;
-      final location = _locationController.text;
-      final isCompleted = widget.timeInterval == null ? false : _isCompleted;
-      final isImportant = widget.timeInterval == null ? false : _isImportant;
-      final color = _timeIntervalColor;
-      final subtasks = _subtasks;
-
-      final howMuchHasBeenDone = _hasBeenDoneController.text == ''
-          ? double.parse('0.0')
-          : double.parse(_hasBeenDoneController.text);
-      double? targetAtLeast;
-      if (_targetType == TargetType.atLeast ||
-          _targetType == TargetType.about) {
-        targetAtLeast = double.tryParse(_targetAtLeastController.text);
-        if (targetAtLeast == null) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('Error'),
-              content: Text('Invalid value for "at least"'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('OK'),
-                ),
-              ],
-            ),
-          );
-          return;
-        }
-      } else {
-        targetAtLeast = double.negativeInfinity;
-      }
-      double? targetAtMost;
-      if (_targetType == TargetType.atMost || _targetType == TargetType.about) {
-        targetAtMost = double.tryParse(_targetAtMostController.text);
-        if (targetAtMost == null) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('Error'),
-              content: Text('Invalid value for "at most"'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('OK'),
-                ),
-              ],
-            ),
-          );
-          return;
-        }
-      } else {
-        targetAtMost = double.infinity;
-      }
-
-      final targetType = _targetType;
-      if (targetType == TargetType.about && (targetAtLeast > targetAtMost)) {
+    if (_formKey.currentState!.validate()) {
+      if ((_isStartDateUndefined &&
+              _isEndDateUndefined &&
+              _isStartTimeUndefined &&
+              _isEndTimeUndefined) ||
+          (_startDateController.text.isEmpty &&
+              _endDateController.text.isEmpty) ||
+          (_startDateController.text == 'undefined' &&
+              _endDateController.text == 'undefined')) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text(AppLocalizations.of(context)!.notification),
-            content: Text(
-                AppLocalizations.of(context)!.minTargetGreaterThanMaxTarget),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(AppLocalizations.of(context)!.close),
-              ),
-            ],
+            content: Text(AppLocalizations.of(context)!.enterAtLeastOneDate),
           ),
         );
-        return;
       }
-      final unit = _unitController.text;
+      // else if ((_isStartDateUndefined ||
+      //         _startDateController.text.isEmpty ||
+      //         _startDateController.text == 'undefined') &&
+      //     (_startDateController.text != 'undefined' &&
+      //     _startDateController.text.isNotEmpty)) {
+      //   showDialog(
+      //     context: context,
+      //     builder: (context) => AlertDialog(
+      //       content: Text('Giờ bắt đầu phải đi kèm với ngày bắt đầu'),
+      //     ),
+      //   );
+      // }
+      // else if ((_isEndDateUndefined ||
+      //         _endDateController.text.isEmpty ||
+      //         _endDateController.text == 'undefined') &&
+      //     (_endDateController.text != 'undefined' &&
+      //     _endDateController.text.isNotEmpty)) {
+      //   showDialog(
+      //     context: context,
+      //     builder: (context) => AlertDialog(
+      //       content: Text('Giờ kết thúc phải đi kèm với ngày kết thúc'),
+      //     ),
+      //   );
+      // }
+      else {
+        if ((_isStartDateUndefined ||
+                _startDateController.text.isEmpty ||
+                _startDateController.text == 'undefined') &&
+            (_startDateController.text != 'undefined' &&
+                _startDateController.text.isNotEmpty)) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              content: Text('Giờ bắt đầu phải đi kèm với ngày bắt đầu'),
+            ),
+          );
+        }
 
-      // final isStartDateUndefined = _isStartDateUndefined;
-      // final isStartTimeUndefined = _isStartTimeUndefined;
-      // final isEndDateUndefined = _isEndDateUndefined;
-      // final isEndTimeUndefined = _isEndTimeUndefined;
+        if ((_isEndDateUndefined ||
+                _endDateController.text.isEmpty ||
+                _endDateController.text == 'undefined') &&
+            (_endDateController.text != 'undefined' &&
+                _endDateController.text.isNotEmpty)) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              content: Text('Giờ kết thúc phải đi kèm với ngày kết thúc'),
+            ),
+          );
+        }
 
-      // final startDate = !_isStartDateUndefined
-      //     ? DateFormat('EEE, dd MMM, yyyy',
-      //             Localizations.localeOf(context).languageCode)
-      //         .parse(_startDateController.text)
-      //     : null;
-      // final endDate = !_isEndDateUndefined
-      //     ? DateFormat('EEE, dd MMM, yyyy',
-      //             Localizations.localeOf(context).languageCode)
-      //         .parse(_endDateController.text)
-      //     : null;
-      // final startTime = !_isStartTimeUndefined
-      //     ? TimeOfDay.fromDateTime(
-      //         DateFormat('HH:mm').parse(_startTimeController.text))
-      //     : null;
-      // final endTime = !_isEndTimeUndefined
-      //     ? TimeOfDay.fromDateTime(
-      //         DateFormat('HH:mm').parse(_endTimeController.text))
-      //     : null;
+        final id = _id;
+        final title = _titleController.text;
+        final description = _descriptionController.text;
+        final location = _locationController.text;
+        final isCompleted = widget.timeInterval == null ? false : _isCompleted;
+        final isImportant = widget.timeInterval == null ? false : _isImportant;
+        final color = _timeIntervalColor;
+        final subtasks = _subtasks;
 
-      final startDate = !_isStartDateUndefined
-          ? (() {
-              try {
-                return DateFormat('EEE, dd MMM, yyyy',
-                        Localizations.localeOf(context).languageCode)
-                    .parse(_startDateController.text);
-              } catch (_) {
-                // Chuỗi ngày không hợp lệ hoặc không thể phân tích được, trả về null
-                return null;
-              }
-            })()
-          : null;
-      final endDate = !_isEndDateUndefined
-          ? (() {
-              try {
-                return DateFormat('EEE, dd MMM, yyyy',
-                        Localizations.localeOf(context).languageCode)
-                    .parse(_endDateController.text);
-              } catch (_) {
-                // Chuỗi ngày không hợp lệ hoặc không thể phân tích được, trả về null
-                return null;
-              }
-            })()
-          : null;
-      final startTime = !_isStartTimeUndefined
-          ? (() {
-              try {
-                return TimeOfDay.fromDateTime(
-                    DateFormat('HH:mm').parse(_startTimeController.text));
-              } catch (_) {
-                // Chuỗi thời gian không hợp lệ hoặc không thể phân tích được, trả về null
-                return null;
-              }
-            })()
-          : null;
-      final endTime = !_isEndTimeUndefined
-          ? (() {
-              try {
-                return TimeOfDay.fromDateTime(
-                    DateFormat('HH:mm').parse(_endTimeController.text));
-              } catch (_) {
-                // Chuỗi thời gian không hợp lệ hoặc không thể phân tích được, trả về null
-                return null;
-              }
-            })()
-          : null;
+        final howMuchHasBeenDone = _hasBeenDoneController.text == ''
+            ? double.parse('0.0')
+            : double.parse(_hasBeenDoneController.text);
+        double? targetAtLeast;
+        if (_targetType == TargetType.atLeast ||
+            _targetType == TargetType.about) {
+          targetAtLeast = double.tryParse(_targetAtLeastController.text);
+          if (targetAtLeast == null) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Error'),
+                content: Text('Invalid value for "at least"'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('OK'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
+        } else {
+          targetAtLeast = double.negativeInfinity;
+        }
+        double? targetAtMost;
+        if (_targetType == TargetType.atMost ||
+            _targetType == TargetType.about) {
+          targetAtMost = double.tryParse(_targetAtMostController.text);
+          if (targetAtMost == null) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Error'),
+                content: Text('Invalid value for "at most"'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('OK'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
+        } else {
+          targetAtMost = double.infinity;
+        }
 
-      final TimeInterval timeInterval = TimeInterval(
-          id: id,
-          title: title,
-          isCompleted: isCompleted,
-          isImportant: isImportant,
-          description: description,
-          location: location,
-          color: color,
-          subtasks: subtasks,
-          targetType: targetType,
-          targetAtLeast: targetAtLeast,
-          targetAtMost: targetAtMost,
-          unit: unit,
-          // isEndDateUndefined: _isEndDateUndefined,
-          // isEndTimeUndefined: _isEndTimeUndefined,
-          // isStartDateUndefined: _isStartDateUndefined,
-          // isStartTimeUndefined: _isStartTimeUndefined,
-          howMuchHasBeenDone: howMuchHasBeenDone,
-          startDate: startDate,
-          endDate: endDate,
-          startTime: startTime,
-          endTime: endTime,
-          isStartDateUndefined: startDate == null || _isStartDateUndefined,
-          isEndDateUndefined: endDate == null || _isEndDateUndefined,
-          isStartTimeUndefined: startTime == null || _isStartTimeUndefined,
-          isEndTimeUndefined: endTime == null || _isEndTimeUndefined,
-          taskId: widget.timeInterval!.taskId,
-          measurableTaskId: widget.timeInterval!.measurableTaskId,
-          taskWithSubtasksId: widget.timeInterval!.taskWithSubtasksId);
-      if ((timeInterval.startTimestamp != null &&
-              timeInterval.endTimestamp != null &&
-              timeInterval.startTimestamp! > timeInterval.endTimestamp!) ||
-          (timeInterval.startDate != null &&
-              timeInterval.endDate != null &&
-              timeInterval.startDate!.isAfter(timeInterval.endDate!)) ||
-          (timeInterval.startDate != null &&
-              timeInterval.endDate != null &&
-              timeInterval.startDate!.isAtSameMomentAs(timeInterval.endDate!) &&
-              timeInterval.startTime != null &&
-              timeInterval.endTime != null &&
-              (timeInterval.startTime!.hour * 60 +
-                      timeInterval.startTime!.minute) >
-                  (timeInterval.startTime!.hour * 60 +
-                      timeInterval.startTime!.minute))) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text(AppLocalizations.of(context)!.error),
+        final targetType = _targetType;
+        if (targetType == TargetType.about && (targetAtLeast > targetAtMost)) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(AppLocalizations.of(context)!.notification),
               content: Text(
-                  AppLocalizations.of(context)!.startTimeAfterEndTime),
-              actions: <Widget>[
+                  AppLocalizations.of(context)!.minTargetGreaterThanMaxTarget),
+              actions: [
                 TextButton(
+                  onPressed: () => Navigator.pop(context),
                   child: Text(AppLocalizations.of(context)!.close),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
                 ),
               ],
-            );
-          },
-        );
-      } else {
-        widget.timeInterval == null
-            ? await _databaseManager.insertTimeInterval(timeInterval)
-            : await _databaseManager.updateTimeInterval(timeInterval);
+            ),
+          );
+          return;
+        }
+        final unit = _unitController.text;
+        final startDate = !_isStartDateUndefined
+            ? (() {
+                try {
+                  return DateFormat('EEE, dd MMM, yyyy',
+                          Localizations.localeOf(context).languageCode)
+                      .parse(_startDateController.text);
+                } catch (_) {
+                  // Chuỗi ngày không hợp lệ hoặc không thể phân tích được, trả về null
+                  return null;
+                }
+              })()
+            : null;
+        final endDate = !_isEndDateUndefined
+            ? (() {
+                try {
+                  return DateFormat('EEE, dd MMM, yyyy',
+                          Localizations.localeOf(context).languageCode)
+                      .parse(_endDateController.text);
+                } catch (_) {
+                  // Chuỗi ngày không hợp lệ hoặc không thể phân tích được, trả về null
+                  return null;
+                }
+              })()
+            : null;
+        final startTime = !_isStartTimeUndefined
+            ? (() {
+                try {
+                  return TimeOfDay.fromDateTime(
+                      DateFormat('HH:mm').parse(_startTimeController.text));
+                } catch (_) {
+                  // Chuỗi thời gian không hợp lệ hoặc không thể phân tích được, trả về null
+                  return null;
+                }
+              })()
+            : null;
+        final endTime = !_isEndTimeUndefined
+            ? (() {
+                try {
+                  return TimeOfDay.fromDateTime(
+                      DateFormat('HH:mm').parse(_endTimeController.text));
+                } catch (_) {
+                  // Chuỗi thời gian không hợp lệ hoặc không thể phân tích được, trả về null
+                  return null;
+                }
+              })()
+            : null;
 
-        Navigator.pop(context, timeInterval);
-        setState(() {});
+        final TimeInterval timeInterval = TimeInterval(
+            id: id,
+            title: title,
+            isCompleted: isCompleted,
+            isImportant: isImportant,
+            description: description,
+            location: location,
+            color: color,
+            subtasks: subtasks,
+            targetType: targetType,
+            targetAtLeast: targetAtLeast,
+            targetAtMost: targetAtMost,
+            unit: unit,
+            isEndDateUndefined: _isEndDateUndefined,
+            isEndTimeUndefined: _isEndTimeUndefined,
+            isStartDateUndefined: _isStartDateUndefined,
+            isStartTimeUndefined: _isStartTimeUndefined,
+            howMuchHasBeenDone: howMuchHasBeenDone,
+            startDate: startDate,
+            endDate: endDate,
+            startTime: startTime,
+            endTime: endTime,
+            taskId: widget.timeInterval!.taskId,
+            measurableTaskId: widget.timeInterval!.measurableTaskId,
+            taskWithSubtasksId: widget.timeInterval!.taskWithSubtasksId);
+        if ((timeInterval.startTimestamp != null &&
+                timeInterval.endTimestamp != null &&
+                timeInterval.startTimestamp! > timeInterval.endTimestamp!) ||
+            (timeInterval.startDate != null &&
+                timeInterval.endDate != null &&
+                timeInterval.startDate!.isAfter(timeInterval.endDate!)) ||
+            (timeInterval.startDate != null &&
+                timeInterval.endDate != null &&
+                timeInterval.startDate!
+                    .isAtSameMomentAs(timeInterval.endDate!) &&
+                timeInterval.startTime != null &&
+                timeInterval.endTime != null &&
+                (timeInterval.startTime!.hour * 60 +
+                        timeInterval.startTime!.minute) >
+                    (timeInterval.startTime!.hour * 60 +
+                        timeInterval.startTime!.minute))) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(AppLocalizations.of(context)!.error),
+                content:
+                    Text(AppLocalizations.of(context)!.startTimeAfterEndTime),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text(AppLocalizations.of(context)!.close),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          widget.timeInterval == null
+              ? await _databaseManager.insertTimeInterval(timeInterval)
+              : await _databaseManager.updateTimeInterval(timeInterval);
+
+          Navigator.pop(context, timeInterval);
+          setState(() {});
+        }
       }
-    }
-    //}
-  }
-
-  static Color contrastColor(Color color) {
-    final brightness = ThemeData.estimateBrightnessForColor(color);
-    switch (brightness) {
-      case Brightness.dark:
-        return Colors.white;
-      case Brightness.light:
-        return Colors.black;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    // final textTheme = Theme.of(context)
-    //     .textTheme
-    //     .apply(displayColor: Theme.of(context).colorScheme.onSurface);
     final timeIntervalColor = widget.timeInterval!.color;
     final myColorScheme = Theme.of(context).brightness == Brightness.dark
         ? ColorScheme.dark(primary: timeIntervalColor)
         : ColorScheme.light(primary: timeIntervalColor);
     final backgroundColor = myColorScheme.primaryContainer;
     final labelColor = contrastColor(backgroundColor);
-    final textTheme = Theme.of(context).textTheme.apply(bodyColor: labelColor);
     String languageCode = Localizations.localeOf(context).languageCode;
 
     double bottom = MediaQuery.of(context).viewInsets.bottom;
@@ -507,6 +522,18 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                     ],
                   ),
                 ),
+                SetTimeIntervalBlockListTile(
+                  startDateController: _startDateController,
+                  isStartDateUndefined: _isStartDateUndefined,
+                  endDateController: _endDateController,
+                  isEndDateUndefined: _isEndDateUndefined,
+                  startTimeController: _startTimeController,
+                  endTimeController: _endTimeController,
+                  isStartTimeUndefined: _isStartTimeUndefined,
+                  isEndTimeUndefined: _isEndTimeUndefined,
+                  languageCode: languageCode,
+                  formKey: _formKey,
+                ),
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
                   title: TextField(
@@ -530,25 +557,6 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                     ),
                   ),
                 ),
-
-                SetTimeIntervalBlockListTile(
-                  startDateController: _startDateController,
-                  isStartDateUndefined: _isStartDateUndefined,
-                  endDateController: _endDateController,
-                  isEndDateUndefined: _isEndDateUndefined,
-                  startTimeController: _startTimeController,
-                  endTimeController: _endTimeController,
-                  isStartTimeUndefined: _isStartTimeUndefined,
-                  isEndTimeUndefined: _isEndTimeUndefined,
-                  languageCode: languageCode,
-                  formKey: _formKey,
-                ),
-                const SizedBox(
-                  height: 08,
-                ),
-
-                DescriptionListTile(
-                    descriptionController: _descriptionController),
                 if (widget.timeInterval!.measurableTaskId != null)
                   TargetBlockListTile(
                     unitController: _unitController,
@@ -580,8 +588,8 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                                   title: Text(localizations.editSubtask),
                                   content: TextField(
                                     controller: _controller,
-                                    decoration:
-                                        InputDecoration(labelText: localizations.title),
+                                    decoration: InputDecoration(
+                                        labelText: localizations.title),
                                   ),
                                   actions: <Widget>[
                                     TextButton(
@@ -642,6 +650,8 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                   const Divider(
                     height: 4,
                   ),
+                DescriptionListTile(
+                    descriptionController: _descriptionController),
                 LocationListTile(locationController: _locationController),
                 CompletionListTile(
                   isUsedForTimeInterval: true,
@@ -667,7 +677,8 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
         title: Text(AppLocalizations.of(context)!.addSubtask),
         content: TextField(
           controller: _subtaskTitleController,
-          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.title),
+          decoration:
+              InputDecoration(labelText: AppLocalizations.of(context)!.title),
         ),
         actions: [
           TextButton(
