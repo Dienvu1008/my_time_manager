@@ -35,6 +35,7 @@ class _TableComplexExampleState extends State<TableComplexExample> {
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
   List<TimeInterval> _timeIntervals = [];
+  bool _showCalendar = true;
 
   @override
   void initState() {
@@ -185,7 +186,6 @@ class _TableComplexExampleState extends State<TableComplexExample> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        
         title: Text(AppLocalizations.of(context)!.hasBeenDone),
         content: TextFormField(
           controller: _hasBeenDoneController,
@@ -265,13 +265,19 @@ class _TableComplexExampleState extends State<TableComplexExample> {
                       _rangeSelectionMode = RangeSelectionMode.toggledOff;
                     } else if (value == 'range') {
                       _rangeSelectionMode = RangeSelectionMode.toggledOn;
+                    } else if (value == 'hide calendar') {
+                      _showCalendar = false;
+                    } else if (value == 'show calendar') {
+                      _showCalendar = true;
                     }
                   });
                 },
-                rangeSelectionMode: _rangeSelectionMode,
+                rangeSelectionMode: _rangeSelectionMode, 
+                showCalendar: _showCalendar,
               );
             },
           ),
+          if (_showCalendar)
           TableCalendar<TimeInterval>(
             firstDay: kFirstDay,
             lastDay: kLastDay,
@@ -369,6 +375,7 @@ class _CalendarHeader extends StatelessWidget {
   final void Function(String) onSelectionModeChanged;
   final RangeSelectionMode rangeSelectionMode;
   final bool clearButtonVisible;
+  final bool showCalendar;
 
   const _CalendarHeader({
     Key? key,
@@ -380,6 +387,7 @@ class _CalendarHeader extends StatelessWidget {
     required this.clearButtonVisible,
     required this.onSelectionModeChanged,
     required this.rangeSelectionMode,
+    required this.showCalendar,
   }) : super(key: key);
 
   @override
@@ -398,23 +406,29 @@ class _CalendarHeader extends StatelessWidget {
             width: 120.0,
             child: Text(
               headerText,
-              style: TextStyle(fontSize: 18.0),
+              style: const TextStyle(fontSize: 18.0),
             ),
           ),
           IconButton(
-            icon: Icon(Icons.calendar_today, size: 18.0),
+            icon: const Icon(Icons.calendar_today, size: 18.0),
             visualDensity: VisualDensity.compact,
             onPressed: onTodayButtonTap,
           ),
           if (clearButtonVisible)
             IconButton(
-              icon: Icon(Icons.clear, size: 18.0),
+              icon: const Icon(Icons.clear, size: 18.0),
               visualDensity: VisualDensity.compact,
               onPressed: onClearButtonTap,
             ),
           PopupMenuButton<String>(
-            icon: Icon(Icons.settings_outlined, size: 18.0),
+            icon: const Icon(Icons.settings_outlined, size: 18.0),
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: showCalendar ? 'hide calendar' : 'show calendar',
+                child: Text(
+                  showCalendar ? localizations!.hideCalendar : localizations!.showCalendar,
+                ),
+              ),
               PopupMenuItem<String>(
                 value: 'multi',
                 child: Text(
@@ -429,7 +443,7 @@ class _CalendarHeader extends StatelessWidget {
               PopupMenuItem<String>(
                 value: 'range',
                 child: Text(
-                  localizations!.selectDateRange,
+                  localizations.selectDateRange,
                   style: TextStyle(
                     color: rangeSelectionMode == RangeSelectionMode.toggledOn
                         ? Colors.blue
@@ -441,12 +455,14 @@ class _CalendarHeader extends StatelessWidget {
             onSelected: onSelectionModeChanged,
           ),
           const Spacer(),
+          if (showCalendar)
           IconButton(
-            icon: Icon(Icons.chevron_left),
+            icon: const Icon(Icons.chevron_left),
             onPressed: onLeftArrowTap,
           ),
+          if (showCalendar)
           IconButton(
-            icon: Icon(Icons.chevron_right),
+            icon: const Icon(Icons.chevron_right),
             onPressed: onRightArrowTap,
           ),
         ],

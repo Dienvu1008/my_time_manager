@@ -3481,6 +3481,43 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  String get showCalendar {
+    return {
+      'en': 'Show calendar',
+      'vi': 'Hiển thị lịch',
+      'de': 'Kalender anzeigen',
+      'cs': 'Zobrazit kalendář',
+      'es': 'Mostrar calendario',
+      'fr': 'Afficher le calendrier',
+      'it': 'Mostra calendario',
+      'ja': 'カレンダーを表示',
+      'ko': '달력 표시',
+      'no': 'Vis kalender',
+      'ru': 'Показать календарь',
+      'sv': 'Visa kalender',
+      'zh': '显示日历',
+    }[locale.languageCode]!;
+  }
+
+String get hideCalendar {
+    return {
+      'en': 'Hide calendar',
+      'vi': 'Ẩn lịch',
+      'de': 'Kalender ausblenden',
+      'cs': 'Skrýt kalendář',
+      'es': 'Ocultar calendario',
+      'fr': 'Masquer le calendrier',
+      'it': 'Nascondi calendario',
+      'ja': 'カレンダーを非表示',
+      'ko': '달력 숨기기',
+      'no': 'Skjul kalender',
+      'ru': 'Скрыть календарь',
+      'sv': 'Dölj kalender',
+      'zh': '隐藏日历',
+    }[locale.languageCode]!;
+  }
+
+
   // String get deviceFiles {
   //   return {
   //     'en': 'Device files',
