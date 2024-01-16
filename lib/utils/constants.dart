@@ -154,6 +154,16 @@ enum PageOfCalendarScreenSelected {
   final int value;
 }
 
+enum PageOfSettingsScreen {
+  page_ui(0),
+  page_account(1),
+  page_data_and_sync(2),
+  ;
+
+  const PageOfSettingsScreen(this.value);
+  final int value;
+}
+
 enum AppLanguage {
   czech('Czech', 'CS'),
   german('German', 'DE'),

@@ -37,6 +37,7 @@ import 'component_widgets/transition_one_two.dart';
 class Home extends StatefulWidget {
   const Home({
     super.key,
+    required this.isProVersion,
     required this.useLightMode,
     required this.useMaterial3,
     required this.showBrightnessButtonInAppBar,
@@ -61,6 +62,7 @@ class Home extends StatefulWidget {
     required this.launchCount,
   });
 
+  final bool isProVersion;
   final bool useLightMode;
   final bool useMaterial3;
   final bool showBrightnessButtonInAppBar;
@@ -184,9 +186,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   Widget createPageForMaterialDesignScreen(
       PageOfMaterialDesignScreenSelected screenSelected,
       bool showNavBarExample) {
-    switch (
-        //_selectedNavBarItemIndex
-        screenSelected) {
+    switch (screenSelected) {
       case PageOfMaterialDesignScreenSelected.component:
         return Expanded(
           child: OneTwoTransition(
@@ -215,6 +215,88 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   Widget createPageForCalendarScreen() {
     return _calendarScreen.elementAt(_selectedNavBarItemIndex);
+  }
+
+  Widget createPageForSettingsScreen(
+    PageOfSettingsScreen screenSelected,
+  ) {
+    switch (screenSelected) {
+      case PageOfSettingsScreen.page_ui:
+        return SettingsPage(
+          colorSelected: widget.colorSelected,
+          colorSelectionMethod: widget.colorSelectionMethod,
+          handleBrightnessChange: widget.handleBrightnessChange,
+          handleColorSelect: widget.handleColorSelect,
+          handleDisplayBrightnessButtonInAppBarChange:
+              widget.handleDisplayBrightnessButtonInAppBarChange,
+          handleDisplayColorImageButtonInAppBarChange:
+              widget.handleDisplayColorImageButtonInAppBarChange,
+          handleDisplayColorSeedButtonInAppBarChange:
+              widget.handleDisplayColorSeedButtonInAppBarChange,
+          handleDisplayLanguagesButtonInAppBarChange:
+              widget.handleDisplayLanguagesButtonInAppBarChange,
+          handleDisplayMaterialDesignButtonInAppBarChange:
+              widget.handleDisplayMaterialDesignButtonInAppBarChange,
+          handleImageSelect: widget.handleImageSelect,
+          handleLanguageSelect: widget.handleLanguageSelect,
+          handleMaterialVersionChange: widget.handleMaterialVersionChange,
+          imageSelected: widget.imageSelected,
+          languageSelected: widget.languageSelected,
+          launchCount: widget.launchCount,
+          showBrightnessButtonInAppBar: widget.showBrightnessButtonInAppBar,
+          showColorImageButtonInAppBar: widget.showColorImageButtonInAppBar,
+          showColorSeedButtonInAppBar: widget.showColorSeedButtonInAppBar,
+          showLanguagesButtonInAppBar: widget.showLanguagesButtonInAppBar,
+          showMaterialDesignButtonInAppBar:
+              widget.showMaterialDesignButtonInAppBar,
+          useLightMode: widget.useLightMode,
+          useMaterial3: widget.useMaterial3,
+        );
+
+      case PageOfSettingsScreen.page_account:
+        return ComingSoonWidget();
+      case PageOfSettingsScreen.page_data_and_sync:
+        return ComingSoonWidget();
+    }
+  }
+
+  Widget getContentPage() {
+    if (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value) {
+      return createPageForTasksScreen();
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.settingsScreen.value) {
+      return createPageForSettingsScreen(
+        PageOfSettingsScreen.values[_selectedNavBarItemIndex],
+      );
+    } else if (_selectedDrawerItemIndex == ScreenSelected.aboutUsScreen.value) {
+      return AboutUsPage(
+        isProVersion: widget.isProVersion,
+      );
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.calendarScreen.value) {
+      return createPageForCalendarScreen();
+    } else {
+      return createPageForMaterialDesignScreen(
+        PageOfMaterialDesignScreenSelected.values[_selectedNavBarItemIndex],
+        controller.value == 1,
+      );
+    }
+  }
+
+  List<NavigationRailDestination> getDestinations() {
+    if (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value) {
+      return navRailTasksScreenDestinations;
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.settingsScreen.value) {
+      return navRailSettingsScreenDestinations;
+    } else if (_selectedDrawerItemIndex == ScreenSelected.aboutUsScreen.value) {
+      return navRailAboutUsScreenDestinations;
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.calendarScreen.value) {
+      return navRailCalendarScreenDestinations;
+    } else {
+      return navRailMaterialDesignScreenDestinations;
+    }
   }
 
   PreferredSizeWidget createAppBar(String title) {
@@ -247,6 +329,49 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 LanguageButton(
                   handleLanguageSelect: widget.handleLanguageSelect,
                   languageSelected: widget.languageSelected,
+                ),
+              if (_selectedDrawerItemIndex ==
+                      ScreenSelected.tasksScreen.value &&
+                  _selectedNavBarItemIndex ==
+                      PageOfTasksScreenSelected.tasksTimelinePage.value)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_outlined, size: 18.0),
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                    PopupMenuItem<String>(
+                      //value: showCalendar ? 'hide calendar' : 'show calendar',
+                      child: Text('Hide Calendar'
+                          // showCalendar
+                          //     ? localizations!.hideCalendar
+                          //     : localizations!.showCalendar,
+                          ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'multi',
+                      child: Text('Multi'
+                          // localizations!.selectMultipleDays,
+                          // style: TextStyle(
+                          //   color: rangeSelectionMode ==
+                          //           RangeSelectionMode.toggledOff
+                          //       ? Colors.blue
+                          //       : null,
+                          // ),
+                          ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'range',
+                      child: Text('Range'
+                          // localizations.selectDateRange,
+                          // style: TextStyle(
+                          //   color:
+                          //       rangeSelectionMode == RangeSelectionMode.toggledOn
+                          //           ? Colors.blue
+                          //           : null,
+                          // ),
+                          ),
+                    ),
+                  ],
+                  //onSelected: key.currentState!._onCalendarSelectionModeChanged(),
                 ),
               Container(),
             ]
@@ -296,40 +421,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    // final Map<List<dynamic>, String> appBarTitles = {
-    //   [
-    //     ScreenSelected.tasksScreen.value,
-    //     PageOfTasksScreenSelected.tasksOverviewPage.value
-    //   ]: 'Overview',
-    //   [
-    //     ScreenSelected.tasksScreen.value,
-    //     PageOfTasksScreenSelected.tasksTimelinePage.value
-    //   ]: 'Timeline',
-    //   [
-    //     ScreenSelected.tasksScreen.value,
-    //     PageOfTasksScreenSelected.tasksTimetablePage.value
-    //   ]: 'Timetable',
-    //   [ScreenSelected.settingsScreen.value, null]: localizations!.settings,
-    //   [ScreenSelected.aboutUsScreen.value, null]: localizations.About,
-    //   [
-    //     ScreenSelected.materialDesignScreen.value,
-    //     PageOfMaterialDesignScreenSelected.component.value
-    //   ]: 'Components',
-    //   [
-    //     ScreenSelected.materialDesignScreen.value,
-    //     PageOfMaterialDesignScreenSelected.color.value
-    //   ]: 'Colors',
-    //   [
-    //     ScreenSelected.materialDesignScreen.value,
-    //     PageOfMaterialDesignScreenSelected.typography.value
-    //   ]: 'Typography',
-    //   [
-    //     ScreenSelected.materialDesignScreen.value,
-    //     PageOfMaterialDesignScreenSelected.elevation.value
-    //   ]: 'Elevation',
-    //   [null, null]: '',
-    // };
-
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
@@ -337,116 +428,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
             scaffoldKey: scaffoldKey,
             animationController: controller,
             railAnimation: railAnimation,
-            appBar: createAppBar((_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value &&
-                    _selectedNavBarItemIndex ==
-                        PageOfTasksScreenSelected.tasksOverviewPage.value)
-                ? localizations!.overview
-                : (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value &&
-                        _selectedNavBarItemIndex ==
-                            PageOfTasksScreenSelected.tasksTimelinePage.value)
-                    ? 'Timeline'
-                    : (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value &&
-                            _selectedNavBarItemIndex ==
-                                PageOfTasksScreenSelected
-                                    .tasksTimetablePage.value)
-                        ? 'Timetable'
-                        : (_selectedDrawerItemIndex ==
-                                ScreenSelected.settingsScreen.value)
-                            ? localizations!.settings
-                            : (_selectedDrawerItemIndex ==
-                                    ScreenSelected.aboutUsScreen.value)
-                                ? localizations!.aboutUs
-                                : (_selectedDrawerItemIndex ==
-                                            ScreenSelected
-                                                .materialDesignScreen.value &&
-                                        _selectedNavBarItemIndex ==
-                                            PageOfMaterialDesignScreenSelected
-                                                .component.value)
-                                    ? 'Components'
-                                    : (_selectedDrawerItemIndex ==
-                                                ScreenSelected
-                                                    .materialDesignScreen
-                                                    .value &&
-                                            _selectedNavBarItemIndex ==
-                                                PageOfMaterialDesignScreenSelected
-                                                    .color.value)
-                                        ? 'Colors'
-                                        : (_selectedDrawerItemIndex ==
-                                                    ScreenSelected
-                                                        .materialDesignScreen
-                                                        .value &&
-                                                _selectedNavBarItemIndex ==
-                                                    PageOfMaterialDesignScreenSelected
-                                                        .typography.value)
-                                            ? 'Typography'
-                                            : ''),
-
-            // appBar: createAppBar(appBarTitles[[
-            //   _selectedDrawerItemIndex,
-            //   _selectedNavBarItemIndex
-            // ]]!),
-            drawer: MyAppDrawer(_selectedDrawerItemIndex, _onDrawerItemTapped, localizations),
-            body: _selectedDrawerItemIndex == ScreenSelected.tasksScreen.value
-                ? createPageForTasksScreen() 
-                : _selectedDrawerItemIndex == ScreenSelected.settingsScreen.value
-                    ? SettingsPage(
-                        colorSelected: widget.colorSelected,
-                        colorSelectionMethod: widget.colorSelectionMethod,
-                        handleBrightnessChange: widget.handleBrightnessChange,
-                        handleColorSelect: widget.handleColorSelect,
-                        handleDisplayBrightnessButtonInAppBarChange:
-                            widget.handleDisplayBrightnessButtonInAppBarChange,
-                        handleDisplayColorImageButtonInAppBarChange:
-                            widget.handleDisplayColorImageButtonInAppBarChange,
-                        handleDisplayColorSeedButtonInAppBarChange:
-                            widget.handleDisplayColorSeedButtonInAppBarChange,
-                        handleDisplayLanguagesButtonInAppBarChange:
-                            widget.handleDisplayLanguagesButtonInAppBarChange,
-                        handleDisplayMaterialDesignButtonInAppBarChange: widget
-                            .handleDisplayMaterialDesignButtonInAppBarChange,
-                        handleImageSelect: widget.handleImageSelect,
-                        handleLanguageSelect: widget.handleLanguageSelect,
-                        handleMaterialVersionChange:
-                            widget.handleMaterialVersionChange,
-                        imageSelected: widget.imageSelected,
-                        languageSelected: widget.languageSelected,
-                        launchCount: widget.launchCount,
-                        showBrightnessButtonInAppBar:
-                            widget.showBrightnessButtonInAppBar,
-                        showColorImageButtonInAppBar:
-                            widget.showColorImageButtonInAppBar,
-                        showColorSeedButtonInAppBar:
-                            widget.showColorSeedButtonInAppBar,
-                        showLanguagesButtonInAppBar:
-                            widget.showLanguagesButtonInAppBar,
-                        showMaterialDesignButtonInAppBar:
-                            widget.showMaterialDesignButtonInAppBar,
-                        useLightMode: widget.useLightMode,
-                        useMaterial3: widget.useMaterial3,
-                      )
-                    : _selectedDrawerItemIndex == ScreenSelected.aboutUsScreen.value
-                        ? AboutUsPage()
-                        : _selectedDrawerItemIndex == ScreenSelected.calendarScreen.value
-                            ? createPageForCalendarScreen()
-                            : createPageForMaterialDesignScreen(PageOfMaterialDesignScreenSelected.values[_selectedNavBarItemIndex], controller.value == 1),
-            // : _selectedDrawerItemIndex == ScreenSelected.calendarScreen.value
-            // ? DatePickerDialog()
-            // :,
+            appBar: createAppBar(getAppBarTitle(_selectedDrawerItemIndex,
+                _selectedNavBarItemIndex, localizations)),
+            drawer: MyAppDrawer(_selectedDrawerItemIndex, _onDrawerItemTapped,
+                localizations, widget.isProVersion),
+            body: getContentPage(),
             navigationRail: NavigationRail(
               extended: showLargeSizeLayout,
-              destinations:
-                  _selectedDrawerItemIndex == ScreenSelected.tasksScreen.value
-                      ? navRailTasksScreenDestinations
-                      : _selectedDrawerItemIndex ==
-                              ScreenSelected.settingsScreen.value
-                          ? navRailSettingsScreenDestinations
-                          : _selectedDrawerItemIndex ==
-                                  ScreenSelected.aboutUsScreen.value
-                              ? navRailAboutUsScreenDestinations
-                              : _selectedDrawerItemIndex ==
-                                      ScreenSelected.calendarScreen.value
-                                  ? navRailCalendarScreenDestinations
-                                  : navRailMaterialDesignScreenDestinations,
+              destinations: getDestinations(),
               selectedIndex: _selectedNavBarItemIndex,
               onDestinationSelected: (index) {
                 setState(() {
@@ -477,11 +466,9 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
               ),
             ),
             navigationBar: Visibility(
-              //bottom navigation bar sẽ không hiện ở các màn hình settings và about us
+              //bottom navigation bar sẽ không hiện ở màn hình about us
               visible: _selectedDrawerItemIndex !=
-                      ScreenSelected.settingsScreen.value &&
-                  _selectedDrawerItemIndex !=
-                      ScreenSelected.aboutUsScreen.value,
+                  ScreenSelected.aboutUsScreen.value,
               child: AppNavigationBars(
                 onSelectItem: (index) {
                   setState(() {
@@ -496,4 +483,63 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       },
     );
   }
+}
+
+String getAppBarTitle(
+    selectedDrawerItemIndex, selectedNavBarItemIndex, localizations) {
+  if (selectedDrawerItemIndex == ScreenSelected.tasksScreen.value) {
+    if (selectedNavBarItemIndex ==
+        PageOfTasksScreenSelected.tasksOverviewPage.value) {
+      return localizations!.overview;
+    } else if (selectedNavBarItemIndex ==
+        PageOfTasksScreenSelected.tasksTimelinePage.value) {
+      return 'Timeline';
+    } else if (selectedNavBarItemIndex ==
+        PageOfTasksScreenSelected.tasksTimetablePage.value) {
+      return 'Timetable';
+    }
+  } else if (selectedDrawerItemIndex == ScreenSelected.aboutUsScreen.value) {
+    return localizations!.aboutUs;
+  } else if (selectedDrawerItemIndex ==
+      ScreenSelected.materialDesignScreen.value) {
+    if (selectedNavBarItemIndex ==
+        PageOfMaterialDesignScreenSelected.component.value) {
+      return 'Components';
+    } else if (selectedNavBarItemIndex ==
+        PageOfMaterialDesignScreenSelected.color.value) {
+      return 'Colors';
+    } else if (selectedNavBarItemIndex ==
+        PageOfMaterialDesignScreenSelected.typography.value) {
+      return 'Typography';
+    } else if (selectedNavBarItemIndex ==
+        PageOfMaterialDesignScreenSelected.elevation.value) {
+      return 'Elevation';
+    }
+  }
+  if (selectedDrawerItemIndex == ScreenSelected.calendarScreen.value) {
+    if (selectedNavBarItemIndex == PageOfCalendarScreenSelected.dayPage.value) {
+      return 'Day';
+    } else if (selectedNavBarItemIndex ==
+        PageOfCalendarScreenSelected.weekPage.value) {
+      return 'Week';
+    } else if (selectedNavBarItemIndex ==
+        PageOfCalendarScreenSelected.monthPage.value) {
+      return 'Month';
+    } else if (selectedNavBarItemIndex ==
+        PageOfCalendarScreenSelected.yearPage.value) {
+      return 'Year';
+    }
+  }
+  if (selectedDrawerItemIndex == ScreenSelected.settingsScreen.value) {
+    if (selectedNavBarItemIndex == PageOfSettingsScreen.page_ui.value) {
+      return 'UI';
+    } else if (selectedNavBarItemIndex ==
+        PageOfSettingsScreen.page_account.value) {
+      return 'Account';
+    } else if (selectedNavBarItemIndex ==
+        PageOfSettingsScreen.page_data_and_sync.value) {
+      return 'Data & Sync';
+    }
+  }
+  return '';
 }

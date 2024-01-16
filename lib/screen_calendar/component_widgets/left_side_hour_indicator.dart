@@ -3,7 +3,7 @@ import 'package:my_time_manager/screen_calendar/utils/constants.dart';
 import 'package:my_time_manager/screen_calendar/utils/typedefs.dart';
 
 /// Time line to display time at left side of day or week view.
-class TimeLine extends StatelessWidget {
+class LeftSideHourIndicator extends StatelessWidget {
   /// Width of timeline
   final double timeLineWidth;
 
@@ -27,7 +27,7 @@ class TimeLine extends StatelessWidget {
   double get _halfHourHeight => hourHeight / 2;
 
   /// Time line to display time at left side of day or week view.
-  const TimeLine({
+  const LeftSideHourIndicator({
     Key? key,
     required this.timeLineWidth,
     required this.hourHeight,

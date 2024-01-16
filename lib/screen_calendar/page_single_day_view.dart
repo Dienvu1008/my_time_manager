@@ -7,7 +7,7 @@ import 'package:my_time_manager/screen_calendar/component_widgets/hour_indicator
 import 'package:my_time_manager/screen_calendar/component_widgets/live_time_indicator.dart';
 import 'package:my_time_manager/screen_calendar/component_widgets/painter_half_hourline.dart';
 import 'package:my_time_manager/screen_calendar/component_widgets/painter_hourline.dart';
-import 'package:my_time_manager/screen_calendar/component_widgets/timeline.dart';
+import 'package:my_time_manager/screen_calendar/component_widgets/left_side_hour_indicator.dart';
 import 'package:my_time_manager/screen_calendar/utils/typedefs.dart';
 
 /// Defines a single day page.
@@ -197,7 +197,7 @@ class SingleDayViewPage<T extends Object?> extends StatelessWidget {
                             verticalLineOffset,
                       ),
                     ),
-                    TimeLine(
+                    LeftSideHourIndicator(
                       height: height,
                       hourHeight: hourHeight,
                       timeLineBuilder: timeLineBuilder,

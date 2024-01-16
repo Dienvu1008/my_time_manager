@@ -17,18 +17,23 @@ final List<NavigationRailDestination> navRailSettingsScreenDestinations =
         )
         .toList();
 
-//navBarSettingsScreenDestinations tạo ra hai destinations giả để tránh lỗi 'destinations.length >= 2'
 const List<NavigationDestination> navBarSettingsScreenDestinations = [
   NavigationDestination(
     tooltip: '',
-    icon: SizedBox.shrink(), //Icon(Icons.settings_outlined),
-    label: '', //'Settings',
-    selectedIcon: SizedBox.shrink(), //Icon(Icons.settings),
+    icon: Icon(Icons.design_services_outlined),
+    label: 'UI',
+    selectedIcon: Icon(Icons.design_services),
   ),
   NavigationDestination(
     tooltip: '',
-    icon: SizedBox.shrink(), //Icon(Icons.settings_outlined),
-    label: '', //'Settings',
-    selectedIcon: SizedBox.shrink(), //Icon(Icons.settings),
+    icon: Icon(Icons.account_circle_outlined),
+    label: 'Account',
+    selectedIcon: Icon(Icons.account_circle),
+  ),
+    NavigationDestination(
+    tooltip: '',
+    icon: Icon(Icons.cloud_sync_outlined),
+    label: 'Data & Sync',
+    selectedIcon: Icon(Icons.cloud_sync),
   ),
 ];

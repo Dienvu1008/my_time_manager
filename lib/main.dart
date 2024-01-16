@@ -10,7 +10,8 @@ void main() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
-  runApp(const App());
-  //runApp(App(isProVersion: true));
+  bool isProVersion = true;
+  //runApp(const App());
+  runApp(App(isProVersion: isProVersion));
 }
  

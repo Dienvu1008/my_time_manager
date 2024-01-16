@@ -7,7 +7,10 @@ import 'package:my_time_manager/utils/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class App extends StatelessWidget {
-  const App({Key? key}) : super(key: key);
+  const App({required bool isProVersion, Key? key})
+      : _isProVersion = isProVersion;
+
+  final bool _isProVersion;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +59,7 @@ class App extends StatelessWidget {
             ],
 
             debugShowCheckedModeBanner: false, // remove debug banner
-            title: 'Material 3',
+            title: 'My Time Manager',
             themeMode: state.themeMode,
             theme: ThemeData(
               colorSchemeSeed:
@@ -79,6 +82,7 @@ class App extends StatelessWidget {
               brightness: Brightness.dark,
             ),
             home: Home(
+              isProVersion: _isProVersion,
               useLightMode: state.useLightMode,
               useMaterial3: state.useMaterial3,
               showBrightnessButtonInAppBar: state.showBrightnessButtonInAppBar,

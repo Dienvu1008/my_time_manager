@@ -6,7 +6,7 @@ import 'package:my_time_manager/screen_calendar/component_widgets/event_scroll_c
 import 'package:my_time_manager/screen_calendar/component_widgets/hour_indicator_settings.dart';
 import 'package:my_time_manager/screen_calendar/component_widgets/live_time_indicator.dart';
 import 'package:my_time_manager/screen_calendar/component_widgets/painter_hourline.dart';
-import 'package:my_time_manager/screen_calendar/component_widgets/timeline.dart';
+import 'package:my_time_manager/screen_calendar/component_widgets/left_side_hour_indicator.dart';
 import 'package:my_time_manager/screen_calendar/utils/typedefs.dart';
 
 /// A single page for week view.
@@ -272,7 +272,7 @@ class InternalWeekViewPage<T extends Object?> extends StatelessWidget {
                         ),
                       ),
                     ),
-                    TimeLine(
+                    LeftSideHourIndicator(
                       timeLineWidth: timeLineWidth,
                       hourHeight: hourHeight,
                       height: height,

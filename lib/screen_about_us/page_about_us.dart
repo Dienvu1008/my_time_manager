@@ -6,7 +6,8 @@ import '../utils/utils.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AboutUsPage extends StatelessWidget {
-  const AboutUsPage({super.key});
+  const AboutUsPage({required this.isProVersion, super.key});
+  final bool isProVersion;
 
   void showConfirmationDialog(BuildContext context, Uri url) {
     showDialog(
@@ -44,7 +45,8 @@ class AboutUsPage extends StatelessWidget {
         final localizations = AppLocalizations.of(context);
         return AlertDialog(
           title: Text(localizations!.openSourceAnnouncement),
-          content: Text(localizations.thisAppWillBecomeOpenSourceWeWillMakeTheSourceCodePublicAfterCleaningUpTheCode),
+          content: Text(localizations
+              .thisAppWillBecomeOpenSourceWeWillMakeTheSourceCodePublicAfterCleaningUpTheCode),
           actions: [
             TextButton(
               child: Text(localizations.ok),
@@ -91,12 +93,22 @@ class AboutUsPage extends StatelessWidget {
                             await launchURL(issueUrl);
                           }
                         }),
-                    ListTile(
-                      leading: const Icon(Icons.update_outlined),
-                      title: Text("Free Version", style: textTheme.bodyMedium),
-                      subtitle: Text("1.3.1", style: textTheme.bodySmall),
-                      onTap: () => launchURL(freeVersionUrl),
-                    ),
+                    if (!isProVersion)
+                      ListTile(
+                        leading: const Icon(Icons.update_outlined),
+                        title:
+                            Text("Free Version", style: textTheme.bodyMedium),
+                        subtitle: Text("1.3.1", style: textTheme.bodySmall),
+                        onTap: () => launchURL(freeVersionUrl),
+                      ),
+                    if (isProVersion)
+                      ListTile(
+                        leading: const Icon(Icons.update_outlined),
+                        title:
+                            Text("Pro Version", style: textTheme.bodyMedium),
+                        subtitle: Text("1.3.1", style: textTheme.bodySmall),
+                        onTap: () => launchURL(proVersionUrl),
+                      ),
                     ListTile(
                         leading: const Icon(Icons.policy_outlined),
                         title: Text(localizations.privacyPolicy,
