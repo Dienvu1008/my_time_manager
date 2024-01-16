@@ -1,14 +1,12 @@
 import 'dart:async';
+import 'package:calendar_widgets/calendar_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
-import 'package:my_time_manager/screen_calendar/component_widgets/calendar_controller_provider.dart';
-import 'package:my_time_manager/screen_calendar/component_widgets/controller_event.dart';
-import 'package:my_time_manager/screen_calendar/view_weekly.dart';
+import 'package:my_time_manager/screen_calendar/mapping.dart';
 import '../data/database/database_manager.dart';
 
 class TasksTimetablePage extends StatefulWidget {
   //final GlobalKey<WeekViewState>? state;
-
   //final double? width;
   const TasksTimetablePage({
     Key? key,
@@ -27,13 +25,6 @@ class _TasksTimetablePageState extends State<TasksTimetablePage> {
   void initState() {
     super.initState();
     _init();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text('This feature is still under development'),
-    //     ),
-    //   );
-    // });
   }
 
   Future<void> _init() async {
@@ -57,18 +48,20 @@ class _TasksTimetablePageState extends State<TasksTimetablePage> {
         timeInterval.title = taskWithSubtasks.title;
         await _databaseManager.updateTimeInterval(timeInterval);
       }
-      //await timeInterval.init();
     }
     setState(() => _timeIntervals = timeIntervals);
   }
 
   @override
   Widget build(BuildContext context) {
+    List<CalendarTimeIntervalData> _calendarTimeIntervals =
+        _timeIntervals.toCalendarData();
+    ;
     final width = MediaQuery.of(context).size.width;
-    return CalendarControllerProvider<TimeInterval>(
-      controller: EventController<TimeInterval>()..addAll(_timeIntervals),
+    return CalendarControllerProvider(
+      controller: TimeIntervalController()..addAll(_calendarTimeIntervals),
       child: Expanded(
-        child: WeekView<TimeInterval>(
+        child: WeekViewWidget(
           //key: widget.state,
           width: width,
         ),
@@ -77,17 +70,51 @@ class _TasksTimetablePageState extends State<TasksTimetablePage> {
   }
 }
 
+class WeekViewWidget extends StatelessWidget {
+  final GlobalKey<WeekViewState>? state;
+  final double? width;
 
+  const WeekViewWidget({super.key, this.state, this.width});
 
+  @override
+  Widget build(BuildContext context) {
+    return WeekView(
+      key: state,
+      width: width,
+      onTimeIntervalTileTap: (events, date) {
+        // Navigator.of(context).push(
+        //   MaterialPageRoute(
+        //     builder: (_) => DetailsPage(
+        //       event: events.first,
+        //     ),
+        //   ),
+        // );
+      },
+      leftSideHourIndicatorBuilder: _leftSideHourIndicatorBuilder,
+    );
+  }
 
-
-
-
-
-
-
-
-
-
-
-
+  Widget _leftSideHourIndicatorBuilder(DateTime date) {
+    final timeString = date.toString().substring(11, 16);
+    //if (date.minute != 0) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          top: -8,
+          right: 8,
+          child: Text(
+            //"${date.hour}:${date.minute}",
+            timeString,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              //color: Colors.black.withAlpha(50),
+              //fontStyle: FontStyle.italic,
+              fontSize: 10,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

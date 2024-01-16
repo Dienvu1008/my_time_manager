@@ -22,6 +22,8 @@ class TimeInterval {
   DateTime? endDate;
   TimeOfDay? startTime;
   TimeOfDay? endTime;
+  DateTime? calendarStartDateTime;
+  DateTime? calendarEndDateTime;
   bool isStartDateUndefined;
   bool isEndDateUndefined;
   bool isStartTimeUndefined;
@@ -74,6 +76,8 @@ class TimeInterval {
     this.isEndDateUndefined = false,
     this.isStartTimeUndefined = false,
     this.isEndTimeUndefined = false,
+    this.calendarStartDateTime,
+    this.calendarEndDateTime,
     double? targetAtLeast,
     double? targetAtMost,
     TargetType? targetType,
@@ -93,8 +97,8 @@ class TimeInterval {
     //int? startTimestamp,
     //int? endTimestamp
   })  : //assert(
-        //id == null || id.isNotEmpty,
-        //'id can not be null and should be empty',
+        //id == null || id.isEmpty,
+        //'id can not be null and should not be empty',
         //),
         //taskId = taskId,
         //measurableTaskId = measurableTaskId,
@@ -124,90 +128,100 @@ class TimeInterval {
       timeZone = timeZone ?? await FlutterNativeTimezone.getLocalTimezone();
     }
 
+
+    // isStartDateUndefined == true
     if (isStartDateUndefined) {
-      //isStartDateUndefined == true;
       isStartTimeUndefined = true;
       startDate = null;
       startTime = null;
       startTimestamp = null;
-    } else {
+      calendarStartDateTime = null;
+    }
+    // isStartDateUndefined == false
+    else {
+      // Error when (isStartDateUndefined == false && startDate == null)
       if (startDate == null) {
-        //isStartDateUndefined == false;
-        //startDate == null;
-        //isStartTimeUndefined == true;
-        //throw ArgumentError(
-        //'If the start date is determined, the start date must be set');
-      } else {
+        throw ArgumentError(
+            'If the start date is determined, the start date must be set');
+      }
+      // isStartDateUndefined == false && startDate != null
+      else {
+        // isStartDateUndefined == false && startDate != null && isStartTimeUndefined = true
         if (isStartTimeUndefined) {
-          //isStartDateUndefined == false;
-          //startDate != null;
-          //isStartTimeUndefined == true;
           startTime = null;
           startTimestamp =
               DateTime(startDate!.year, startDate!.month, startDate!.day)
                   .millisecondsSinceEpoch;
-        } else {
+          calendarStartDateTime =
+              DateTime(startDate!.year, startDate!.month, startDate!.day);
+        }
+        // isStartDateUndefined == false && startDate != null && isStartTimeUndefined = false
+        else {
+          // Error when (isStartDateUndefined == false && startDate != null && isStartTimeUndefined = false && startTime == null)
           if (startTime == null) {
-            //isStartDateUndefined == false;
-            //startDate != null;
-            //isStartTimeUndefined == false;
-            //startTime == null;
-            //throw ArgumentError(
-            //'If the start time is determined, the start time must be set');
-          } else {
-            //isStartDateUndefined == false;
-            //startDate != null;
-            //isStartTimeUndefined == false;
-            //startTime != null;
+            throw ArgumentError(
+                'If the start time is determined, the start time must be set');
+          }
+          // isStartDateUndefined == false && startDate != null && isStartTimeUndefined = false && startTime != null
+          else {
             startTimestamp = DateTime(startDate!.year, startDate!.month,
                     startDate!.day, startTime!.hour, startTime!.minute)
                 .millisecondsSinceEpoch;
+            calendarStartDateTime = DateTime(startDate!.year, startDate!.month,
+                startDate!.day, startTime!.hour, startTime!.minute);
+          }
+        }
+      }
+    }
+    // isEndDateUndefined == true
+    if (isEndDateUndefined) {
+      isEndTimeUndefined = true;
+      endDate = null;
+      endTime = null;
+      endTimestamp = null;
+      calendarEndDateTime = null;
+    }
+    // isEndDateUndefined == false
+    else {
+      // Error when (isEndDateUndefined == false && endDate == null)
+      if (endDate == null) {
+        throw ArgumentError(
+            'If the end date is determined, the end date must be set');
+      }
+      // isEndDateUndefined == false && endDate != null
+      else {
+        // isEndDateUndefined == false && endDate != null && isEndTimeUndefined == true
+        if (isEndTimeUndefined) {
+          endTime = null;
+          endTimestamp =
+              DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59, 59)
+                  .millisecondsSinceEpoch;
+          calendarEndDateTime =
+              DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59, 59);
+        }
+        // isEndDateUndefined == false && endDate != null && isEndTimeUndefined == false
+        else {
+          // Error when (isEndDateUndefined == false && endDate != null && isEndTimeUndefined == false && endTime == null)
+          if (endTime == null) {
+            throw ArgumentError(
+                'If the end time is determined, the end time must be set');
+          }
+          // isEndDateUndefined == false && endDate != null && isEndTimeUndefined == false && endTime != null
+          else {
+            endTimestamp = DateTime(endDate!.year, endDate!.month, endDate!.day,
+                    endTime!.hour, endTime!.minute)
+                .millisecondsSinceEpoch;
+            calendarEndDateTime = DateTime(endDate!.year, endDate!.month,
+                endDate!.day, endTime!.hour, endTime!.minute);
           }
         }
       }
     }
 
-    if (isEndDateUndefined) {
-      //isEndDateUndefined == true;
-      isEndTimeUndefined = true;
-      endDate = null;
-      endTime = null;
-      endTimestamp = null;
-    } else {
-      if (endDate == null) {
-        //isEndDateUndefined == false;
-        //endDate == null;
-        //isEndTimeUndefined == true;
-        //throw ArgumentError(
-        //'If the end date is determined, the end date must be set');
-      } else {
-        if (isEndTimeUndefined) {
-          //isEndDateUndefined == false;
-          //endDate != null;
-          //isEndTimeUndefined == true;
-          endTime = null;
-          endTimestamp =
-              DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59, 59)
-                  .millisecondsSinceEpoch;
-        } else {
-          if (endTime == null) {
-            //isEndDateUndefined == false;
-            //endDate != null;
-            //isEndTimeUndefined == false;
-            //endTime == null;
-            //throw ArgumentError(
-            //'If the end time is determined, the end time must be set');
-          } else {
-            //isEndDateUndefined == false;
-            //endDate != null;
-            //isEndTimeUndefined == false;
-            //endTime != null;
-            endTimestamp = DateTime(endDate!.year, endDate!.month, endDate!.day,
-                    endTime!.hour, endTime!.minute)
-                .millisecondsSinceEpoch;
-          }
-        }
-      }
+    if (startTimestamp != null &&
+        endTimestamp != null &&
+        startTimestamp! > endTimestamp!) {
+      throw ArgumentError('End timestamp must be after start timestamp');
     }
 
     // if (endDate != null && endDate!.isBefore(DateTime.now())) {
@@ -215,6 +229,7 @@ class TimeInterval {
     // } else {
     //   isGone = false;
     // }
+
 
     if (endTimestamp != null &&
         endTimestamp! < DateTime.now().millisecondsSinceEpoch) {
@@ -283,11 +298,7 @@ class TimeInterval {
       isNextMonth = false;
     }
 
-    if (startTimestamp != null &&
-        endTimestamp != null &&
-        startTimestamp! > endTimestamp!) {
-      //throw ArgumentError('End timestamp must be after start timestamp');
-    }
+
   }
   Map<String, dynamic> toMap() {
     return {

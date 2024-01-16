@@ -7,7 +7,10 @@ import 'package:my_time_manager/utils/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class App extends StatelessWidget {
-  const App({Key? key}) : super(key: key);
+  const App({required bool isProVersion, Key? key})
+      : _isProVersion = isProVersion;
+
+  final bool _isProVersion;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +59,7 @@ class App extends StatelessWidget {
             ],
 
             debugShowCheckedModeBanner: false, // remove debug banner
-            title: 'Material 3',
+            title: 'My Time Manager',
             themeMode: state.themeMode,
             theme: ThemeData(
               colorSchemeSeed:
@@ -79,6 +82,7 @@ class App extends StatelessWidget {
               brightness: Brightness.dark,
             ),
             home: Home(
+              isProVersion: _isProVersion,
               useLightMode: state.useLightMode,
               useMaterial3: state.useMaterial3,
               showBrightnessButtonInAppBar: state.showBrightnessButtonInAppBar,
@@ -418,6 +422,8 @@ class LoadLaunchCountEvent extends AppEvent {
   LoadLaunchCountEvent(this.launchCount);
 }
 
+
+
 ////////////////////////////////////////////////////////////////
 ///APP STATE
 class AppState {
@@ -480,27 +486,6 @@ class AppState {
     AppLanguage? language,
     int? launchCount,
   }) {
-    // return AppState(
-    //   useMaterial3: useMaterial3 ?? this.useMaterial3,
-    //   showBrightnessButtonInAppBar:
-    //       showBrightnessButtonInAppBar ?? this.showBrightnessButtonInAppBar,
-    //   showMaterialDesignButtonInAppBar: showMaterialDesignButtonInAppBar ??
-    //       this.showMaterialDesignButtonInAppBar,
-    //   showColorSeedButtonInAppBar:
-    //       showColorSeedButtonInAppBar ?? this.showColorSeedButtonInAppBar,
-    //   showColorImageButtonInAppBar:
-    //       showColorImageButtonInAppBar ?? this.showColorImageButtonInAppBar,
-    //   showLanguagesButtonInAppBar:
-    //       showLanguagesButtonInAppBar ?? this.showLanguagesButtonInAppBar,
-    //   themeMode: themeMode ?? this.themeMode,
-    //   colorSelected: colorSelected ?? this.colorSelected,
-    //   imageSelected: imageSelected ?? this.imageSelected,
-    //   imageColorScheme: imageColorScheme ?? this.imageColorScheme,
-    //   colorSelectionMethod: colorSelectionMethod ?? this.colorSelectionMethod,
-    //   language: language ?? this.language,
-    //   launchCount: launchCount ?? this.launchCount,
-    // );
-
     return AppState(
       useMaterial3: useMaterial3 ?? this.useMaterial3,
       showBrightnessButtonInAppBar:
@@ -522,23 +507,4 @@ class AppState {
       launchCount: launchCount ?? this.launchCount,
     );
   }
-
-  // factory AppState.loading() => AppState(
-  //       useMaterial3: false,
-  //       themeMode: ThemeMode.system,
-  //       colorSelected: ColorSeed.baseColor,
-  //       imageSelected: ColorImageProvider.leaves,
-  //       imageColorScheme: const ColorScheme.light(),
-  //       colorSelectionMethod: ColorSelectionMethod.colorSeed,
-  //     );
-
-  // factory AppState.loaded(String? language) => AppState(
-  //       useMaterial3: false,
-  //       themeMode: ThemeMode.system,
-  //       colorSelected: ColorSeed.baseColor,
-  //       imageSelected: ColorImageProvider.leaves,
-  //       imageColorScheme: const ColorScheme.light(),
-  //       colorSelectionMethod: ColorSelectionMethod.colorSeed,
-  //       selectedLanguage: language,
-  //     );
 }

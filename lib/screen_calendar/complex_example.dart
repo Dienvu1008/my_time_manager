@@ -1,16 +1,17 @@
 import 'dart:collection';
+import 'package:calendar_widgets/src_table_calendar/shared/utils.dart';
+import 'package:calendar_widgets/src_table_calendar/table_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
-import 'package:my_time_manager/screen_calendar/src/shared/utils.dart';
-import 'package:my_time_manager/screen_calendar/src/table_calendar.dart';
 import 'package:my_time_manager/screen_calendar/utils/utils.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/card_time_interval.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 
 class TableComplexExample extends StatefulWidget {
+  const TableComplexExample({super.key});
   @override
   _TableComplexExampleState createState() => _TableComplexExampleState();
 }
@@ -19,16 +20,19 @@ class _TableComplexExampleState extends State<TableComplexExample> {
   final DatabaseManager _databaseManager = DatabaseManager();
   late final ValueNotifier<List<TimeInterval>> _selectedTimeIntervals;
   final ValueNotifier<DateTime> _focusedDay = ValueNotifier(DateTime.now());
+
   final Set<DateTime> _selectedDays = LinkedHashSet<DateTime>(
     equals: isSameDay,
     hashCode: getHashCode,
   );
+
   List<DateTime> _selectedDaysList = [];
   late LinkedHashMap<DateTime, List<TimeInterval>> _kTimeIntervals =
       LinkedHashMap<DateTime, List<TimeInterval>>(
     equals: isSameDay,
     hashCode: getHashCode,
   );
+
   late PageController _pageController;
   CalendarFormat _calendarFormat = CalendarFormat.month;
   RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOff;
@@ -77,6 +81,7 @@ class _TableComplexExampleState extends State<TableComplexExample> {
       hashCode: getHashCode,
     )..addAll(kTimeIntervalSource);
     _timeIntervals = timeIntervals;
+
   }
 
   bool get canClearSelection =>
@@ -225,6 +230,20 @@ class _TableComplexExampleState extends State<TableComplexExample> {
     );
   }
 
+  void _onCalendarSelectionModeChanged(String value) {
+    setState(() {
+      if (value == 'multi') {
+        _rangeSelectionMode = RangeSelectionMode.toggledOff;
+      } else if (value == 'range') {
+        _rangeSelectionMode = RangeSelectionMode.toggledOn;
+      } else if (value == 'hide calendar') {
+        _showCalendar = false;
+      } else if (value == 'show calendar') {
+        _showCalendar = true;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Expanded(
@@ -272,36 +291,37 @@ class _TableComplexExampleState extends State<TableComplexExample> {
                     }
                   });
                 },
-                rangeSelectionMode: _rangeSelectionMode, 
+                rangeSelectionMode: _rangeSelectionMode,
                 showCalendar: _showCalendar,
               );
             },
           ),
           if (_showCalendar)
-          TableCalendar<TimeInterval>(
-            firstDay: kFirstDay,
-            lastDay: kLastDay,
-            focusedDay: _focusedDay.value,
-            headerVisible: false,
-            selectedDayPredicate: (day) => _selectedDays.contains(day),
-            rangeStartDay: _rangeStart,
-            rangeEndDay: _rangeEnd,
-            calendarFormat: _calendarFormat,
-            rangeSelectionMode: _rangeSelectionMode,
-            eventLoader: _getTimeIntervalsForDay,
-            daysOfWeekVisible: true,
-            startingDayOfWeek: StartingDayOfWeek.monday,
-            onDaySelected: _onDaySelected,
-            onRangeSelected: _onRangeSelected,
-            onCalendarCreated: (controller) => _pageController = controller,
-            onPageChanged: (focusedDay) => _focusedDay.value = focusedDay,
-            onFormatChanged: (format) {
-              if (_calendarFormat != format) {
-                setState(() => _calendarFormat = format);
-              }
-            },
-          ),
+            TableCalendar<TimeInterval>(
+              firstDay: kFirstDay,
+              lastDay: kLastDay,
+              focusedDay: _focusedDay.value,
+              headerVisible: false,
+              selectedDayPredicate: (day) => _selectedDays.contains(day),
+              rangeStartDay: _rangeStart,
+              rangeEndDay: _rangeEnd,
+              calendarFormat: _calendarFormat,
+              rangeSelectionMode: _rangeSelectionMode,
+              eventLoader: _getTimeIntervalsForDay,
+              daysOfWeekVisible: true,
+              startingDayOfWeek: StartingDayOfWeek.monday,
+              onDaySelected: _onDaySelected,
+              onRangeSelected: _onRangeSelected,
+              onCalendarCreated: (controller) => _pageController = controller,
+              onPageChanged: (focusedDay) => _focusedDay.value = focusedDay,
+              onFormatChanged: (format) {
+                if (_calendarFormat != format) {
+                  setState(() => _calendarFormat = format);
+                }
+              },
+            ),
           const SizedBox(height: 8.0),
+          const Divider(height: 4,),
           Expanded(
             child: ValueListenableBuilder<List<TimeInterval>>(
               valueListenable: _selectedTimeIntervals,
@@ -426,7 +446,9 @@ class _CalendarHeader extends StatelessWidget {
               PopupMenuItem<String>(
                 value: showCalendar ? 'hide calendar' : 'show calendar',
                 child: Text(
-                  showCalendar ? localizations!.hideCalendar : localizations!.showCalendar,
+                  showCalendar
+                      ? localizations!.hideCalendar
+                      : localizations!.showCalendar,
                 ),
               ),
               PopupMenuItem<String>(
@@ -456,15 +478,15 @@ class _CalendarHeader extends StatelessWidget {
           ),
           const Spacer(),
           if (showCalendar)
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: onLeftArrowTap,
-          ),
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              onPressed: onLeftArrowTap,
+            ),
           if (showCalendar)
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: onRightArrowTap,
-          ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              onPressed: onRightArrowTap,
+            ),
         ],
       ),
     );

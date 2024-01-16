@@ -32,6 +32,15 @@ dependencies:
   image_picker: ^1.0.1
   #device_calendar: ^0.1.1
   table_calendar: ^3.0.9
+  flutter_background_service: ^5.0.5
+  flutter_local_notifications: ^16.3.0
+  device_info_plus: ^9.1.1
+  flutter_background_service_android: ^6.2.2
+  time_manager:
+    path: ../time_manager
+  calendar_widgets:
+    path: ../calendar_widgets
+
   
 
   

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_time_manager/home/component_widgets/destinations_focus_timer_screen.dart';
 
 import 'destinations_material_design_screen.dart';
 import 'destinations_settings_screen.dart';
@@ -32,6 +33,7 @@ class _AppNavigationBarsState extends State<AppNavigationBars> {
     navBarAboutUsScreenDestinations,
     navBarMaterialDesignScreenDestinations,
     navBarCalendarScreenDestinations,
+    navBarFocusTimerScreenDestinations
   ];
 
   @override

@@ -22,10 +22,10 @@ class TaskList extends Equatable {
     Color? color,
     List<String>? dataFiles,
     DateTime? updateTimeStamp,
-  })  : assert(
-          id == null || id.isNotEmpty,
-          'id can not be null and should be empty',
-        ),
+  })  : //assert(
+          //id == null || id.isEmpty,
+          //'id can not be null and should not be empty',
+        //),
         id = id ?? const Uuid().v4(),
         description = description ?? '',
         color = color ?? Colors.white,

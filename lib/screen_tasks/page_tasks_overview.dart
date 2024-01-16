@@ -1,10 +1,7 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
@@ -13,18 +10,14 @@ import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_lis
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_measurable_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task_with_subtasks.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/button_color_seed.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/card_measurale_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/card_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/card_task_with_subtasks.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:uuid/uuid.dart';
 import '../app/app_localizations.dart';
 import '../data/database/database_manager.dart';
 import '../data/models/models.dart';
-import '../utils/constants.dart';
 import '../utils/utils.dart';
 
 class TasksOverviewPage extends StatefulWidget {

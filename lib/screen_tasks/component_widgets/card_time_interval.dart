@@ -10,9 +10,7 @@ import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_measurable_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task_with_subtasks.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 import 'package:my_time_manager/utils/utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class TimeIntervalCard extends StatefulWidget {
   final TimeInterval timeInterval;

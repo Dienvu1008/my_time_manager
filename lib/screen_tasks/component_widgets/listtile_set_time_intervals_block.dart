@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 //Một TimeInterval cần có ít nhất một ngày bắt đầu hoặc ngày kết thúc được xác định.
 //Nếu TimeInterval có cả hai ngày bắt đầu và ngày kết thúc được xác định thì ngày bắt đầu không được phép xảy ra sau ngày kết thúc.
 
-//Nếu TimeInterval có ngày bắt đầu và ngày kết thúc là cùng một ngày, 
+//Nếu TimeInterval có ngày bắt đầu và ngày kết thúc là cùng một ngày,
 //giờ bắt đầu và giờ kết thúc được xác định thì giờ bắt đầu không được phép xảy ra sau giờ kết thúc.
 
 //Nếu ngày bắt đầu không được xác định rõ thì thời gian bắt đầu cũng sẽ không được xác định.
@@ -44,7 +44,6 @@ class _SetTimeIntervalBlockListTileState
     extends State<SetTimeIntervalBlockListTile> {
   @override
   Widget build(BuildContext context) {
-
     return Form(
         key: widget.formKey,
         child: Column(

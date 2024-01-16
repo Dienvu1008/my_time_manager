@@ -4,7 +4,6 @@ import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
 import 'package:my_time_manager/utils/utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskWithSubtasksCard extends StatefulWidget {
   final TaskWithSubtasks taskWithSubtasks;

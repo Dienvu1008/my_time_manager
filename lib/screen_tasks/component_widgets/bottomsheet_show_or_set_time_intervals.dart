@@ -115,109 +115,6 @@ class _ShowOrSetTimeIntervalsBottomSheetState
                     (BuildContext context, ScrollController scrollController) {
                   return Column(
                     children: <Widget>[
-                      // Listener(
-                      //   onPointerMove: (PointerMoveEvent event) {
-                      //     if (event.delta.dy < 0) {
-                      //       _controller.forward();
-                      //     } else if (event.delta.dy > 0) {
-                      //       _controller.reverse();
-                      //     }
-                      //   },
-                      //   child: Container(
-                      //     height: 60, // Set this to your desired height
-                      //     width: double.infinity,
-                      //     color: Colors.grey[300],
-                      //     alignment: Alignment.center,
-                      //     child: const Icon(Icons.horizontal_rule),
-                      //   ),
-                      // ),
-
-                      // SingleChildScrollView(
-                      //   child: Container(
-                      //     color: widget.color,
-                      //     child: //SingleChildScrollView( child:
-                      //         Column(
-                      //       children: [
-                      //         ListTile(
-                      //           leading: IconButton(
-                      //             icon: Icon(
-                      //                 _isExpanded
-                      //                     ? Icons.expand_more
-                      //                     : Icons.chevron_right,
-                      //                 color: titleTextColor),
-                      //             onPressed: () => setState(() {
-                      //               _isExpanded = !_isExpanded;
-                      //             }),
-                      //           ),
-                      //           title: Text(
-                      //             widget.title,
-                      //             style: TextStyle(color: titleTextColor),
-                      //           ),
-                      //         ),
-                      //         if (_isExpanded && widget.description.isNotEmpty)
-                      //           ListTile(
-                      //             leading: Icon(Icons.description_outlined,
-                      //                 color: titleTextColor),
-                      //             title: Text(
-                      //               widget.description,
-                      //               style: TextStyle(color: titleTextColor),
-                      //             ),
-                      //           ),
-                      //         if (_isExpanded && widget.location.isNotEmpty)
-                      //           ListTile(
-                      //             leading: Icon(Icons.location_on_outlined,
-                      //                 color: titleTextColor),
-                      //             title: Text(
-                      //               widget.location,
-                      //               style: TextStyle(color: titleTextColor),
-                      //             ),
-                      //           ),
-                      //         if (_isExpanded &&
-                      //             widget.measurableTaskId != null)
-                      //           ListTile(
-                      //             title: Column(
-                      //               children: [
-                      //                 if (widget.targetType == TargetType.about)
-                      //                   Text(
-                      //                     'Target: about ${widget.targetAtLeast} to ${widget.targetAtMost} ${widget.unit}',
-                      //                     style:
-                      //                         TextStyle(color: titleTextColor),
-                      //                   ),
-                      //                 if (widget.targetType ==
-                      //                     TargetType.atLeast)
-                      //                   Text(
-                      //                     'Target: at least ${widget.targetAtLeast} ${widget.unit}',
-                      //                     style:
-                      //                         TextStyle(color: titleTextColor),
-                      //                   ),
-                      //                 if (widget.targetType ==
-                      //                     TargetType.atMost)
-                      //                   Text(
-                      //                     'Target: at most ${widget.targetAtMost} ${widget.unit}',
-                      //                     style:
-                      //                         TextStyle(color: titleTextColor),
-                      //                   ),
-                      //               ],
-                      //             ),
-                      //           ),
-                      //         if (_isExpanded &&
-                      //             widget.taskWithSubtasksId != null)
-                      //           ...widget.subtasks.map(
-                      //             (subtask) => ListTile(
-                      //                 leading: Icon(
-                      //                     subtask.isSubtaskCompleted
-                      //                         ? Icons.check_box
-                      //                         : Icons.check_box_outline_blank,
-                      //                     color: titleTextColor),
-                      //                 title: Text(
-                      //                   subtask.title,
-                      //                   style: TextStyle(color: titleTextColor),
-                      //                 )),
-                      //           )
-                      //       ],
-                      //     ),
-                      //   ),
-                      // ),
                       Container(
                         color: widget.color,
                         child: GestureDetector(
@@ -980,16 +877,6 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
             _isEndTimeUndefined = false;
           });
         }
-        // setState(() {
-        //   _startDateController.clear();
-        //   _startTimeController.clear();
-        //   _endDateController.clear();
-        //   _endTimeController.clear();
-        //   _isStartDateUndefined = false;
-        //   _isEndDateUndefined = false;
-        //   _isStartTimeUndefined = false;
-        //   _isEndTimeUndefined = false;
-        // });
       }
     }
   }
@@ -1546,6 +1433,7 @@ class _TimeIntervalOfTaskOrEventPageState
                               });
                             }
                           }
+
                           // Call the async function
                           editTimeInterval();
                         } else if (result == 'delete') {
