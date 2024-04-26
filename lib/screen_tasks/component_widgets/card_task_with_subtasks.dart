@@ -1,3 +1,4 @@
+import 'package:calendar_widgets/calendar_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/models/model_measurable_task.dart';
@@ -13,6 +14,7 @@ class TaskWithSubtasksCard extends StatefulWidget {
   final Function(TaskWithSubtasks) onSubtasksChanged;
   final bool Function(TaskWithSubtasks) isTaskWithSubtasksCardExpanded;
   final Function(TaskWithSubtasks) onTaskWithSubtasksCardExpanded;
+  final bool isProVersion;
   const TaskWithSubtasksCard({
     Key? key,
     required this.taskWithSubtasks,
@@ -22,6 +24,7 @@ class TaskWithSubtasksCard extends StatefulWidget {
     required this.onSubtasksChanged,
     required this.isTaskWithSubtasksCardExpanded,
     required this.onTaskWithSubtasksCardExpanded,
+    required this.isProVersion,
   }) : super(key: key);
 
   @override
@@ -72,6 +75,7 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
         : ColorScheme.light(primary: taskWithSubtasksColor);
     final backgroundColor = myColorScheme.primaryContainer;
     final labelColor = contrastColor(backgroundColor);
+    final textTheme = Theme.of(context).textTheme;
     return Card(
       color: backgroundColor,
       child: Row(
@@ -84,15 +88,7 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ListTile(
-                    // title: Text(
-                    //   widget.taskWithSubtasks.title,
-                    //   style: TextStyle(
-                    //     color: labelColor,
-                    //     decoration: widget.taskWithSubtasks.isCompleted
-                    //         ? TextDecoration.lineThrough
-                    //         : null,
-                    //   ),
-                    // ),
+                    contentPadding: const EdgeInsets.only(right:0, left: 8),
                     title: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -101,7 +97,7 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                               decoration: BoxDecoration(
                                 color: Colors.red,
                                 borderRadius: BorderRadius.circular(
-                                    5), // bo tròn viền tại đây
+                                    5),
                               ),
                               child: Text(
                                 localizations!.important,
@@ -111,96 +107,117 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                             ),
                           Text(
                             widget.taskWithSubtasks.title,
-                            style: TextStyle(
-                              color: labelColor,
-                              decoration: widget.taskWithSubtasks.isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
+                            style: widget.taskWithSubtasks.isCompleted
+                                ? textTheme.labelLarge!.copyWith(
+                                    decoration: TextDecoration.lineThrough,
+                                    color: labelColor)
+                                : textTheme.labelLarge!
+                                    .copyWith(color: labelColor),
                           ),
                         ]),
-                    // subtitle: widget.taskWithSubtasks.description.isNotEmpty
-                    //     ? Text(
-                    //         widget.taskWithSubtasks.description,
-                    //         style: TextStyle(color: labelColor),
-                    //       )
-                    //     : null,
                     trailing: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert_outlined, color: labelColor),
                       onSelected: (String result) {
-                        if (result == 'option1') {
+                        if (result == 'edit') {
                           widget
                               .onTaskWithSubtasksEdit(widget.taskWithSubtasks);
-                        } else if (result == 'option2') {
+                        } else if (result == 'delete') {
                           widget.onTaskWithSubtasksDelete(
                               widget.taskWithSubtasks);
-                        } else if (result == 'option3') {
+                        } else if (result == 'completion') {
                           widget.onTaskWithSubtasksToggleComplete(
                               widget.taskWithSubtasks);
-                        } else if (result == 'option4') {
+                        } else if (result == 'schedule') {
                           showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            showDragHandle: true,
-                            builder: (BuildContext context) =>
-                                ShowOrSetTimeIntervalsBottomSheet(
-                              title: widget.taskWithSubtasks.title,
-                              color: widget.taskWithSubtasks.color,
-                              description: widget.taskWithSubtasks.description,
-                              location: widget.taskWithSubtasks.location,
-                              targetType: TargetType.about,
-                              targetAtLeast: double.negativeInfinity,
-                              targetAtMost: double.infinity,
-                              unit: '',
-                              subtasks: widget.taskWithSubtasks.subtasks,
-                              taskWithSubtasksId: widget.taskWithSubtasks.id,
-                              isSetTimeIntervalPage: true,
-                            ),
-                          );
-                        } else if (result == 'option5') {
-                          widget.onTaskWithSubtasksCardExpanded(widget.taskWithSubtasks);
+                              context: context,
+                              isScrollControlled: true,
+                              showDragHandle: true,
+                              builder: (BuildContext context) {
+                                final EdgeInsets padding =
+                                    MediaQuery.of(context).padding;
+                                return Padding(
+                                  padding: EdgeInsets.only(top: padding.top),
+                                  child: ShowOrSetTimeIntervalsBottomSheet(
+                                    title: widget.taskWithSubtasks.title,
+                                    color: widget.taskWithSubtasks.color,
+                                    description:
+                                        widget.taskWithSubtasks.description,
+                                    location: widget.taskWithSubtasks.location,
+                                    targetType: TargetType.about,
+                                    targetAtLeast: double.negativeInfinity,
+                                    targetAtMost: double.infinity,
+                                    unit: '',
+                                    subtasks: widget.taskWithSubtasks.subtasks,
+                                    taskWithSubtasksId:
+                                        widget.taskWithSubtasks.id,
+                                    isSetTimeIntervalPage: true,
+                                  ),
+                                );
+                              });
+                        } else if (result == 'expand') {
+                          widget.onTaskWithSubtasksCardExpanded(
+                              widget.taskWithSubtasks);
                         } else if (result == 'planned') {
                           showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            showDragHandle: true,
-                            builder: (BuildContext context) =>
-                                ShowOrSetTimeIntervalsBottomSheet(
-                              title: widget.taskWithSubtasks.title,
-                              color: widget.taskWithSubtasks.color,
-                              description: widget.taskWithSubtasks.description,
-                              location: widget.taskWithSubtasks.location,
-                              targetType: TargetType.about,
-                              targetAtLeast: double.negativeInfinity,
-                              targetAtMost: double.infinity,
-                              unit: '',
-                              subtasks: widget.taskWithSubtasks.subtasks,
-                              taskWithSubtasksId: widget.taskWithSubtasks.id,
-                              isSetTimeIntervalPage: false,
-                            ),
-                          );
-                        } else if (result == 'focus_timer') { showComingSoonDialog(context);}
+                              context: context,
+                              isScrollControlled: true,
+                              showDragHandle: true,
+                              enableDrag: true,
+                              builder: (BuildContext context) {
+                                final EdgeInsets padding =
+                                    MediaQuery.of(context).padding;
+                                return Padding(
+                                  padding: EdgeInsets.only(top: padding.top),
+                                  child: ShowOrSetTimeIntervalsBottomSheet(
+                                    title: widget.taskWithSubtasks.title,
+                                    color: widget.taskWithSubtasks.color,
+                                    description:
+                                        widget.taskWithSubtasks.description,
+                                    location: widget.taskWithSubtasks.location,
+                                    targetType: TargetType.about,
+                                    targetAtLeast: double.negativeInfinity,
+                                    targetAtMost: double.infinity,
+                                    unit: '',
+                                    subtasks: widget.taskWithSubtasks.subtasks,
+                                    taskWithSubtasksId:
+                                        widget.taskWithSubtasks.id,
+                                    isSetTimeIntervalPage: false,
+                                  ),
+                                );
+                              });
+                        } else if (result == 'focus_timer') {
+
+                          if(widget.isProVersion){
+                            showComingSoonDialog(context);} else {showWillBeAvaiableOnProVersionDialog(context);}
+                        }
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
                         PopupMenuItem<String>(
-                          value: 'option5',
+                          value: 'expand',
                           child: Row(
                             children: [
                               Icon(//_isExpanded
-                              widget.isTaskWithSubtasksCardExpanded(widget.taskWithSubtasks) == true
-                                  ? Icons.chevron_right
-                                  : Icons.expand_more),
+                                  widget.isTaskWithSubtasksCardExpanded(
+                                              widget.taskWithSubtasks) ==
+                                          true
+                                      ? Icons.chevron_right
+                                      : Icons.expand_more),
                               const SizedBox(width: 8),
                               //_isExpanded
-                              widget.isTaskWithSubtasksCardExpanded(widget.taskWithSubtasks) == true
-                                  ? Expanded(child: Text(localizations!.hideSubTasks))
-                                  : Expanded(child: Text(localizations!.showSubTasks),)
+                              widget.isTaskWithSubtasksCardExpanded(
+                                          widget.taskWithSubtasks) ==
+                                      true
+                                  ? Expanded(
+                                      child: Text(localizations!.hideSubTasks))
+                                  : Expanded(
+                                      child: Text(localizations!.showSubTasks),
+                                    )
                             ],
                           ),
                         ),
                         PopupMenuItem<String>(
-                          value: 'option3',
+                          value: 'completion',
                           child: Row(
                             children: [
                               Icon(widget.taskWithSubtasks.isCompleted
@@ -208,58 +225,73 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                                   : Icons.check_box_outline_blank),
                               const SizedBox(width: 8),
                               widget.taskWithSubtasks.isCompleted
-                                  ? Expanded(child: Text(localizations.markAsIncompleted))
-                                  : Expanded(child: Text(localizations.markAsCompleted),)
+                                  ? Expanded(
+                                      child:
+                                          Text(localizations.markAsIncompleted))
+                                  : Expanded(
+                                      child:
+                                          Text(localizations.markAsCompleted),
+                                    )
                             ],
                           ),
                         ),
+                            PopupMenuItem<String>(
+                              value: 'schedule',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.hourglass_empty_outlined),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(localizations.schedule),
+                                  )
+                                ],
+                              ),
+                            ),
                         PopupMenuItem<String>(
                           value: 'planned',
                           child: Row(
                             children: [
                               const Icon(Icons.event_note_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.planned),)
+                              Expanded(
+                                child: Text(localizations.planned),
+                              )
                             ],
                           ),
                         ),
-                        // const PopupMenuItem<String>(
-                        //   value: 'option4',
-                        //   child: Row(
-                        //     children: [
-                        //       Icon(Icons.hourglass_empty),
-                        //       SizedBox(width: 8),
-                        //       Text('Schedule'),
-                        //     ],
-                        //   ),
-                        // ),
                         PopupMenuItem<String>(
                           value: 'focus_timer',
                           child: Row(
                             children: [
                               const Icon(Icons.timelapse_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.focusRightNow),)
+                              Expanded(
+                                child: Text(localizations.focusRightNow),
+                              )
                             ],
                           ),
                         ),
                         PopupMenuItem<String>(
-                          value: 'option1',
+                          value: 'edit',
                           child: Row(
                             children: [
                               const Icon(Icons.edit_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.editTask),)
+                              Expanded(
+                                child: Text(localizations.editTask),
+                              )
                             ],
                           ),
                         ),
                         PopupMenuItem<String>(
-                          value: 'option2',
+                          value: 'delete',
                           child: Row(
                             children: [
                               const Icon(Icons.delete_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.deleteTask),)
+                              Expanded(
+                                child: Text(localizations.deleteTask),
+                              )
                             ],
                           ),
                         ),
@@ -267,9 +299,12 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                     ),
                   ),
                   //if (_isExpanded)
-                  if (widget.isTaskWithSubtasksCardExpanded(widget.taskWithSubtasks) == true)
+                  if (widget.isTaskWithSubtasksCardExpanded(
+                          widget.taskWithSubtasks) ==
+                      true)
                     ...widget.taskWithSubtasks.subtasks.reversed.map(
                       (subtask) => CheckboxListTile(
+                        contentPadding: const EdgeInsets.only(right:0, left: 8),
                         dense: true,
                         side: BorderSide(
                           color: labelColor,
@@ -302,8 +337,8 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                               builder: (BuildContext context) {
                                 return AlertDialog(
                                   title: Text(localizations!.deleteSubtask),
-                                  content: Text(
-                                      localizations.areYouSureYouWantToDeleteThisSubtask),
+                                  content: Text(localizations
+                                      .areYouSureYouWantToDeleteThisSubtask),
                                   actions: <Widget>[
                                     TextButton(
                                       onPressed: () =>

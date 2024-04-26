@@ -16,7 +16,6 @@ class LanguageButton extends StatelessWidget {
     return PopupMenuButton(
       icon: Icon(
         Icons.language_outlined,
-        //color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       tooltip: 'Select a language',
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -51,10 +50,78 @@ class LanguageButton extends StatelessWidget {
               ],
             ),
           );
-
         });
       },
       onSelected: handleLanguageSelect,
+    );
+  }
+}
+
+class LanguageSubmenuButton extends StatelessWidget {
+  const LanguageSubmenuButton(
+      {required this.handleLanguageSelect, required this.languageSelected});
+
+  final void Function(int) handleLanguageSelect;
+  final AppLanguage languageSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    return SubmenuButton(
+      menuChildren: List.generate(AppLanguage.values.length, (index) {
+        AppLanguage currentLanguage = AppLanguage.values[index];
+
+        return MenuItemButton(
+          onPressed: currentLanguage != languageSelected
+              ? () => handleLanguageSelect(index)
+              : null,
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(
+                width: 50,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: Center(
+                    child: Text(currentLanguage.short_language),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 5),
+              Padding(
+                padding: const EdgeInsets.only(left: 20),
+                child: Text(localizations!.translate(currentLanguage.language)),
+              ),
+            ],
+          ),
+        );
+      }),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.center,
+        runAlignment: WrapAlignment.spaceAround,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 5),
+              child: Text(localizations!.translate(languageSelected.language)),
+            ),
+          ),
+          const SizedBox(
+            width: 20,
+          ),
+          SizedBox(
+            width: 50,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: Center(
+                child: Text(languageSelected.short_language),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -9,6 +9,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseManager {
+
+
   // Singleton pattern
   static final DatabaseManager _databaseManager = DatabaseManager._internal();
   factory DatabaseManager() => _databaseManager;
@@ -21,6 +23,7 @@ class DatabaseManager {
     _database = await _initDatabase();
     return _database!;
   }
+
 
   Future<Database> _initDatabase() async {
     final databasePath = await getDatabasesPath();
@@ -39,6 +42,8 @@ class DatabaseManager {
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
+
+
 
 //ON DELETE CASCADE doesn't work right. Why????
   Future<void> _onCreate(Database db, int version) async {
@@ -363,7 +368,7 @@ class DatabaseManager {
       taskList.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    printTaskLists();
+    //printTaskLists();
   }
 
   Future<void> insertTask(Task task) async {
@@ -373,7 +378,7 @@ class DatabaseManager {
       task.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    printTasks();
+    //printTasks();
   }
 
   Future<void> insertMeasurableTask(MeasurableTask measurableTask) async {
@@ -383,7 +388,7 @@ class DatabaseManager {
       measurableTask.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    printMeasurableTasks();
+    //printMeasurableTasks();
   }
 
   Future<void> insertTaskWithSubtasks(TaskWithSubtasks taskWithSubtasks) async {
@@ -393,7 +398,7 @@ class DatabaseManager {
       taskWithSubtasks.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    printTasksWithSubtasks();
+    //printTasksWithSubtasks();
   }
 
   Future<void> insertTimeInterval(TimeInterval timeInterval) async {
@@ -403,7 +408,7 @@ class DatabaseManager {
       timeInterval.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    printTimeIntervals();
+    //printTimeIntervals();
   }
 
   Future<void> insertEvent(Event event) async {
@@ -426,6 +431,8 @@ class DatabaseManager {
     // Convert the List<Map<String, dynamic> into a List<TaskList>.
     return List.generate(maps.length, (index) => TaskList.fromMap(maps[index]));
   }
+
+
 
   Future<List<Task>> tasks() async {
     final db = await _databaseManager.database;
@@ -611,9 +618,9 @@ class DatabaseManager {
       where: 'id = ?',
       whereArgs: [task.id],
     );
-    print('Task updated');
-    printTasks();
-    printTimeIntervals();
+    // print('Task updated');
+    // printTasks();
+    // printTimeIntervals();
   }
 
   Future<void> updateMeasurableTask(MeasurableTask measurableTask) async {
@@ -669,14 +676,14 @@ class DatabaseManager {
       // Pass the tasklist's id as a whereArg to prevent SQL injection.
       whereArgs: [id],
     );
-    printTasks();
+    //printTasks();
   }
 
   Future<void> deleteTask(String id) async {
     final db = await _databaseManager.database;
 
     await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
-    printTimeIntervals();
+    //printTimeIntervals();
   }
 
   Future<void> deleteMeasurableTask(String id) async {

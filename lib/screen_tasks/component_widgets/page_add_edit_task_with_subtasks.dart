@@ -198,7 +198,7 @@ class _AddOrEditTaskWithSubtasksPageState
                     )),
                 const SizedBox(height: 12.0),
                 Row(children: [
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () => _showAddSubtaskDialog(context),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

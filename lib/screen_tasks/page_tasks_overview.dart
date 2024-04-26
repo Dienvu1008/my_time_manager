@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,10 +17,56 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../app/app_localizations.dart';
 import '../data/database/database_manager.dart';
 import '../data/models/models.dart';
+import '../home/component_widgets/app_drawer.dart';
+import '../home/component_widgets/button_brightness.dart';
+import '../home/component_widgets/button_color_image.dart';
+import '../home/component_widgets/button_color_seed.dart';
+import '../home/component_widgets/button_language.dart';
+import '../home/component_widgets/button_material3.dart';
+import '../home/component_widgets/button_select_calendar_mode.dart';
+import '../home/component_widgets/button_show_timeline_calendar.dart';
+import '../home/component_widgets/button_use_bottom_bar.dart';
+import '../utils/constants.dart';
 import '../utils/utils.dart';
 
 class TasksOverviewPage extends StatefulWidget {
-  const TasksOverviewPage({Key? key}) : super(key: key);
+  final Function handleBrightnessChange;
+  final void Function() handleMaterialVersionChange;
+  final void Function() handleUsingBottomBarChange;
+  final void Function(int) handleColorSelect;
+  final bool useBottomBar;
+  final ColorSeed colorSelected;
+  final ColorSelectionMethod colorSelectionMethod;
+  final void Function(int) handleImageSelect;
+  final ColorImageProvider imageSelected;
+  final void Function(int) handleLanguageSelect;
+  final AppLanguage languageSelected;
+  final bool showBrightnessButtonInAppBar;
+  final bool showColorImageButtonInAppBar;
+  final bool showColorSeedButtonInAppBar;
+  final bool showLanguagesButtonInAppBar;
+  final bool showMaterialDesignButtonInAppBar;
+
+  final bool isProVersion;
+
+  const TasksOverviewPage({super.key,
+    required this.handleBrightnessChange,
+    required this.handleMaterialVersionChange,
+    required this.handleUsingBottomBarChange,
+    required this.useBottomBar,
+    required this.handleColorSelect,
+    required this.colorSelected,
+    required this.colorSelectionMethod,
+    required this.handleImageSelect,
+    required this.imageSelected,
+    required this.handleLanguageSelect,
+    required this.languageSelected,
+    required this.showBrightnessButtonInAppBar,
+    required this.showColorImageButtonInAppBar,
+    required this.showColorSeedButtonInAppBar,
+    required this.showLanguagesButtonInAppBar,
+    required this.showMaterialDesignButtonInAppBar,
+    required this.isProVersion});
 
   @override
   _TasksOverviewPageState createState() => _TasksOverviewPageState();
@@ -46,7 +91,9 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
       taskLists
           .sort((a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
     }
+    //if(mounted)
     setState(() => _taskLists = taskLists);
+    //_taskLists = taskLists;
   }
 
   void _reorderTaskLists(int oldIndex, int newIndex) {
@@ -63,7 +110,6 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
     await _databaseManager.deleteTaskList(taskList.id);
     _taskLists!.remove(taskList.id);
     await _saveOrder();
-    setState(() {});
   }
 
   Future<void> _deleteDatabase() async {
@@ -83,60 +129,122 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    //_init();
     if (_taskLists == null) {
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
+
     return Expanded(
-        child: Scaffold(
-      body: TaskListsHolder(
-        onReorder: _reorderTaskLists,
-        taskLists: _taskLists ?? [],
-        onTaskListDelete: (value) async {
-          _onTaskListDelete(value);
-        },
-        onTaskListEdit: (TaskList taskList) async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => AddOrEditTaskListPage(taskList: taskList),
-              fullscreenDialog: false,
+      child: Column(
+        children: [
+          AppBar(title: Text(localizations!.overview, style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold)),
+              actions: [
+                MenuAnchor(
+                  builder: (context, controller, child) {
+                    return IconButton(
+                      onPressed: () {
+                        if (controller.isOpen) {
+                          controller.close();
+                        } else {
+                          controller.open();
+                        }
+                      },
+                      icon: const Icon(Icons.more_vert_outlined),
+                    );
+                  },
+                  menuChildren: [
+                    if (widget.showBrightnessButtonInAppBar)
+                    BrightnessMenuItemButton(
+                      handleBrightnessChange: widget.handleBrightnessChange,
+                    ),
+                    if (widget.showMaterialDesignButtonInAppBar)
+                    Material3MenuItemButton(
+                      handleMaterialVersionChange:
+                      widget.handleMaterialVersionChange,
+                    ),
+
+                    UsingBottomBarMenuItemButton(
+                        handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+                        useBottomBar: widget.useBottomBar),
+                    if (widget.showColorSeedButtonInAppBar)
+                    ColorSeedSubmenuButton(
+                      handleColorSelect: widget.handleColorSelect,
+                      colorSelected: widget.colorSelected,
+                      colorSelectionMethod: widget.colorSelectionMethod,
+                    ),
+                    if (widget.showColorImageButtonInAppBar)
+                    ColorImageSubmenuButton(
+                      handleImageSelect: widget.handleImageSelect,
+                      imageSelected: widget.imageSelected,
+                      colorSelectionMethod: widget.colorSelectionMethod,
+                    ),
+                    if (widget.showLanguagesButtonInAppBar)
+                    LanguageSubmenuButton(
+                      handleLanguageSelect: widget.handleLanguageSelect,
+                      languageSelected: widget.languageSelected,
+                    ),
+                  ],
+                ),
+              ]),
+          Expanded(
+            child: Scaffold(
+              body: TaskListsHolder(
+                onReorder: _reorderTaskLists,
+                taskLists: _taskLists ?? [],
+                onTaskListDelete: (value) async {
+                  _onTaskListDelete(value);
+                },
+                onTaskListEdit: (TaskList taskList) async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AddOrEditTaskListPage(taskList: taskList),
+                      fullscreenDialog: false,
+                    ),
+                  );
+                  final updatedTaskLists = await _databaseManager.taskLists();
+                  final order = _prefs.getStringList('taskListOrder');
+                  if (order != null) {
+                    updatedTaskLists.sort((a, b) =>
+                        order.indexOf(a.id).compareTo(order.indexOf(b.id)));
+                  }
+                  setState(() => _taskLists = updatedTaskLists);
+                },
+                isProVersion: widget.isProVersion,
+              ),
+              floatingActionButton:
+                  //Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  FloatingActionButton.small(
+                onPressed: () async {
+                  final taskList = await showDialog<TaskList>(
+                    context: context,
+                    builder: (context) => AddOrEditTaskListPage(),
+                  );
+                  if (taskList != null) {
+                    await _addTaskList(taskList);
+                  }
+                },
+                heroTag: 'addTaskList',
+                child: const Icon(Icons.add),
+              ),
+
+              // const SizedBox(
+              //   width: 10.0,
+              //   height: 20.0,
+              // ),
+              // FloatingActionButton(
+              //   onPressed: _deleteDatabase,
+              //   child: const Icon(Icons.delete),
+              //),
+              //]
+              //),
             ),
-          );
-          final updatedTaskLists = await _databaseManager.taskLists();
-          final order = _prefs.getStringList('taskListOrder');
-          if (order != null) {
-            updatedTaskLists.sort(
-                (a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
-          }
-          setState(() => _taskLists = updatedTaskLists);
-        },
+          )
+        ],
       ),
-      floatingActionButton:
-          Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-        FloatingActionButton(
-          onPressed: () async {
-            final taskList = await showDialog<TaskList>(
-              context: context,
-              builder: (context) => AddOrEditTaskListPage(),
-            );
-            if (taskList != null) {
-              await _addTaskList(taskList);
-            }
-          },
-          heroTag: 'addTaskList',
-          child: const Icon(Icons.add),
-        ),
-        const SizedBox(
-          width: 10.0,
-          height: 20.0,
-        ),
-        FloatingActionButton(
-          onPressed: _deleteDatabase,
-          child: const Icon(Icons.delete),
-        ),
-      ]),
-    ));
+    );
   }
 }
 
@@ -147,12 +255,14 @@ class TaskListsHolder extends StatefulWidget {
     required this.onTaskListEdit,
     required this.onReorder,
     required this.taskLists,
+    required this.isProVersion,
   }) : super(key: key);
 
   final Function(TaskList) onTaskListDelete;
   final Function(TaskList) onTaskListEdit;
   final Function(int, int) onReorder;
   final List<TaskList> taskLists;
+  final bool isProVersion;
 
   @override
   _TaskListsHolderState createState() => _TaskListsHolderState();
@@ -169,10 +279,32 @@ class _TaskListsHolderState extends State<TaskListsHolder> {
           key: ValueKey(taskList),
           taskList: taskList,
           onTaskListDelete: (TaskList taskList) async {
-            widget.onTaskListDelete(taskList);
-            setState(() => widget.taskLists.remove(taskList));
+            final shouldDelete = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Delete this list'),
+                content: Text(
+                    'Are you sure you want to delete this list and all its tasks and events?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+
+            if (shouldDelete ?? false) {
+              widget.onTaskListDelete(taskList);
+              setState(() => widget.taskLists.remove(taskList));
+            }
           },
           onTaskListEdit: widget.onTaskListEdit,
+          isProVersion: widget.isProVersion,
         );
       }),
     );
@@ -185,11 +317,13 @@ class TaskListCard extends StatefulWidget {
     required this.taskList,
     required this.onTaskListEdit,
     required this.onTaskListDelete,
+    required this.isProVersion,
   }) : super(key: key);
 
   final TaskList taskList;
   final Function(TaskList) onTaskListEdit;
   final Function(TaskList) onTaskListDelete;
+  final bool isProVersion;
 
   @override
   _TaskListCardState createState() => _TaskListCardState();
@@ -270,13 +404,6 @@ class _TaskListCardState extends State<TaskListCard> {
     }
 
     await _databaseManager.updateTask(_task);
-    //final updatedTask = await _databaseManager.task(task.id);
-    //final index = _items.indexWhere((item) => item.id == updatedTask.id);
-    // if (index != -1) {
-    //   setState(() {
-    //     _items[index] = updatedTask;
-    //   });
-    // }
   }
 
   Future<void> _onMeasurableTaskToggleCompleted(
@@ -291,15 +418,6 @@ class _TaskListCardState extends State<TaskListCard> {
       });
     }
     await _databaseManager.updateMeasurableTask(_measurableTask);
-    // final updatedMeasurableTask =
-    //     await _databaseManager.measurableTask(measurableTask.id);
-    // final index =
-    //     _items.indexWhere((item) => item.id == updatedMeasurableTask.id);
-    // if (index != -1) {
-    //   setState(() {
-    //     _items[index] = updatedMeasurableTask;
-    //   });
-    // }
   }
 
   Future<void> _onHasBeenDoneUpdate(MeasurableTask measurableTask) async {
@@ -334,16 +452,6 @@ class _TaskListCardState extends State<TaskListCard> {
                 });
               }
               await _databaseManager.updateMeasurableTask(_measurableTask);
-
-              // final updatedMeasurableTask =
-              //     await _databaseManager.measurableTask(measurableTask.id);
-              // final index = _items
-              //     .indexWhere((item) => item.id == updatedMeasurableTask.id);
-              // if (index != -1) {
-              //   setState(() {
-              //     _items[index] = updatedMeasurableTask;
-              //   });
-              // }
               Navigator.pop(context);
             },
             child: Text(AppLocalizations.of(context)!.update),
@@ -364,29 +472,10 @@ class _TaskListCardState extends State<TaskListCard> {
       });
     }
     await _databaseManager.updateTaskWithSubtasks(_taskWithSubtasks);
-    // final updatedTaskWithSubtasks =
-    //     await _databaseManager.taskWithSubtasks(taskWithSubtasks.id);
-    // final index =
-    //     _items.indexWhere((item) => item.id == updatedTaskWithSubtasks.id);
-    // if (index != -1) {
-    //   setState(() {
-    //     _items[index] = updatedTaskWithSubtasks;
-    //   });
-    // }
   }
 
   Future<void> _onSubtasksChanged(TaskWithSubtasks taskWithSubtasks) async {
     TaskWithSubtasks _taskWithSubtasks = taskWithSubtasks;
-
-    // TaskWithSubtasks(
-    //   color: taskWithSubtasks.color,
-    //   description: taskWithSubtasks.description,
-    //   taskListId: taskWithSubtasks.taskListId,
-    //   title: taskWithSubtasks.title,
-    //   //isCompleted: taskWithSubtasks.isCompleted,
-    //   id: taskWithSubtasks.id,
-    //   subtasks: taskWithSubtasks.subtasks,
-    // );
 
     final index = _items.indexWhere((item) => item.id == _taskWithSubtasks.id);
     if (index != -1) {
@@ -396,16 +485,6 @@ class _TaskListCardState extends State<TaskListCard> {
     }
 
     await _databaseManager.updateTaskWithSubtasks(_taskWithSubtasks);
-    // final updatedTaskWithSubtasks =
-    //     await _databaseManager.taskWithSubtasks(taskWithSubtasks.id);
-    // final index =
-    //     _items.indexWhere((item) => item.id == updatedTaskWithSubtasks.id);
-    // if (index != -1) {
-    //   setState(() {
-    //     _items[index] = updatedTaskWithSubtasks;
-    //   });
-    // }
-    //_init();
   }
 
   Future<void> _onTaskDelete(Task task) async {
@@ -590,38 +669,38 @@ class _TaskListCardState extends State<TaskListCard> {
             ],
           ),
 
-          // ListTile(
-          //   leading: IconButton(
-          //     icon: Icon(_isExpanded ? Icons.expand_more : Icons.chevron_right),
-          //     onPressed: () => setState(() {
-          //       _isExpanded = !_isExpanded;
-          //       _prefs.setBool('${widget.taskList.id}_isExpanded', _isExpanded);
-          //     }),
-          //   ),
-          //   title: Expanded(
-          //     child: GestureDetector(
-          //       onTap: () => widget.onTaskListEdit(widget.taskList),
-          //       child: Column(
-          //         crossAxisAlignment: CrossAxisAlignment.start,
-          //         children: [
-          //           Text(widget.taskList.title, style: textTheme.titleMedium),
-          //           const SizedBox(height: 4.0),
-          //           if (_isExpanded && widget.taskList.description.isNotEmpty)
-          //             Text(widget.taskList.description),
-          //         ],
-          //       ),
-          //     ),
-          //   ),
-          //   trailing: TaskListCardOptions(
-          //     taskList: widget.taskList,
-          //     onTaskListDelete: () => widget.onTaskListDelete(widget.taskList),
-          //     onTaskListEdit: () => widget.onTaskListEdit(widget.taskList),
-          //     addTask: (value) => _addTask(value),
-          //     addMeasurableTask: (value) => _addMeasurableTask(value),
-          //     addTaskWithSubtasks: (value) => _addTaskWithSubtasks(value),
-          //   ),
-          // ),
-          if (_isExpanded)
+    //     ListTile(
+    //       contentPadding: const EdgeInsets.only(right:0, left: 0),
+    //     leading: IconButton(
+    //     icon: Icon(_isExpanded ? Icons.expand_more : Icons.chevron_right),
+    //     onPressed: () => setState(() {
+    //       _isExpanded = !_isExpanded;
+    //       _prefs.setBool('${widget.taskList.id}_isExpanded', _isExpanded);
+    //     }),
+    //   ),
+    //   title: GestureDetector(
+    //     onTap: () => widget.onTaskListEdit(widget.taskList),
+    //     child: Column(
+    //       crossAxisAlignment: CrossAxisAlignment.start,
+    //       children: [
+    //         Text(widget.taskList.title, style: textTheme.titleMedium),
+    //         const SizedBox(height: 4.0),
+    //         if (_isExpanded && widget.taskList.description.isNotEmpty)
+    //           Text(widget.taskList.description),
+    //       ],
+    //     ),
+    //   ),
+    //   trailing: TaskListCardOptions(
+    //     taskList: widget.taskList,
+    //     onTaskListDelete: () => widget.onTaskListDelete(widget.taskList),
+    //     onTaskListEdit: () => widget.onTaskListEdit(widget.taskList),
+    //     addTask: (value) => _addTask(value),
+    //     addMeasurableTask: (value) => _addMeasurableTask(value),
+    //     addTaskWithSubtasks: (value) => _addTaskWithSubtasks(value),
+    //   ),
+    // ),
+
+    if (_isExpanded)
             ItemsHolder(
               onReorder: _reorderItems,
               items: _items,
@@ -710,6 +789,7 @@ class _TaskListCardState extends State<TaskListCard> {
                   (TaskWithSubtasks taskWithSubtasks) {
                 _onTaskWithSubtasksCardExpanded(taskWithSubtasks);
               },
+              isProVersion: widget.isProVersion,
             ),
         ]),
       ),
@@ -780,34 +860,23 @@ class TaskListCardOptions extends StatelessWidget {
                 }
               },
               child: Text(localizations.addANewMeasureableTask),
-              
             ),
             MenuItemButton(
-                onPressed: () async {
-                  final taskWithSubtasks = await showDialog<TaskWithSubtasks>(
-                    context: context,
-                    builder: (context) => AddOrEditTaskWithSubtasksPage(
-                      taskList: taskList,
-                    ),
-                  );
-                  if (taskWithSubtasks != null) {
-                    await addTaskWithSubtasks(taskWithSubtasks);
-                  }
-                },
-                child: Text(localizations.addANewTaskWithSubTasks),//Text(localizations.addANewTaskWithSubtasks),
-                ),
+              onPressed: () async {
+                final taskWithSubtasks = await showDialog<TaskWithSubtasks>(
+                  context: context,
+                  builder: (context) => AddOrEditTaskWithSubtasksPage(
+                    taskList: taskList,
+                  ),
+                );
+                if (taskWithSubtasks != null) {
+                  await addTaskWithSubtasks(taskWithSubtasks);
+                }
+              },
+              child: Text(localizations
+                  .addANewTaskWithSubTasks), //Text(localizations.addANewTaskWithSubtasks),
+            ),
             MenuItemButton(
-              // onPressed: () async {
-              //   final taskWithSubtasks = await showDialog<TaskWithSubtasks>(
-              //     context: context,
-              //     builder: (context) => AddOrEditTaskWithSubtasksPage(
-              //       taskList: taskList,
-              //     ),
-              //   );
-                //if (taskWithSubtasks != null) {
-                //await addTask(taskWithSubtasks);
-                //}
-              //},
               onPressed: () => showComingSoonDialog(context),
               child: Text(localizations.addANewEvent),
             ),
@@ -871,6 +940,7 @@ class ItemsHolder extends StatefulWidget {
     required this.onSubtasksChanged,
     required this.isTaskWithSubtasksCardExpanded,
     required this.onTaskWithSubtasksCardExpanded,
+    required this.isProVersion,
   }) : super(key: key);
 
   final Function(Task) onTaskEdit;
@@ -892,6 +962,7 @@ class ItemsHolder extends StatefulWidget {
   final Function(TaskWithSubtasks) onTaskWithSubtasksCardExpanded;
   final List<dynamic> items;
   final Function(int, int) onReorder;
+  final bool isProVersion;
 
   @override
   _ItemsHolderState createState() => _ItemsHolderState();
@@ -901,6 +972,7 @@ class _ItemsHolderState extends State<ItemsHolder> {
   @override
   Widget build(BuildContext context) {
     return ReorderableListView(
+
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       onReorder: widget.onReorder,
@@ -920,6 +992,7 @@ class _ItemsHolderState extends State<ItemsHolder> {
             onTaskToggleComplete: (Task task) async {
               widget.onTaskToggleComplete(task);
             },
+            isProVersion: widget.isProVersion,
           );
         } else if (item is MeasurableTask) {
           return MeasurableTaskCard(
@@ -943,6 +1016,7 @@ class _ItemsHolderState extends State<ItemsHolder> {
             onMeasurableTaskCardExpanded: (MeasurableTask measurableTask) {
               widget.onMeasurableTaskCardExpanded(measurableTask);
             },
+            isProVersion: widget.isProVersion,
           );
         } else if (item is TaskWithSubtasks) {
           return TaskWithSubtasksCard(
@@ -969,6 +1043,7 @@ class _ItemsHolderState extends State<ItemsHolder> {
             },
             isTaskWithSubtasksCardExpanded:
                 widget.isTaskWithSubtasksCardExpanded,
+            isProVersion: widget.isProVersion,
           );
         } else if (item is Event) {
         } else {
@@ -1268,7 +1343,8 @@ class BlocTaskWithSubtasksCard extends StatelessWidget {
 }
 
 class BlocTasksOverviewPage extends StatelessWidget {
-  const BlocTasksOverviewPage({Key? key}) : super(key: key);
+  const BlocTasksOverviewPage({Key? key, required this.isProVersion}) : super(key: key);
+  final bool isProVersion;
 
   @override
   Widget build(BuildContext context) {
@@ -1330,6 +1406,7 @@ class BlocTasksOverviewPage extends StatelessWidget {
                   );
                   context.read<TaskListsHolderBloc>().add(LoadTaskListsEvent());
                 },
+                isProVersion: isProVersion,
               ),
               floatingActionButton:
                   Column(mainAxisAlignment: MainAxisAlignment.end, children: [
@@ -1424,7 +1501,7 @@ class TaskListsHolderBloc
   }
 
 //   Future<void> _onDeleteTaskListEvent(
-//   DeleteTaskListEvent event, 
+//   DeleteTaskListEvent event,
 //   Emitter<TaskListsHolderState> emit,
 //   Future<bool> Function() confirmDelete,
 // ) async {
@@ -1436,7 +1513,6 @@ class TaskListsHolderBloc
 //     emit(state.copyWith(taskLists: taskLists));
 //   }
 // }
-
 
   Future<void> _onAddTaskListEvent(
       AddTaskListEvent event, Emitter<TaskListsHolderState> emit) async {

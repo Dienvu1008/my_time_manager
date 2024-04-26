@@ -1,27 +1,36 @@
+import 'dart:collection';
+
+import 'package:calendar_widgets/src_table_calendar/customization/calendar_builders.dart';
+import 'package:calendar_widgets/src_table_calendar/shared/utils.dart';
+import 'package:calendar_widgets/src_table_calendar/table_calendar.dart';
 import 'package:flutter/material.dart';
-import 'package:my_time_manager/screen_calendar/complex_example.dart';
+import 'package:my_time_manager/home/data_controller_provider.dart';
 import 'package:my_time_manager/screen_calendar/view_daily.dart';
 import 'package:my_time_manager/screen_calendar/view_monthly.dart';
+import 'package:my_time_manager/screen_tasks/page_tasks_timeline_new.dart';
 import 'package:my_time_manager/utils/widget_coming_soon.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../app/app_localizations.dart';
+import '../data/database/database_manager.dart';
+import '../data/models/model_list.dart';
+import '../data/models/model_time_interval.dart';
 import '../screen_about_us/page_about_us.dart';
+import '../screen_calendar/view_weekly.dart';
 import '../screen_focus_timer/page_focus_timer.dart';
 import '../screen_material_design/page_color_palettes.dart';
 import '../screen_material_design/page_component.dart';
 import '../screen_settings/page_settings_user_interface.dart';
 import '../screen_tasks/page_tasks_overview.dart';
 import '../screen_tasks/page_tasks_timeline.dart';
-import '../screen_tasks/page_tasks_timetable.dart';
 import '../utils/constants.dart';
 import '../screen_material_design/page_elevation.dart';
 import '../screen_material_design/page_typography.dart';
 import '../utils/utils.dart';
-import 'package:table_calendar/table_calendar.dart';
-
 import 'component_widgets/actions_expanded_trailing.dart';
 import 'component_widgets/app_drawer.dart';
 import 'component_widgets/app_navigation_bars.dart';
+import 'component_widgets/appbar.dart';
 import 'component_widgets/button_brightness.dart';
 import 'component_widgets/button_color_image.dart';
 import 'component_widgets/button_color_seed.dart';
@@ -35,6 +44,7 @@ import 'component_widgets/destinations_settings_screen.dart';
 import 'component_widgets/destionations_nav_rail_calendar_screen.dart';
 import 'component_widgets/transition_navigation.dart';
 import 'component_widgets/transition_one_two.dart';
+import 'data_controller.dart';
 
 class Home extends StatefulWidget {
   const Home({
@@ -62,11 +72,14 @@ class Home extends StatefulWidget {
     required this.imageSelected,
     required this.languageSelected,
     required this.launchCount,
+    required this.useBottomBar,
+    required this.handleUsingBottomBarChange,
   });
 
   final bool isProVersion;
   final bool useLightMode;
   final bool useMaterial3;
+  final bool useBottomBar;
   final bool showBrightnessButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
   final bool showColorSeedButtonInAppBar;
@@ -80,6 +93,7 @@ class Home extends StatefulWidget {
 
   final void Function(bool useLightMode) handleBrightnessChange;
   final void Function() handleMaterialVersionChange;
+  final void Function() handleUsingBottomBarChange;
   final void Function() handleDisplayBrightnessButtonInAppBarChange;
   final void Function() handleDisplayMaterialDesignButtonInAppBarChange;
   final void Function() handleDisplayColorSeedButtonInAppBarChange;
@@ -104,19 +118,85 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   int _selectedDrawerItemIndex = ScreenSelected.tasksScreen.value;
   int _selectedNavBarItemIndex = 0;
 
-  static final List<Widget> _tasksScreen = <Widget>[
-    BlocTasksOverviewPage(),
-    //TasksTimelinePage(),
-    TableComplexExample(),
-    TasksTimetablePage(),
-  ];
+  final DatabaseManager _databaseManager = DatabaseManager();
+  late SharedPreferences _prefs;
+  List<TaskList>? _taskLists;
+  List<TimeInterval> _timeIntervals = [];
 
-  static final List<Widget> _calendarScreen = <Widget>[
-    TasksDayView(),
-    TasksTimetablePage(),
-    TasksMonthView(),
-    ComingSoonWidget(),
-  ];
+  // static final List<Widget> _calendarScreen = <Widget>[
+  //   const TasksDayView(),
+  //   const TasksWeekView(),
+  //   const TasksMonthView(),
+  //   const ComingSoonWidget(),
+  // ];
+
+  Widget createPageForCalendarScreen(PageOfCalendarScreenSelected screenSelected) {
+    switch (screenSelected) {
+      case PageOfCalendarScreenSelected.dayPage:
+        return TasksDayView(
+          handleBrightnessChange: widget.handleBrightnessChange,
+          handleMaterialVersionChange: widget.handleMaterialVersionChange,
+          handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+          useBottomBar: widget.useBottomBar,
+          handleColorSelect: widget.handleColorSelect,
+          colorSelected: widget.colorSelected,
+          colorSelectionMethod: widget.colorSelectionMethod,
+          handleImageSelect: widget.handleImageSelect,
+          imageSelected: widget.imageSelected,
+          handleLanguageSelect: widget.handleLanguageSelect,
+          languageSelected: widget.languageSelected,
+          showBrightnessButtonInAppBar: widget.showBrightnessButtonInAppBar,
+          showColorImageButtonInAppBar: widget.showColorImageButtonInAppBar,
+          showColorSeedButtonInAppBar: widget.showColorSeedButtonInAppBar,
+          showLanguagesButtonInAppBar: widget.showLanguagesButtonInAppBar,
+          showMaterialDesignButtonInAppBar:
+          widget.showMaterialDesignButtonInAppBar,
+        );
+      case PageOfCalendarScreenSelected.weekPage:
+        return TasksWeekView(
+          handleBrightnessChange: widget.handleBrightnessChange,
+          handleMaterialVersionChange: widget.handleMaterialVersionChange,
+          handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+          useBottomBar: widget.useBottomBar,
+          handleColorSelect: widget.handleColorSelect,
+          colorSelected: widget.colorSelected,
+          colorSelectionMethod: widget.colorSelectionMethod,
+          handleImageSelect: widget.handleImageSelect,
+          imageSelected: widget.imageSelected,
+          handleLanguageSelect: widget.handleLanguageSelect,
+          languageSelected: widget.languageSelected,
+          showBrightnessButtonInAppBar: widget.showBrightnessButtonInAppBar,
+          showColorImageButtonInAppBar: widget.showColorImageButtonInAppBar,
+          showColorSeedButtonInAppBar: widget.showColorSeedButtonInAppBar,
+          showLanguagesButtonInAppBar: widget.showLanguagesButtonInAppBar,
+          showMaterialDesignButtonInAppBar:
+          widget.showMaterialDesignButtonInAppBar,
+        );
+
+      case PageOfCalendarScreenSelected.monthPage:
+        return TasksMonthView(
+          handleBrightnessChange: widget.handleBrightnessChange,
+          handleMaterialVersionChange: widget.handleMaterialVersionChange,
+          handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+          useBottomBar: widget.useBottomBar,
+          handleColorSelect: widget.handleColorSelect,
+          colorSelected: widget.colorSelected,
+          colorSelectionMethod: widget.colorSelectionMethod,
+          handleImageSelect: widget.handleImageSelect,
+          imageSelected: widget.imageSelected,
+          handleLanguageSelect: widget.handleLanguageSelect,
+          languageSelected: widget.languageSelected,
+          showBrightnessButtonInAppBar: widget.showBrightnessButtonInAppBar,
+          showColorImageButtonInAppBar: widget.showColorImageButtonInAppBar,
+          showColorSeedButtonInAppBar: widget.showColorSeedButtonInAppBar,
+          showLanguagesButtonInAppBar: widget.showLanguagesButtonInAppBar,
+          showMaterialDesignButtonInAppBar:
+          widget.showMaterialDesignButtonInAppBar,
+        );
+      case PageOfCalendarScreenSelected.yearPage:
+        return ComingSoonWidget();
+    }
+  }
 
   void _onDrawerItemTapped(int index) {
     setState(() {
@@ -144,6 +224,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       parent: controller,
       curve: const Interval(0.5, 1.0),
     );
+    //_init();
+    //_loadData();
   }
 
   @override
@@ -211,13 +293,91 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     }
   }
 
-  Widget createPageForTasksScreen() {
-    return _tasksScreen.elementAt(_selectedNavBarItemIndex);
+  Widget createPageForTasksScreen(PageOfTasksScreenSelected screenSelected) {
+    switch (screenSelected) {
+      case PageOfTasksScreenSelected.tasksOverviewPage:
+        return TasksOverviewPage(
+          handleBrightnessChange: widget.handleBrightnessChange,
+          handleMaterialVersionChange: widget.handleMaterialVersionChange,
+          handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+          useBottomBar: widget.useBottomBar,
+          handleColorSelect: widget.handleColorSelect,
+          colorSelected: widget.colorSelected,
+          colorSelectionMethod: widget.colorSelectionMethod,
+          handleImageSelect: widget.handleImageSelect,
+          imageSelected: widget.imageSelected,
+          handleLanguageSelect: widget.handleLanguageSelect,
+          languageSelected: widget.languageSelected,
+          showBrightnessButtonInAppBar: widget.showBrightnessButtonInAppBar,
+          showColorImageButtonInAppBar: widget.showColorImageButtonInAppBar,
+          showColorSeedButtonInAppBar: widget.showColorSeedButtonInAppBar,
+          showLanguagesButtonInAppBar: widget.showLanguagesButtonInAppBar,
+          showMaterialDesignButtonInAppBar:
+              widget.showMaterialDesignButtonInAppBar,
+          isProVersion: widget.isProVersion,
+        );
+      case PageOfTasksScreenSelected.tasksTimelinePage:
+        return FutureBuilder(
+          future: _databaseManager.timeIntervals(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            } else if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            } else {
+              List<TimeInterval> timeIntervals = snapshot.data ?? [];
+              return TableComplexExample(
+                handleBrightnessChange: widget.handleBrightnessChange,
+                handleMaterialVersionChange: widget.handleMaterialVersionChange,
+                handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+                useBottomBar: widget.useBottomBar,
+                handleColorSelect: widget.handleColorSelect,
+                colorSelected: widget.colorSelected,
+                colorSelectionMethod: widget.colorSelectionMethod,
+                handleImageSelect: widget.handleImageSelect,
+                imageSelected: widget.imageSelected,
+                handleLanguageSelect: widget.handleLanguageSelect,
+                languageSelected: widget.languageSelected,
+                showBrightnessButtonInAppBar:
+                    widget.showBrightnessButtonInAppBar,
+                showColorImageButtonInAppBar:
+                    widget.showColorImageButtonInAppBar,
+                showColorSeedButtonInAppBar: widget.showColorSeedButtonInAppBar,
+                showLanguagesButtonInAppBar: widget.showLanguagesButtonInAppBar,
+                showMaterialDesignButtonInAppBar:
+                    widget.showMaterialDesignButtonInAppBar,
+                timeIntervals: timeIntervals,
+              );
+            }
+          },
+        );
+
+      case PageOfTasksScreenSelected.tasksTimetablePage:
+        return TasksWeekView(
+          handleBrightnessChange: widget.handleBrightnessChange,
+          handleMaterialVersionChange: widget.handleMaterialVersionChange,
+          handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+          useBottomBar: widget.useBottomBar,
+          handleColorSelect: widget.handleColorSelect,
+          colorSelected: widget.colorSelected,
+          colorSelectionMethod: widget.colorSelectionMethod,
+          handleImageSelect: widget.handleImageSelect,
+          imageSelected: widget.imageSelected,
+          handleLanguageSelect: widget.handleLanguageSelect,
+          languageSelected: widget.languageSelected,
+          showBrightnessButtonInAppBar: widget.showBrightnessButtonInAppBar,
+          showColorImageButtonInAppBar: widget.showColorImageButtonInAppBar,
+          showColorSeedButtonInAppBar: widget.showColorSeedButtonInAppBar,
+          showLanguagesButtonInAppBar: widget.showLanguagesButtonInAppBar,
+          showMaterialDesignButtonInAppBar:
+          widget.showMaterialDesignButtonInAppBar,
+        );
+    }
   }
 
-  Widget createPageForCalendarScreen() {
-    return _calendarScreen.elementAt(_selectedNavBarItemIndex);
-  }
+  // Widget createPageForCalendarScreen() {
+  //   return _calendarScreen.elementAt(_selectedNavBarItemIndex);
+  // }
 
   Widget createPageForSettingsScreen(
     PageOfSettingsScreen screenSelected,
@@ -254,7 +414,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           useLightMode: widget.useLightMode,
           useMaterial3: widget.useMaterial3,
         );
-
       case PageOfSettingsScreen.page_account:
         return ComingSoonWidget();
       case PageOfSettingsScreen.page_data_and_sync:
@@ -264,7 +423,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   Widget getContentPage() {
     if (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value) {
-      return createPageForTasksScreen();
+      return createPageForTasksScreen(
+          PageOfTasksScreenSelected.values[_selectedNavBarItemIndex]);
     } else if (_selectedDrawerItemIndex ==
         ScreenSelected.settingsScreen.value) {
       return createPageForSettingsScreen(
@@ -276,10 +436,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       );
     } else if (_selectedDrawerItemIndex ==
         ScreenSelected.calendarScreen.value) {
-      return createPageForCalendarScreen();
+      return createPageForCalendarScreen(PageOfCalendarScreenSelected.values[_selectedNavBarItemIndex]);
     } else if (_selectedDrawerItemIndex ==
         ScreenSelected.focusTimerScreen.value) {
-      return TimerPage();
+      return const TimerPage();
     } else {
       return createPageForMaterialDesignScreen(
         PageOfMaterialDesignScreenSelected.values[_selectedNavBarItemIndex],
@@ -305,86 +465,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     } else {
       return navRailMaterialDesignScreenDestinations;
     }
-  }
-
-  PreferredSizeWidget createAppBar(String title) {
-    return AppBar(
-      title: Text(title),
-      actions: !showMediumSizeLayout && !showLargeSizeLayout
-          ? [
-              if (widget.showBrightnessButtonInAppBar)
-                BrightnessButton(
-                  handleBrightnessChange: widget.handleBrightnessChange,
-                ),
-              if (widget.showMaterialDesignButtonInAppBar)
-                Material3Button(
-                  handleMaterialVersionChange:
-                      widget.handleMaterialVersionChange,
-                ),
-              if (widget.showColorSeedButtonInAppBar)
-                ColorSeedButton(
-                  handleColorSelect: widget.handleColorSelect,
-                  colorSelected: widget.colorSelected,
-                  colorSelectionMethod: widget.colorSelectionMethod,
-                ),
-              if (widget.showColorImageButtonInAppBar)
-                ColorImageButton(
-                  handleImageSelect: widget.handleImageSelect,
-                  imageSelected: widget.imageSelected,
-                  colorSelectionMethod: widget.colorSelectionMethod,
-                ),
-              if (widget.showLanguagesButtonInAppBar)
-                LanguageButton(
-                  handleLanguageSelect: widget.handleLanguageSelect,
-                  languageSelected: widget.languageSelected,
-                ),
-              if (_selectedDrawerItemIndex ==
-                      ScreenSelected.tasksScreen.value &&
-                  _selectedNavBarItemIndex ==
-                      PageOfTasksScreenSelected.tasksTimelinePage.value)
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_outlined, size: 18.0),
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<String>>[
-                    PopupMenuItem<String>(
-                      //value: showCalendar ? 'hide calendar' : 'show calendar',
-                      child: Text('Hide Calendar'
-                          // showCalendar
-                          //     ? localizations!.hideCalendar
-                          //     : localizations!.showCalendar,
-                          ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'multi',
-                      child: Text('Multi'
-                          // localizations!.selectMultipleDays,
-                          // style: TextStyle(
-                          //   color: rangeSelectionMode ==
-                          //           RangeSelectionMode.toggledOff
-                          //       ? Colors.blue
-                          //       : null,
-                          // ),
-                          ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'range',
-                      child: Text('Range'
-                          // localizations.selectDateRange,
-                          // style: TextStyle(
-                          //   color:
-                          //       rangeSelectionMode == RangeSelectionMode.toggledOn
-                          //           ? Colors.blue
-                          //           : null,
-                          // ),
-                          ),
-                    ),
-                  ],
-                  //onSelected: key.currentState!._onCalendarSelectionModeChanged(),
-                ),
-              Container(),
-            ]
-          : [Container()],
-    );
   }
 
   Widget _trailingActions() => Column(
@@ -433,121 +513,103 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       animation: controller,
       builder: (context, child) {
         return NavigationTransition(
-            scaffoldKey: scaffoldKey,
-            animationController: controller,
-            railAnimation: railAnimation,
-            appBar: createAppBar(getAppBarTitle(_selectedDrawerItemIndex,
-                _selectedNavBarItemIndex, localizations)),
-            drawer: MyAppDrawer(_selectedDrawerItemIndex, _onDrawerItemTapped,
-                localizations, widget.isProVersion),
-            body: getContentPage(),
-            navigationRail: NavigationRail(
-              extended: showLargeSizeLayout,
-              destinations: getDestinations(),
-              selectedIndex: _selectedNavBarItemIndex,
-              onDestinationSelected: (index) {
+          scaffoldKey: scaffoldKey,
+          animationController: controller,
+          railAnimation: railAnimation,
+          appBar: _selectedDrawerItemIndex != ScreenSelected.tasksScreen.value //&& _selectedDrawerItemIndex != ScreenSelected.calendarScreen.value
+              ? CustomAppBar(
+                  selectedDrawerItemIndex: _selectedDrawerItemIndex,
+                  selectedNavBarItemIndex: _selectedNavBarItemIndex,
+                  showMediumSizeLayout: showMediumSizeLayout,
+                  showLargeSizeLayout: showLargeSizeLayout,
+                  useLightMode: widget.useLightMode,
+                  handleBrightnessChange: widget.handleBrightnessChange,
+                  useMaterial3: widget.useMaterial3,
+                  handleMaterialVersionChange:
+                      widget.handleMaterialVersionChange,
+                  handleImageSelect: widget.handleImageSelect,
+                  handleColorSelect: widget.handleColorSelect,
+                  colorSelectionMethod: widget.colorSelectionMethod,
+                  imageSelected: widget.imageSelected,
+                  colorSelected: widget.colorSelected,
+                  handleLanguageSelect: widget.handleLanguageSelect,
+                  languageSelected: widget.languageSelected,
+                  showBrightnessButtonInAppBar:
+                      widget.showBrightnessButtonInAppBar,
+                  showMaterialDesignButtonInAppBar:
+                      widget.showMaterialDesignButtonInAppBar,
+                  showColorSeedButtonInAppBar:
+                      widget.showColorSeedButtonInAppBar,
+                  showColorImageButtonInAppBar:
+                      widget.showColorImageButtonInAppBar,
+                  showLanguagesButtonInAppBar:
+                      widget.showLanguagesButtonInAppBar,
+                  handleDisplayBrightnessButtonInAppBarChange:
+                      widget.handleDisplayBrightnessButtonInAppBarChange,
+                  handleDisplayMaterialDesignButtonInAppBarChange:
+                      widget.handleDisplayMaterialDesignButtonInAppBarChange,
+                  handleDisplayColorSeedButtonInAppBarChange:
+                      widget.handleDisplayColorSeedButtonInAppBarChange,
+                  handleDisplayColorImageButtonInAppBarChange:
+                      widget.handleDisplayColorImageButtonInAppBarChange,
+                  handleDisplayLanguagesButtonInAppBarChange:
+                      widget.handleDisplayLanguagesButtonInAppBarChange,
+                  useBottomBar: widget.useBottomBar,
+                  handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+                )
+              : null,
+          drawer: MyAppDrawer(_selectedDrawerItemIndex, _onDrawerItemTapped,
+              localizations, widget.isProVersion),
+          body: getContentPage(),
+          navigationRail: NavigationRail(
+            extended: showLargeSizeLayout,
+            destinations: getDestinations(),
+            selectedIndex: _selectedNavBarItemIndex,
+            onDestinationSelected: (index) {
+              setState(() {
+                _selectedNavBarItemIndex = index;
+                _onNavBarItemTapped(_selectedNavBarItemIndex);
+              });
+            },
+            trailing: Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: showLargeSizeLayout
+                    ? ExpandedTrailingActions(
+                        useLightMode: widget.useLightMode,
+                        handleBrightnessChange: widget.handleBrightnessChange,
+                        useMaterial3: widget.useMaterial3,
+                        handleMaterialVersionChange:
+                            widget.handleMaterialVersionChange,
+                        handleImageSelect: widget.handleImageSelect,
+                        handleColorSelect: widget.handleColorSelect,
+                        colorSelectionMethod: widget.colorSelectionMethod,
+                        imageSelected: widget.imageSelected,
+                        colorSelected: widget.colorSelected,
+                        handleLanguageSelect: widget.handleLanguageSelect,
+                        languageSelected: widget.languageSelected,
+                      )
+                    : _trailingActions(),
+              ),
+            ),
+          ),
+          navigationBar: Visibility(
+            //bottom navigation bar sẽ không hiện ở màn hình about us
+            visible: widget.useBottomBar &&
+                _selectedDrawerItemIndex != ScreenSelected.aboutUsScreen.value,
+            child: AppNavigationBars(
+              onSelectItem: (index) {
                 setState(() {
                   _selectedNavBarItemIndex = index;
                   _onNavBarItemTapped(_selectedNavBarItemIndex);
                 });
               },
-              trailing: Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: showLargeSizeLayout
-                      ? ExpandedTrailingActions(
-                          useLightMode: widget.useLightMode,
-                          handleBrightnessChange: widget.handleBrightnessChange,
-                          useMaterial3: widget.useMaterial3,
-                          handleMaterialVersionChange:
-                              widget.handleMaterialVersionChange,
-                          handleImageSelect: widget.handleImageSelect,
-                          handleColorSelect: widget.handleColorSelect,
-                          colorSelectionMethod: widget.colorSelectionMethod,
-                          imageSelected: widget.imageSelected,
-                          colorSelected: widget.colorSelected,
-                          handleLanguageSelect: widget.handleLanguageSelect,
-                          languageSelected: widget.languageSelected,
-                        )
-                      : _trailingActions(),
-                ),
-              ),
+              selectedDrawerItemIndex: _selectedDrawerItemIndex,
+              selectedNavBarItemIndex: _selectedNavBarItemIndex,
             ),
-            navigationBar: Visibility(
-              //bottom navigation bar sẽ không hiện ở màn hình about us
-              visible: _selectedDrawerItemIndex !=
-                  ScreenSelected.aboutUsScreen.value,
-              child: AppNavigationBars(
-                onSelectItem: (index) {
-                  setState(() {
-                    _selectedNavBarItemIndex = index;
-                    _onNavBarItemTapped(_selectedNavBarItemIndex);
-                  });
-                },
-                selectedDrawerItemIndex: _selectedDrawerItemIndex,
-                selectedNavBarItemIndex: _selectedNavBarItemIndex,
-              ),
-            ));
+          ),
+        );
       },
     );
   }
-}
-
-String getAppBarTitle(
-    selectedDrawerItemIndex, selectedNavBarItemIndex, localizations) {
-  if (selectedDrawerItemIndex == ScreenSelected.tasksScreen.value) {
-    if (selectedNavBarItemIndex ==
-        PageOfTasksScreenSelected.tasksOverviewPage.value) {
-      return localizations!.overview;
-    } else if (selectedNavBarItemIndex ==
-        PageOfTasksScreenSelected.tasksTimelinePage.value) {
-      return 'Timeline';
-    } else if (selectedNavBarItemIndex ==
-        PageOfTasksScreenSelected.tasksTimetablePage.value) {
-      return 'Timetable';
-    }
-  } else if (selectedDrawerItemIndex == ScreenSelected.aboutUsScreen.value) {
-    return localizations!.aboutUs;
-  } else if (selectedDrawerItemIndex ==
-      ScreenSelected.materialDesignScreen.value) {
-    if (selectedNavBarItemIndex ==
-        PageOfMaterialDesignScreenSelected.component.value) {
-      return 'Components';
-    } else if (selectedNavBarItemIndex ==
-        PageOfMaterialDesignScreenSelected.color.value) {
-      return 'Colors';
-    } else if (selectedNavBarItemIndex ==
-        PageOfMaterialDesignScreenSelected.typography.value) {
-      return 'Typography';
-    } else if (selectedNavBarItemIndex ==
-        PageOfMaterialDesignScreenSelected.elevation.value) {
-      return 'Elevation';
-    }
-  }
-  if (selectedDrawerItemIndex == ScreenSelected.calendarScreen.value) {
-    if (selectedNavBarItemIndex == PageOfCalendarScreenSelected.dayPage.value) {
-      return 'Day';
-    } else if (selectedNavBarItemIndex ==
-        PageOfCalendarScreenSelected.weekPage.value) {
-      return 'Week';
-    } else if (selectedNavBarItemIndex ==
-        PageOfCalendarScreenSelected.monthPage.value) {
-      return 'Month';
-    } else if (selectedNavBarItemIndex ==
-        PageOfCalendarScreenSelected.yearPage.value) {
-      return 'Year';
-    }
-  }
-  if (selectedDrawerItemIndex == ScreenSelected.settingsScreen.value) {
-    if (selectedNavBarItemIndex == PageOfSettingsScreen.page_ui.value) {
-      return 'UI';
-    } else if (selectedNavBarItemIndex ==
-        PageOfSettingsScreen.page_account.value) {
-      return 'Account';
-    } else if (selectedNavBarItemIndex ==
-        PageOfSettingsScreen.page_data_and_sync.value) {
-      return 'Data & Sync';
-    }
-  }
-  return '';
 }

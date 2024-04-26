@@ -60,6 +60,8 @@ class _AppNavigationBarsState extends State<AppNavigationBars> {
     Widget navigationBar = Focus(
       autofocus: true,
       child: NavigationBar(
+        backgroundColor: Colors.transparent,
+
         selectedIndex: selectedNavBarItemIndex,
         onDestinationSelected: (index) {
           setState(() {

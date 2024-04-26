@@ -45,16 +45,17 @@ class MyAppDrawer extends StatelessWidget {
             title: Text(localizations.focusTimer),
             selected: _selectedDrawerItemIndex ==
                 ScreenSelected.focusTimerScreen.value,
-            onTap: () =>
-                _onDrawerItemTapped(ScreenSelected.focusTimerScreen.value),//() => showComingSoonDialog(context),
+            onTap: () => _onDrawerItemTapped(ScreenSelected
+                .focusTimerScreen.value), //() => showComingSoonDialog(context),
           ),
           ListTile(
-            leading: const Icon(Icons.notes_outlined),
-            title: Text(localizations.notes),
-            selected:
-                _selectedDrawerItemIndex == ScreenSelected.notesScreen.value,
-            onTap: () => showComingSoonDialog(context),
-          ),
+              leading: const Icon(Icons.notes_outlined),
+              title: Text(localizations.notes),
+              selected:
+                  _selectedDrawerItemIndex == ScreenSelected.notesScreen.value,
+              onTap: () => isProVersion
+                  ? showComingSoonDialog(context)
+                  : showWillBeAvaiableOnProVersionDialog(context)),
           // ListTile(
           //   leading: const Icon(Icons.contacts_outlined),
           //   title: Text(localizations.myContacts),
@@ -75,8 +76,8 @@ class MyAppDrawer extends StatelessWidget {
           //   title: const Text('Material Design'),
           //   selected: _selectedDrawerItemIndex ==
           //       ScreenSelected.materialDesignScreen.value,
-          //   onTap: () => _onDrawerItemTapped(
-          //       ScreenSelected.materialDesignScreen.value),
+          //   onTap: () =>
+          //       _onDrawerItemTapped(ScreenSelected.materialDesignScreen.value),
           // ),
           ListTile(
             leading: const Icon(Icons.settings_outlined),

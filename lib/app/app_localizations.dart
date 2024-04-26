@@ -2293,7 +2293,7 @@ class AppLocalizations {
   String get schedule {
     return {
       'en': 'Schedule',
-      'vi': 'Lịch trình',
+      'vi': 'Lên kế hoạch',
       'de': 'Zeitplan',
       'cs': 'Rozvrh',
       'es': 'Horario',
@@ -2361,6 +2361,44 @@ class AppLocalizations {
       'zh': '即将推出',
     }[locale.languageCode]!;
   }
+
+  String get availableOnProVersion {
+    return {
+      'en': 'Available on Pro version',
+      'vi': 'Sẽ xuất hiện trên phiên bản Pro',
+      'de': 'Verfügbar in der Pro-Version',
+      'cs': 'Dostupné v Pro verzi',
+      'es': 'Disponible en versión Pro',
+      'fr': 'Disponible sur la version Pro',
+      'it': 'Disponibile sulla versione Pro',
+      'ja': 'Proバージョンで利用可能',
+      'ko': '프로 버전에서 사용 가능',
+      'no': 'Tilgjengelig på Pro-versjonen',
+      'ru': 'Доступно в Pro версии',
+      'sv': 'Tillgänglig på Pro-versionen',
+      'zh': '在专业版上可用',
+    }[locale.languageCode]!;
+  }
+
+  String get featureUnderDevelopment {
+    return {
+      'en': 'This feature is under development and will be available in the Pro version',
+      'vi': 'Chức năng này đang được phát triển và sẽ xuất hiện trên phiên bản Pro',
+      'de': 'Diese Funktion befindet sich in der Entwicklung und wird in der Pro-Version verfügbar sein',
+      'cs': 'Tato funkce je ve vývoji a bude k dispozici v Pro verzi',
+      'es': 'Esta función está en desarrollo y estará disponible en la versión Pro',
+      'fr': 'Cette fonctionnalité est en cours de développement et sera disponible dans la version Pro',
+      'it': 'Questa funzione è in fase di sviluppo e sarà disponibile nella versione Pro',
+      'ja': 'この機能は開発中で、Proバージョンで利用可能になります',
+      'ko': '이 기능은 개발 중이며 Pro 버전에서 사용할 수 있습니다',
+      'no': 'Denne funksjonen er under utvikling og vil være tilgjengelig i Pro-versjonen',
+      'ru': 'Эта функция находится в разработке и будет доступна в Pro версии',
+      'sv': 'Denna funktion är under utveckling och kommer att finnas tillgänglig i Pro-versionen',
+      'zh': '此功能正在开发中，将在专业版中提供',
+    }[locale.languageCode]!;
+  }
+
+
 
   String get featureAvailableSoon {
     return {

@@ -30,7 +30,7 @@ class _LocationListTileState extends State<LocationListTile> {
               border: InputBorder.none,
             ),
           ),
-          trailing: ElevatedButton(
+          trailing: TextButton(
             child: Text(localizations.map),
             onPressed: () => {
               launchURL(Uri.parse(

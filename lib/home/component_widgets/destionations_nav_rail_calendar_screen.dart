@@ -36,10 +36,10 @@ const List<NavigationDestination> navBarCalendarScreenDestinations = [
     label: 'Month',
     selectedIcon: Icon(Icons.calendar_view_month),
   ),
-  NavigationDestination(
-    tooltip: '',
-    icon: Icon(Icons.calendar_month_outlined),
-    label: 'Year',
-    selectedIcon: Icon(Icons.calendar_month),
-  )
+  // NavigationDestination(
+  //   tooltip: '',
+  //   icon: Icon(Icons.calendar_month_outlined),
+  //   label: 'Year',
+  //   selectedIcon: Icon(Icons.calendar_month),
+  // )
 ];

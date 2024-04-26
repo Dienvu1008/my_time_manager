@@ -10,8 +10,7 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   }
 
-  bool isProVersion = true;
-  //runApp(const App());
+  bool isProVersion = false;
   runApp(App(isProVersion: isProVersion));
 }
  

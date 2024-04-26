@@ -50,7 +50,7 @@ class ScheduleListTile extends StatelessWidget {
               isScrollControlled: true,
               showDragHandle: true,
               builder: (BuildContext context) =>
-                  ShowOrSetTimeIntervalsBottomSheet(
+                  SafeArea(child: ShowOrSetTimeIntervalsBottomSheet(
                 title: title,
                 color: color,
                 description: description,
@@ -65,9 +65,9 @@ class ScheduleListTile extends StatelessWidget {
                 taskWithSubtasksId: taskWithSubtasksId,
                 isSetTimeIntervalPage: false,
               ),
-            );
+            ));
           },
-          trailing: ElevatedButton(
+          trailing: TextButton(
             child: Text(localizations.schedule),
             onPressed: () => {
               showModalBottomSheet(
@@ -75,7 +75,7 @@ class ScheduleListTile extends StatelessWidget {
                 isScrollControlled: true,
                 showDragHandle: true,
                 builder: (BuildContext context) =>
-                    ShowOrSetTimeIntervalsBottomSheet(
+                    SafeArea(child : ShowOrSetTimeIntervalsBottomSheet(
                   title: title,
                   color: color,
                   description: description,
@@ -90,7 +90,7 @@ class ScheduleListTile extends StatelessWidget {
                   taskWithSubtasksId: taskWithSubtasksId,
                   isSetTimeIntervalPage: true,
                 ),
-              ),
+              ),)
             },
           ),
         ),

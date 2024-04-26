@@ -13,8 +13,10 @@ class NavigationTransition extends StatefulWidget {
       required this.navigationRail,
       this.navigationBar,
       required this.drawer,
-      required this.appBar,
-      required this.body});
+      this.appBar,
+      required this.body,
+      //this.appBarBodyWidget,
+      });
 
   final GlobalKey<ScaffoldState> scaffoldKey;
   final AnimationController animationController;
@@ -22,8 +24,9 @@ class NavigationTransition extends StatefulWidget {
   final Widget navigationRail;
   final Widget? navigationBar;
   final Widget drawer;
-  final PreferredSizeWidget appBar;
+  final PreferredSizeWidget? appBar;
   final Widget body;
+  //final Widget? appBarBodyWidget;
 
   @override
   State<NavigationTransition> createState() => _NavigationTransitionState();
@@ -74,7 +77,6 @@ class _NavigationTransitionState extends State<NavigationTransition> {
         child: widget.navigationBar,
       ),
       drawer: Drawer(
-        //animation: railAnimation,
         backgroundColor: colorScheme.surface,
         child: widget.drawer,
       ),
@@ -82,4 +84,3 @@ class _NavigationTransitionState extends State<NavigationTransition> {
     );
   }
 }
-

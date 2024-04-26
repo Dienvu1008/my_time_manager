@@ -1,17 +1,16 @@
+import 'dart:async';
 import 'package:calendar_widgets/calendar_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/screen_calendar/mapping.dart';
-
+import 'package:my_time_manager/screen_calendar/week_view.dart';
+import '../data/database/database_manager.dart';
 import '../screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 import '../utils/constants.dart';
-import 'month_view.dart';
 
-class TasksMonthView extends StatefulWidget {
+class TasksWeekView extends StatefulWidget {
   //final GlobalKey<WeekViewState>? state;
   //final double? width;
-
   final Function handleBrightnessChange;
   final void Function() handleMaterialVersionChange;
   final void Function() handleUsingBottomBarChange;
@@ -29,8 +28,7 @@ class TasksMonthView extends StatefulWidget {
   final bool showColorSeedButtonInAppBar;
   final bool showLanguagesButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
-
-  const TasksMonthView({
+  const TasksWeekView({
     Key? key,
     required this.handleBrightnessChange,
     required this.handleMaterialVersionChange,
@@ -52,10 +50,10 @@ class TasksMonthView extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _TasksMonthViewState createState() => _TasksMonthViewState();
+  _TasksWeekViewState createState() => _TasksWeekViewState();
 }
 
-class _TasksMonthViewState extends State<TasksMonthView> {
+class _TasksWeekViewState extends State<TasksWeekView> {
   final DatabaseManager _databaseManager = DatabaseManager();
   List<TimeInterval> _timeIntervals = [];
 
@@ -99,7 +97,7 @@ class _TasksMonthViewState extends State<TasksMonthView> {
     return CalendarControllerProvider(
       controller: TimeIntervalController()..addAll(_calendarTimeIntervals),
       child: Expanded(
-        child: MonthViewWidget(
+        child: WeekViewWidget(
           handleBrightnessChange: widget.handleBrightnessChange,
           handleMaterialVersionChange: widget.handleMaterialVersionChange,
           handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
@@ -127,8 +125,8 @@ class _TasksMonthViewState extends State<TasksMonthView> {
   }
 }
 
-class MonthViewWidget extends StatelessWidget {
-  final GlobalKey<MonthViewState>? state;
+class WeekViewWidget extends StatelessWidget {
+  final GlobalKey<WeekViewState>? state;
   final double? width;
 
   final Function handleBrightnessChange;
@@ -149,11 +147,7 @@ class MonthViewWidget extends StatelessWidget {
   final bool showLanguagesButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
 
-  const MonthViewWidget({
-    super.key,
-    this.state,
-    this.width,
-
+  const WeekViewWidget({super.key, this.state, this.width,
     required this.handleBrightnessChange,
     required this.handleMaterialVersionChange,
     required this.handleUsingBottomBarChange,
@@ -174,7 +168,8 @@ class MonthViewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MonthView(
+    return WeekView(
+      key: state,
       // handleBrightnessChange: handleBrightnessChange,
       // handleMaterialVersionChange: handleMaterialVersionChange,
       // handleUsingBottomBarChange: handleUsingBottomBarChange,
@@ -194,18 +189,43 @@ class MonthViewWidget extends StatelessWidget {
       // showLanguagesButtonInAppBar: showLanguagesButtonInAppBar,
       // showMaterialDesignButtonInAppBar:
       // showMaterialDesignButtonInAppBar,
-      key: state,
-      width: width,
-      onEventTap: (event, date) async {
+
+      //width: width,
+      onTimeIntervalTileTap: (events, date) async {
         await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => AddOrEditTimeIntervalPage(
-              timeInterval: event.event as TimeInterval,
+              timeInterval: events.first.event as TimeInterval,
             ),
             fullscreenDialog: false,
           ),
         );
       },
+      leftSideHourIndicatorBuilder: _leftSideHourIndicatorBuilder,
+    );
+  }
+
+  Widget _leftSideHourIndicatorBuilder(DateTime date) {
+    final timeString = date.toString().substring(11, 16);
+    //if (date.minute != 0) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          top: -8,
+          right: 8,
+          child: Text(
+            //"${date.hour}:${date.minute}",
+            timeString,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              //color: Colors.black.withAlpha(50),
+              //fontStyle: FontStyle.italic,
+              fontSize: 10,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

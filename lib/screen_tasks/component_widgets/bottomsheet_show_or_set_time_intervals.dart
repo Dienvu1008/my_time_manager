@@ -1,3 +1,4 @@
+import 'package:calendar_widgets/src_table_calendar/table_calendar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,12 +9,17 @@ import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
 import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/home/data_controller_provider.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_alarm.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_repeat.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_set_time_intervals_block.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_timezone.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval_of_task_or_event.dart';
 import 'package:my_time_manager/utils/constants.dart';
+
+import '../../home/component_widgets/button_show_timeline_calendar.dart';
+import '../../utils/utils.dart';
 
 class ShowOrSetTimeIntervalsBottomSheet extends StatefulWidget {
   const ShowOrSetTimeIntervalsBottomSheet(
@@ -57,12 +63,13 @@ class _ShowOrSetTimeIntervalsBottomSheetState
   late AnimationController _controller;
   late Animation<double> _animation;
   bool _isSetTimeIntervalPage = false;
-  ValueNotifier<String> _selectedTimeIntervalsNotifier =
-      ValueNotifier<String>('all');
+  // ValueNotifier<String> _selectedTimeIntervalsNotifier =
+  //     ValueNotifier<String>('all');
 
   final GlobalKey<_SetTimeIntervalPageState> key = GlobalKey();
   final DatabaseManager _databaseManager = DatabaseManager();
   bool _isExpanded = false;
+  bool _showCalendar = true;
 
   @override
   void initState() {
@@ -71,7 +78,7 @@ class _ShowOrSetTimeIntervalsBottomSheetState
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 0.6, end: 1.0).animate(_controller);
+    _animation = Tween<double>(begin: 1.0, end: 1.0).animate(_controller);
     _isSetTimeIntervalPage = widget.isSetTimeIntervalPage;
   }
 
@@ -79,16 +86,6 @@ class _ShowOrSetTimeIntervalsBottomSheetState
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  static Color contrastColor(Color color) {
-    final brightness = ThemeData.estimateBrightnessForColor(color);
-    switch (brightness) {
-      case Brightness.dark:
-        return Colors.white;
-      case Brightness.light:
-        return Colors.black;
-    }
   }
 
   @override
@@ -101,7 +98,7 @@ class _ShowOrSetTimeIntervalsBottomSheetState
         : ColorScheme.light(primary: widget.color);
     final backgroundColor = myColorScheme.primaryContainer;
     final titleTextColor = contrastColor(backgroundColor);
-    return AnimatedBuilder(
+    return SafeArea( child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
           return FractionallySizedBox(
@@ -113,408 +110,231 @@ class _ShowOrSetTimeIntervalsBottomSheetState
                 minChildSize: 0.6,
                 builder:
                     (BuildContext context, ScrollController scrollController) {
-                  return Column(
-                    children: <Widget>[
-                      Container(
-                        color: widget.color,
-                        child: GestureDetector(
-                          child: ListTile(
-                            title: Text(
-                              widget.title,
-                              style: TextStyle(color: titleTextColor),
+                  return Scaffold(
+                    body: Column(
+                      children: <Widget>[
+                        Container(
+                          color: widget.color,
+                          child: GestureDetector(
+                            child: Center(
+                              child: Text(
+                                widget.title,
+                                style: TextStyle(color: titleTextColor),
+                              ),
                             ),
-                          ),
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  backgroundColor: widget.color,
-                                  //title: Text('Dialog Title'),
-                                  content: SingleChildScrollView(
-                                    //child: Container(
-                                    //color: widget.color,
-                                    child: Column(
-                                      children: [
-                                        ListTile(
-                                          title: Text(
-                                            widget.title,
-                                            style: TextStyle(
-                                                color: titleTextColor),
-                                          ),
-                                        ),
-                                        if (widget.description.isNotEmpty)
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    backgroundColor: widget.color,
+                                    content: SingleChildScrollView(
+                                      child: Column(
+                                        children: [
                                           ListTile(
-                                            dense: true,
-                                            leading: Icon(
-                                                Icons.description_outlined,
-                                                color: titleTextColor),
                                             title: Text(
-                                              widget.description,
+                                              widget.title,
                                               style: TextStyle(
                                                   color: titleTextColor),
                                             ),
                                           ),
-                                        if (widget.location.isNotEmpty)
-                                          ListTile(
-                                            dense: true,
-                                            leading: Icon(
-                                                Icons.location_on_outlined,
-                                                color: titleTextColor),
-                                            title: Text(
-                                              widget.location,
-                                              style: TextStyle(
+                                          if (widget.description.isNotEmpty)
+                                            ListTile(
+                                              dense: true,
+                                              leading: Icon(
+                                                  Icons.description_outlined,
                                                   color: titleTextColor),
-                                            ),
-                                          ),
-                                        if (widget.measurableTaskId != null)
-                                          ListTile(
-                                            dense: true,
-                                            title: Column(
-                                              children: [
-                                                if (widget.targetType ==
-                                                    TargetType.about)
-                                                  Text(
-                                                    'Target: about ${widget.targetAtLeast} to ${widget.targetAtMost} ${widget.unit}',
-                                                    style: TextStyle(
-                                                        color: titleTextColor),
-                                                  ),
-                                                if (widget.targetType ==
-                                                    TargetType.atLeast)
-                                                  Text(
-                                                    'Target: at least ${widget.targetAtLeast} ${widget.unit}',
-                                                    style: TextStyle(
-                                                        color: titleTextColor),
-                                                  ),
-                                                if (widget.targetType ==
-                                                    TargetType.atMost)
-                                                  Text(
-                                                    'Target: at most ${widget.targetAtMost} ${widget.unit}',
-                                                    style: TextStyle(
-                                                        color: titleTextColor),
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
-                                        if (widget.taskWithSubtasksId != null)
-                                          ...widget.subtasks.map(
-                                            (subtask) => ListTile(
-                                                dense: true,
-                                                leading: Icon(
-                                                    subtask.isSubtaskCompleted
-                                                        ? Icons.check_box
-                                                        : Icons
-                                                            .check_box_outline_blank,
+                                              title: Text(
+                                                widget.description,
+                                                style: TextStyle(
                                                     color: titleTextColor),
-                                                title: Text(
-                                                  subtask.title,
-                                                  style: TextStyle(
+                                              ),
+                                            ),
+                                          if (widget.location.isNotEmpty)
+                                            ListTile(
+                                              dense: true,
+                                              leading: Icon(
+                                                  Icons.location_on_outlined,
+                                                  color: titleTextColor),
+                                              title: Text(
+                                                widget.location,
+                                                style: TextStyle(
+                                                    color: titleTextColor),
+                                              ),
+                                            ),
+                                          if (widget.measurableTaskId != null)
+                                            ListTile(
+                                              dense: true,
+                                              title: Column(
+                                                children: [
+                                                  if (widget.targetType ==
+                                                      TargetType.about)
+                                                    Text(
+                                                      'Target: about ${widget.targetAtLeast} to ${widget.targetAtMost} ${widget.unit}',
+                                                      style: TextStyle(
+                                                          color:
+                                                              titleTextColor),
+                                                    ),
+                                                  if (widget.targetType ==
+                                                      TargetType.atLeast)
+                                                    Text(
+                                                      'Target: at least ${widget.targetAtLeast} ${widget.unit}',
+                                                      style: TextStyle(
+                                                          color:
+                                                              titleTextColor),
+                                                    ),
+                                                  if (widget.targetType ==
+                                                      TargetType.atMost)
+                                                    Text(
+                                                      'Target: at most ${widget.targetAtMost} ${widget.unit}',
+                                                      style: TextStyle(
+                                                          color:
+                                                              titleTextColor),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                          if (widget.taskWithSubtasksId != null)
+                                            ...widget.subtasks.map(
+                                              (subtask) => ListTile(
+                                                  dense: true,
+                                                  leading: Icon(
+                                                      subtask.isSubtaskCompleted
+                                                          ? Icons.check_box
+                                                          : Icons
+                                                              .check_box_outline_blank,
                                                       color: titleTextColor),
-                                                )),
-                                          )
-                                      ],
+                                                  title: Text(
+                                                    subtask.title,
+                                                    style: TextStyle(
+                                                        color: titleTextColor),
+                                                  )),
+                                            )
+                                        ],
+                                      ),
+                                      //),
                                     ),
-                                    //),
-                                  ),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      child: Text('Close'),
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: ValueListenableBuilder<String>(
-                          valueListenable: _selectedTimeIntervalsNotifier,
-                          builder: (context, value, child) {
-                            return _isSetTimeIntervalPage
-                                ? SetTimeIntervalPage(
-                                    key: key,
-                                    taskId: widget.taskId,
-                                    measurableTaskId: widget.measurableTaskId,
-                                    taskWithSubtasksId:
-                                        widget.taskWithSubtasksId,
-                                  )
-                                : TimeIntervalOfTaskOrEventPage(
-                                    taskId: widget.taskId,
-                                    measurableTaskId: widget.measurableTaskId,
-                                    taskWithSubtasksId:
-                                        widget.taskWithSubtasksId,
-                                    selectedTimeIntervals: value,
-                                  );
-                          },
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(
-                            bottom: MediaQuery.of(context).viewInsets.bottom),
-                        child: AppBar(
-                          leading: Container(),
-                          actions: <Widget>[
-                            IconButton.filledTonal(
-                              isSelected: _controller.status ==
-                                  AnimationStatus.completed,
-                              icon: AnimatedBuilder(
-                                animation: _controller,
-                                builder: (BuildContext context, Widget? child) {
-                                  return Icon(
-                                    _controller.status ==
-                                            AnimationStatus.completed
-                                        ? Icons.unfold_less
-                                        : Icons.unfold_more,
+                                    actions: <Widget>[
+                                      TextButton(
+                                        child: Text('Close'),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ],
                                   );
                                 },
-                              ),
-                              onPressed: () {
-                                if (_controller.status ==
-                                    AnimationStatus.completed) {
-                                  _controller.reverse();
-                                } else {
-                                  _controller.forward();
-                                }
-                              },
-                            ),
-                            const SizedBox(width: 10),
-                            IconButton.filledTonal(
-                              isSelected: !_isSetTimeIntervalPage,
-                              icon: const Icon(Icons.event_note_outlined),
-                              selectedIcon: const Icon(Icons.event_note),
-                              onPressed: () {
-                                setState(() {
-                                  _isSetTimeIntervalPage = false;
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 10),
-                            if (_isSetTimeIntervalPage == false)
-                              PopupMenuButton<String>(
-                                icon: const Icon(Icons.filter_list_outlined),
-                                onSelected: (String result) {
-                                  if (result == 'today') {
-                                    _selectedTimeIntervalsNotifier.value =
-                                        result;
-                                  } else if (result == 'this week') {
-                                    _selectedTimeIntervalsNotifier.value =
-                                        result;
-                                  } else if (result == 'this month') {
-                                    _selectedTimeIntervalsNotifier.value =
-                                        result;
-                                  } else if (result == 'gone') {
-                                    _selectedTimeIntervalsNotifier.value =
-                                        result;
-                                  } else if (result == 'all') {
-                                    _selectedTimeIntervalsNotifier.value =
-                                        result;
-                                  } else if (result == 'next month') {
-                                    _selectedTimeIntervalsNotifier.value =
-                                        result;
-                                  }
-                                },
-                                itemBuilder: (BuildContext context) =>
-                                    <PopupMenuEntry<String>>[
-                                  PopupMenuItem<String>(
-                                    value: 'all',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.event_note_outlined,
-                                          color: _selectedTimeIntervalsNotifier
-                                                      .value ==
-                                                  'all'
-                                              ? Colors.blue
-                                              : labelColor,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'All time intervals',
-                                          style: TextStyle(
-                                            color:
-                                                _selectedTimeIntervalsNotifier
-                                                            .value ==
-                                                        'all'
-                                                    ? Colors.blue
-                                                    : labelColor,
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'today',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.today,
-                                          color: _selectedTimeIntervalsNotifier
-                                                      .value ==
-                                                  'today'
-                                              ? Colors.blue
-                                              : labelColor,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Today',
-                                          style: TextStyle(
-                                            color:
-                                                _selectedTimeIntervalsNotifier
-                                                            .value ==
-                                                        'today'
-                                                    ? Colors.blue
-                                                    : labelColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'this week',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.date_range,
-                                          color: _selectedTimeIntervalsNotifier
-                                                      .value ==
-                                                  'this week'
-                                              ? Colors.blue
-                                              : labelColor,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'This week',
-                                          style: TextStyle(
-                                            color:
-                                                _selectedTimeIntervalsNotifier
-                                                            .value ==
-                                                        'this week'
-                                                    ? Colors.blue
-                                                    : labelColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'this month',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.calendar_month,
-                                          color: _selectedTimeIntervalsNotifier
-                                                      .value ==
-                                                  'this month'
-                                              ? Colors.blue
-                                              : labelColor,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'This month',
-                                          style: TextStyle(
-                                            color:
-                                                _selectedTimeIntervalsNotifier
-                                                            .value ==
-                                                        'this month'
-                                                    ? Colors.blue
-                                                    : labelColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'next month',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.calendar_month,
-                                          color: _selectedTimeIntervalsNotifier
-                                                      .value ==
-                                                  'next month'
-                                              ? Colors.blue
-                                              : labelColor,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Next month',
-                                          style: TextStyle(
-                                            color:
-                                                _selectedTimeIntervalsNotifier
-                                                            .value ==
-                                                        'next month'
-                                                    ? Colors.blue
-                                                    : labelColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'gone',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.history,
-                                          color: _selectedTimeIntervalsNotifier
-                                                      .value ==
-                                                  'gone'
-                                              ? Colors.blue
-                                              : labelColor,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Gone',
-                                          style: TextStyle(
-                                            color:
-                                                _selectedTimeIntervalsNotifier
-                                                            .value ==
-                                                        'gone'
-                                                    ? Colors.blue
-                                                    : labelColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            if (_isSetTimeIntervalPage == false)
-                              const SizedBox(width: 10),
-                            IconButton.filledTonal(
-                              isSelected: _isSetTimeIntervalPage,
-                              icon: const Icon(Icons.hourglass_empty_outlined),
-                              selectedIcon: const Icon(Icons.hourglass_empty),
+                              );
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: _isSetTimeIntervalPage
+                              ? SetTimeIntervalPage(
+                                  key: key,
+                                  taskId: widget.taskId,
+                                  measurableTaskId: widget.measurableTaskId,
+                                  taskWithSubtasksId: widget.taskWithSubtasksId,
+                                )
+                              : FutureBuilder(
+                                  future: widget.taskId != null
+                                      ? _databaseManager
+                                          .timeIntervalsOfTask(widget.taskId!)
+                                      : widget.measurableTaskId != null
+                                          ? _databaseManager
+                                              .timeIntervalsOfMeasureableTask(
+                                                  widget.measurableTaskId!)
+                                          : widget.taskWithSubtasksId != null
+                                              ? _databaseManager
+                                                  .timeIntervalsOfTaskWithSubtasks(
+                                                      widget
+                                                          .taskWithSubtasksId!)
+                                              : null,
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return const CircularProgressIndicator();
+                                    } else if (snapshot.hasError) {
+                                      return Text('Error: ${snapshot.error}');
+                                    } else {
+                                      List<TimeInterval> timeIntervals =
+                                          snapshot.data ?? [];
+                                      return TimeIntervalOfTaskOrEventPageNew(
+                                        taskId: widget.taskId,
+                                        measurableTaskId:
+                                            widget.measurableTaskId,
+                                        taskWithSubtasksId:
+                                            widget.taskWithSubtasksId,
+                                        showCalendar: _showCalendar,
+                                        timeIntervalsOfThisTask: timeIntervals,
+                                      );
+                                    }
+                                  }),
+                        )
+                      ],
+                    ),
+                    floatingActionButton: Column(
+                      children: [
+                        const Spacer(),
+                        if (!_isSetTimeIntervalPage)
+                          FloatingActionButton.small(
                               onPressed: () {
                                 setState(() {
                                   _isSetTimeIntervalPage = true;
                                 });
                               },
+                              child: const Icon(Icons.add)),
+                        if (_isSetTimeIntervalPage)
+                          FloatingActionButton.small(
+                              onPressed: () {
+                                key.currentState!._onSave();
+                              },
+                              child: const Icon(Icons.save_outlined)),
+                        if (_isSetTimeIntervalPage) const SizedBox(height: 10),
+                        if (_isSetTimeIntervalPage)
+                          FloatingActionButton.small(
+                              onPressed: () {
+                                setState(() {
+                                  _isSetTimeIntervalPage = false;
+                                });
+                              },
+                              child: const Icon(Icons.calendar_month_outlined)),
+                        if (!_isSetTimeIntervalPage) const SizedBox(height: 10),
+                        if (!_isSetTimeIntervalPage)
+                          FloatingActionButton.small(
+                            onPressed: () {},
+                            child: MenuAnchor(
+                              builder: (context, controller, child) {
+                                return IconButton(
+                                  onPressed: () {
+                                    if (controller.isOpen) {
+                                      controller.close();
+                                    } else {
+                                      controller.open();
+                                    }
+                                  },
+                                  icon: const Icon(Icons.visibility_outlined),
+                                );
+                              },
+                              menuChildren: [
+                                ShowHideCalendarMenuItemButton(
+                                  handleCalendarVisibilityChange: () =>
+                                      setState(() {
+                                    _showCalendar = !_showCalendar;
+                                  }),
+                                  showCalendar: _showCalendar,
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-                            if (_isSetTimeIntervalPage)
-                              IconButton.filledTonal(
-                                isSelected: false,
-                                icon: const Icon(Icons.save_outlined),
-                                onPressed: () {
-                                  key.currentState!._onSave();
-                                },
-                              ),
-                            const Spacer(),
-                          ],
-                        ),
-                      ),
-                    ],
+                          ),
+                      ],
+                    ),
                   );
                 },
               ),
             ),
           );
-        });
+        }));
   }
 }
 
@@ -860,6 +680,7 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
             },
           );
         } else {
+          //DataControllerProvider.of(context).controller.add(timeInterval);
           await _databaseManager.insertTimeInterval(timeInterval);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -1306,340 +1127,387 @@ class _TimeIntervalOfTaskOrEventPageState
                                 ? const Text(
                                     'This task has not been scheduled in the past')
                                 : Container()
-        : ListView.builder(
-            shrinkWrap: true,
-            //physics: NeverScrollableScrollPhysics(),
-            itemCount: _timeIntervals.length,
-            itemBuilder: (context, index) {
-              final timeInterval = _timeIntervals[index];
-              final textTheme = Theme.of(context).textTheme;
-              if (timeInterval.startDate != null) {
-                _formattedStartDate = DateFormat('EEE, dd MMM, yyyy',
-                        Localizations.localeOf(context).languageCode)
-                    .format(timeInterval.startDate!);
-              } else {
-                _formattedStartDate = '--/--/----';
-              }
+        : SingleChildScrollView(
+            child: Column(children: [
+            Card(
+              child: TableCalendar<TimeInterval>(
+                firstDay: kFirstDay,
+                lastDay: kLastDay,
+                focusedDay: DateTime.now(),
+                // headerVisible: false,
+                // selectedDayPredicate: (day) => _selectedDays.contains(day),
+                // rangeStartDay: _rangeStart,
+                // rangeEndDay: _rangeEnd,
+                // calendarFormat: _calendarFormat,
+                // rangeSelectionMode: _rangeSelectionMode,
+                // eventLoader: _getTimeIntervalsForDay,
+                // daysOfWeekVisible: true,
+                // startingDayOfWeek: StartingDayOfWeek.monday,
+                // onDaySelected: _onDaySelected,
+                // onRangeSelected: _onRangeSelected,
+                // onCalendarCreated: (controller) => _pageController = controller,
+                // //onPageChanged: (focusedDay) => _focusedDay.value = focusedDay,
+                // onPageChanged: (focusedDay) => _focusedDayNew = focusedDay,
+                // onFormatChanged: (format) {
+                //   if (_calendarFormat != format) {
+                //     setState(() => _calendarFormat = format);
+                //   }
+                // },
+                // calendarBuilders: calendarBuilders,
 
-              if (timeInterval.startTime != null) {
-                _formattedStartTime = timeInterval.startTime!.format(context);
-              } else {
-                _formattedStartTime = '--:--';
-              }
+                // headerVisible: false,
+                // selectedDayPredicate: widget.selectedDayPredicate,
+                // rangeStartDay: widget.rangeStart,
+                // rangeEndDay: widget.rangeEnd,
+                // calendarFormat: widget.calendarFormat,
+                // rangeSelectionMode: widget.rangeSelectionMode,
+                // eventLoader: widget.getTimeIntervalsForDay,
+                // daysOfWeekVisible: true,
+                // startingDayOfWeek: StartingDayOfWeek.monday,
+                // onDaySelected: widget.onDaySelected,
+                // onRangeSelected: widget.onRangeSelected,
+                // onCalendarCreated: widget.onCalendarCreated,
+                // onPageChanged: widget.onPageChanged,
+                // onFormatChanged: widget.onFormatChanged,
+                //calendarBuilders: widget.calendarBuilders,
+              ),
+            ),
+            ListView.builder(
+              shrinkWrap: true,
+              //physics: NeverScrollableScrollPhysics(),
+              itemCount: _timeIntervals.length,
+              itemBuilder: (context, index) {
+                final timeInterval = _timeIntervals[index];
+                final textTheme = Theme.of(context).textTheme;
+                if (timeInterval.startDate != null) {
+                  _formattedStartDate = DateFormat('EEE, dd MMM, yyyy',
+                          Localizations.localeOf(context).languageCode)
+                      .format(timeInterval.startDate!);
+                } else {
+                  _formattedStartDate = '--/--/----';
+                }
 
-              if (timeInterval.endDate != null) {
-                _formattedEndDate = DateFormat('EEE, dd MMM, yyyy',
-                        Localizations.localeOf(context).languageCode)
-                    .format(timeInterval.endDate!);
-              } else {
-                _formattedEndDate = '--/--/----';
-              }
+                if (timeInterval.startTime != null) {
+                  _formattedStartTime = timeInterval.startTime!.format(context);
+                } else {
+                  _formattedStartTime = '--:--';
+                }
 
-              if (timeInterval.endTime != null) {
-                _formattedEndTime = timeInterval.endTime!.format(context);
-              } else {
-                _formattedEndTime = '--:--';
-              }
+                if (timeInterval.endDate != null) {
+                  _formattedEndDate = DateFormat('EEE, dd MMM, yyyy',
+                          Localizations.localeOf(context).languageCode)
+                      .format(timeInterval.endDate!);
+                } else {
+                  _formattedEndDate = '--/--/----';
+                }
 
-              return Column(
-                children: [
-                  ListTile(
-                    //contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          spacing: 8.0, // khoảng cách giữa các Chip
-                          children: <Widget>[
-                            if (timeInterval.isGone == true)
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(
-                                      5), // bo tròn viền tại đây
-                                ),
-                                child: const Text(
-                                  'gone',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 10),
-                                ),
-                              ),
-                            if (timeInterval.isInProgress == true)
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(
-                                      5), // bo tròn viền tại đây
-                                ),
-                                child: const Text(
-                                  'in progress',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 10),
-                                ),
-                              ),
-                            if (timeInterval.isToday == true)
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(
-                                      5), // bo tròn viền tại đây
-                                ),
-                                child: const Text(
-                                  'today',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 10),
-                                ),
-                              ),
-                          ],
-                        ),
-                        RichText(
-                          text: TextSpan(
-                            style: timeInterval.isCompleted
-                                ? textTheme.titleSmall!.copyWith(
-                                    decoration: TextDecoration.lineThrough)
-                                : textTheme.titleSmall,
-                            text: _formattedStartDate == _formattedEndDate
-                                ? 'From $_formattedStartDate: $_formattedStartTime to $_formattedEndTime'
-                                : 'From $_formattedStartDate: $_formattedStartTime to $_formattedEndDate: $_formattedEndTime',
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert,
-                      ),
-                      onSelected: (String result) {
-                        if (result == 'mark_completed') {
-                          _onTimeIntervalToggleCompleted(timeInterval);
-                        } else if (result == 'sync_details') {
-                        } else if (result == 'edit') {
-                          Future<void> editTimeInterval() async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => AddOrEditTimeIntervalPage(
-                                  timeInterval: timeInterval,
-                                ),
-                                fullscreenDialog: false,
-                              ),
-                            );
-                            final updatedTimeInterval = await _databaseManager
-                                .timeInterval(timeInterval.id);
-                            final index = _timeIntervals.indexWhere(
-                                (item) => item.id == updatedTimeInterval.id);
-                            if (index != -1) {
-                              setState(() {
-                                _timeIntervals[index] = updatedTimeInterval;
-                              });
-                            }
-                          }
+                if (timeInterval.endTime != null) {
+                  _formattedEndTime = timeInterval.endTime!.format(context);
+                } else {
+                  _formattedEndTime = '--:--';
+                }
 
-                          // Call the async function
-                          editTimeInterval();
-                        } else if (result == 'delete') {
-                          _deleteTimeInterval(timeInterval);
-                        } else if (result == 'expand') {
-                          setState(() {
-                            _isExpanded[timeInterval.id] =
-                                !_isExpanded[timeInterval.id]!;
-                          });
-                        }
-                      },
-                      itemBuilder: (BuildContext context) =>
-                          <PopupMenuEntry<String>>[
-                        PopupMenuItem<String>(
-                          value: 'expand',
-                          child: Row(
-                            children: [
-                              Icon(_isExpanded[timeInterval.id]!
-                                  ? Icons.chevron_right
-                                  : Icons.expand_more),
-                              const SizedBox(width: 8),
-                              _isExpanded[timeInterval.id]!
-                                  ? const Text('Hide details')
-                                  : const Text('Show details'),
+                return Column(
+                  children: [
+                    ListTile(
+                      //contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            spacing: 8.0, // khoảng cách giữa các Chip
+                            children: <Widget>[
+                              // if (timeInterval.isGone == true)
+                              //   Container(
+                              //     decoration: BoxDecoration(
+                              //       color: Colors.red,
+                              //       borderRadius: BorderRadius.circular(
+                              //           5), // bo tròn viền tại đây
+                              //     ),
+                              //     child: const Text(
+                              //       'gone',
+                              //       style: TextStyle(
+                              //           color: Colors.white, fontSize: 10),
+                              //     ),
+                              //   ),
+                              if (timeInterval.isInProgress == true)
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(
+                                        5), // bo tròn viền tại đây
+                                  ),
+                                  child: const Text(
+                                    'in progress',
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 10),
+                                  ),
+                                ),
+                              // if (timeInterval.isToday == true)
+                              //   Container(
+                              //     decoration: BoxDecoration(
+                              //       color: Colors.red,
+                              //       borderRadius: BorderRadius.circular(
+                              //           5), // bo tròn viền tại đây
+                              //     ),
+                              //     child: const Text(
+                              //       'today',
+                              //       style: TextStyle(
+                              //           color: Colors.white, fontSize: 10),
+                              //     ),
+                              //   ),
                             ],
                           ),
+                          RichText(
+                            text: TextSpan(
+                              style: timeInterval.isCompleted
+                                  ? textTheme.titleSmall!.copyWith(
+                                      decoration: TextDecoration.lineThrough)
+                                  : textTheme.titleSmall,
+                              text: _formattedStartDate == _formattedEndDate
+                                  ? 'From $_formattedStartDate: $_formattedStartTime to $_formattedEndTime'
+                                  : 'From $_formattedStartDate: $_formattedStartTime to $_formattedEndDate: $_formattedEndTime',
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_vert,
                         ),
-                        PopupMenuItem<String>(
-                            value: 'mark_completed',
+                        onSelected: (String result) {
+                          if (result == 'mark_completed') {
+                            _onTimeIntervalToggleCompleted(timeInterval);
+                          } else if (result == 'sync_details') {
+                          } else if (result == 'edit') {
+                            Future<void> editTimeInterval() async {
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => AddOrEditTimeIntervalPage(
+                                    timeInterval: timeInterval,
+                                  ),
+                                  fullscreenDialog: false,
+                                ),
+                              );
+                              final updatedTimeInterval = await _databaseManager
+                                  .timeInterval(timeInterval.id);
+                              final index = _timeIntervals.indexWhere(
+                                  (item) => item.id == updatedTimeInterval.id);
+                              if (index != -1) {
+                                setState(() {
+                                  _timeIntervals[index] = updatedTimeInterval;
+                                });
+                              }
+                            }
+
+                            // Call the async function
+                            editTimeInterval();
+                          } else if (result == 'delete') {
+                            _deleteTimeInterval(timeInterval);
+                          } else if (result == 'expand') {
+                            setState(() {
+                              _isExpanded[timeInterval.id] =
+                                  !_isExpanded[timeInterval.id]!;
+                            });
+                          }
+                        },
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<String>>[
+                          PopupMenuItem<String>(
+                            value: 'expand',
                             child: Row(
                               children: [
-                                Icon(timeInterval.isCompleted
-                                    ? Icons.check_box
-                                    : Icons.check_box_outline_blank),
+                                Icon(_isExpanded[timeInterval.id]!
+                                    ? Icons.chevron_right
+                                    : Icons.expand_more),
                                 const SizedBox(width: 8),
+                                _isExpanded[timeInterval.id]!
+                                    ? const Text('Hide details')
+                                    : const Text('Show details'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem<String>(
+                              value: 'mark_completed',
+                              child: Row(
+                                children: [
+                                  Icon(timeInterval.isCompleted
+                                      ? Icons.check_box
+                                      : Icons.check_box_outline_blank),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(timeInterval.isCompleted
+                                        ? 'Mark as incompleted in this time interval'
+                                        : 'Mark as completed in this time interval'),
+                                  ),
+                                ],
+                              )),
+                          const PopupMenuItem<String>(
+                            value: 'sync_details',
+                            child: Row(
+                              children: [
+                                Icon(Icons.copy_outlined),
+                                SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(timeInterval.isCompleted
-                                      ? 'Mark as incompleted in this time interval'
-                                      : 'Mark as completed in this time interval'),
+                                  child: Text(
+                                      'Sync details from task to this time interval'),
+                                )
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                      'Edit details in this time interval'),
                                 ),
                               ],
-                            )),
-                        const PopupMenuItem<String>(
-                          value: 'sync_details',
-                          child: Row(
-                            children: [
-                              Icon(Icons.copy_outlined),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                    'Sync details from task to this time interval'),
-                              )
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit_outlined),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child:
-                                    Text('Edit details in this time interval'),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outlined),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text('Delete this time interval'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_isExpanded[timeInterval.id]! &&
-                      timeInterval.description.isNotEmpty)
-                    ListTile(
-                        dense: true,
-                        leading: Icon(Icons.description_outlined),
-                        title: Text(timeInterval.description)),
-                  if (_isExpanded[timeInterval.id]! &&
-                      timeInterval.location.isNotEmpty)
-                    ListTile(
-                        dense: true,
-                        leading: Icon(Icons.location_on_outlined),
-                        title: Text(timeInterval.location)),
-                  if (timeInterval.measurableTaskId != null &&
-                      _isExpanded[timeInterval.id]!)
-                    ListTile(
-                      dense: true,
-                      title: Column(
-                        children: [
-                          if (timeInterval.targetType == TargetType.about)
-                            Text(
-                              'Target: about ${timeInterval.targetAtLeast} to ${timeInterval.targetAtMost} ${timeInterval.unit}',
-                              //style: TextStyle(color: labelColor),
                             ),
-                          if (timeInterval.targetType == TargetType.atLeast)
-                            Text(
-                              'Target: at least ${timeInterval.targetAtLeast} ${timeInterval.unit}',
-                              //style: TextStyle(color: labelColor),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outlined),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text('Delete this time interval'),
+                                ),
+                              ],
                             ),
-                          if (timeInterval.targetType == TargetType.atMost)
-                            Text(
-                              'Target: at most ${timeInterval.targetAtMost} ${timeInterval.unit}',
-                              //style: TextStyle(color: labelColor),
-                            ),
+                          ),
                         ],
                       ),
                     ),
-                  if (timeInterval.measurableTaskId != null &&
-                      _isExpanded[timeInterval.id]!)
-                    ListTile(
-                      dense: true,
-                      title: ActionChip(
-                          label: Text(
-                            'Has been done: ${timeInterval.howMuchHasBeenDone} ${timeInterval.unit}',
-                          ),
-                          onPressed: () => _onHasBeenDoneUpdate(timeInterval)),
-                    ),
-                  if (timeInterval.taskWithSubtasksId != null &&
-                          _isExpanded[timeInterval.id]!
-                      //timeInterval.isSubtasksChanged
-                      )
-                    ...timeInterval.subtasks.reversed.map(
-                      (subtask) => CheckboxListTile(
-                        //contentPadding: EdgeInsets.symmetric(vertical: 0.0),
+                    if (_isExpanded[timeInterval.id]! &&
+                        timeInterval.description.isNotEmpty)
+                      ListTile(
+                          dense: true,
+                          leading: Icon(Icons.description_outlined),
+                          title: Text(timeInterval.description)),
+                    if (_isExpanded[timeInterval.id]! &&
+                        timeInterval.location.isNotEmpty)
+                      ListTile(
+                          dense: true,
+                          leading: Icon(Icons.location_on_outlined),
+                          title: Text(timeInterval.location)),
+                    if (timeInterval.measurableTaskId != null &&
+                        _isExpanded[timeInterval.id]!)
+                      ListTile(
                         dense: true,
-                        side: BorderSide(
-                            //color: labelColor,
-                            ),
-                        //activeColor: labelColor,
-                        activeColor: Theme.of(context).brightness ==
-                                Brightness.dark
-                            ? Colors.black
-                            : Colors.white, // Màu nền khi Checkbox được chọn
-                        checkColor:
-                            Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white
-                                : Colors.black,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: subtask.isSubtaskCompleted,
-                        onChanged: (value) {
-                          subtask.isSubtaskCompleted = value ?? false;
-                          _onSubtasksChanged(timeInterval);
-                        },
-                        title: Text(
-                          subtask.title,
-                          style: TextStyle(
-                            decoration: subtask.isSubtaskCompleted
-                                ? TextDecoration.lineThrough
-                                : TextDecoration.none,
-                            //color: labelColor,
-                          ),
-                        ),
-                        secondary: IconButton(
-                          icon: Icon(
-                            Icons.delete_outlined,
-                            //color: labelColor,
-                          ),
-                          onPressed: () async {
-                            final result = await showDialog<bool>(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Text('Delete Subtask'),
-                                  content: Text(
-                                      'Are you sure you want to delete this subtask?'),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: Text('Delete'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                            if (result == true) {
-                              timeInterval.subtasks.remove(subtask);
-                              _onSubtasksChanged(timeInterval);
-                            }
-                          },
+                        title: Column(
+                          children: [
+                            if (timeInterval.targetType == TargetType.about)
+                              Text(
+                                'Target: about ${timeInterval.targetAtLeast} to ${timeInterval.targetAtMost} ${timeInterval.unit}',
+                                //style: TextStyle(color: labelColor),
+                              ),
+                            if (timeInterval.targetType == TargetType.atLeast)
+                              Text(
+                                'Target: at least ${timeInterval.targetAtLeast} ${timeInterval.unit}',
+                                //style: TextStyle(color: labelColor),
+                              ),
+                            if (timeInterval.targetType == TargetType.atMost)
+                              Text(
+                                'Target: at most ${timeInterval.targetAtMost} ${timeInterval.unit}',
+                                //style: TextStyle(color: labelColor),
+                              ),
+                          ],
                         ),
                       ),
+                    if (timeInterval.measurableTaskId != null &&
+                        _isExpanded[timeInterval.id]!)
+                      ListTile(
+                        dense: true,
+                        title: ActionChip(
+                            label: Text(
+                              'Has been done: ${timeInterval.howMuchHasBeenDone} ${timeInterval.unit}',
+                            ),
+                            onPressed: () =>
+                                _onHasBeenDoneUpdate(timeInterval)),
+                      ),
+                    if (timeInterval.taskWithSubtasksId != null &&
+                            _isExpanded[timeInterval.id]!
+                        //timeInterval.isSubtasksChanged
+                        )
+                      ...timeInterval.subtasks.reversed.map(
+                        (subtask) => CheckboxListTile(
+                          //contentPadding: EdgeInsets.symmetric(vertical: 0.0),
+                          dense: true,
+                          side: BorderSide(
+                              //color: labelColor,
+                              ),
+                          //activeColor: labelColor,
+                          activeColor: Theme.of(context).brightness ==
+                                  Brightness.dark
+                              ? Colors.black
+                              : Colors.white, // Màu nền khi Checkbox được chọn
+                          checkColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: subtask.isSubtaskCompleted,
+                          onChanged: (value) {
+                            subtask.isSubtaskCompleted = value ?? false;
+                            _onSubtasksChanged(timeInterval);
+                          },
+                          title: Text(
+                            subtask.title,
+                            style: TextStyle(
+                              decoration: subtask.isSubtaskCompleted
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              //color: labelColor,
+                            ),
+                          ),
+                          secondary: IconButton(
+                            icon: Icon(
+                              Icons.delete_outlined,
+                              //color: labelColor,
+                            ),
+                            onPressed: () async {
+                              final result = await showDialog<bool>(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text('Delete Subtask'),
+                                    content: Text(
+                                        'Are you sure you want to delete this subtask?'),
+                                    actions: <Widget>[
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: Text('Delete'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                              if (result == true) {
+                                timeInterval.subtasks.remove(subtask);
+                                _onSubtasksChanged(timeInterval);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    const Divider(
+                      height: 4,
                     ),
-                  const Divider(
-                    height: 4,
-                  ),
-                ],
-              );
-            },
-          );
+                  ],
+                );
+              },
+            )
+          ]));
   }
 }

@@ -632,7 +632,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                 const SizedBox(height: 12.0),
                 if (widget.timeInterval!.taskWithSubtasksId != null)
                   Row(children: [
-                    ElevatedButton(
+                    TextButton(
                       onPressed: () => _showAddSubtaskDialog(context),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

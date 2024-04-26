@@ -85,6 +85,7 @@ class App extends StatelessWidget {
               isProVersion: _isProVersion,
               useLightMode: state.useLightMode,
               useMaterial3: state.useMaterial3,
+              useBottomBar: state.useBottomBar,
               showBrightnessButtonInAppBar: state.showBrightnessButtonInAppBar,
               showMaterialDesignButtonInAppBar:
                   state.showMaterialDesignButtonInAppBar,
@@ -101,6 +102,9 @@ class App extends StatelessWidget {
               handleMaterialVersionChange: () => context
                   .read<AppBloc>()
                   .add(ToggleMaterialVersion(state.useMaterial3)),
+              handleUsingBottomBarChange: () => context
+                  .read<AppBloc>()
+                  .add(ToggleUsingBottomBar(state.useBottomBar)),
               handleDisplayBrightnessButtonInAppBarChange: () => context
                   .read<AppBloc>()
                   .add(ToggleDisplayBrightnessButtonInAppBar(
@@ -133,8 +137,6 @@ class App extends StatelessWidget {
               colorSelectionMethod: state.colorSelectionMethod,
               launchCount: state.launchCount,
             ),
-
-            //home: MyHomePage(title: 'Demo',),
           );
         },
       ),
@@ -146,6 +148,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   static const brightnessKey = 'brightness';
   static const colorKey = 'color';
   static const useDesignVersionKey = 'useMaterial3';
+  static const useBottomBarKey = 'useBottomBar';
   static const displayBrightnessButtonInAppBar = 'showBrightnessButtonInAppBar';
   static const displayMaterialDesignButtonInAppBar =
       'showMaterialDesignButtonInAppBar';
@@ -160,6 +163,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   AppBloc()
       : super(AppState(
             useMaterial3: true,
+            useBottomBar: true,
             showBrightnessButtonInAppBar: true,
             showMaterialDesignButtonInAppBar: true,
             showColorSeedButtonInAppBar: true,
@@ -189,6 +193,12 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
       add(ToggleMaterialVersion(
         sharedPreferences.getString(useDesignVersionKey) == 'useMaterial3'
+            ? true
+            : false,
+      ));
+
+      add(ToggleUsingBottomBar(
+        sharedPreferences.getString(useBottomBarKey) == 'useBottomBar'
             ? true
             : false,
       ));
@@ -250,6 +260,12 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       sharedPreferences.setString(useDesignVersionKey,
           event.useMaterial3 ? 'useMaterial3' : 'useMaterial2');
       emit(state.copyWith(useMaterial3: !event.useMaterial3));
+    });
+
+    on<ToggleUsingBottomBar>((event, emit) {
+      sharedPreferences.setString(useBottomBarKey,
+          event.useBottomBar ? 'useBottomBar' : 'notUseBottomBar');
+      emit(state.copyWith(useBottomBar: !event.useBottomBar));
     });
 
     on<ToggleDisplayBrightnessButtonInAppBar>((event, emit) {
@@ -363,6 +379,11 @@ class ToggleMaterialVersion extends AppEvent {
   ToggleMaterialVersion(this.useMaterial3);
 }
 
+class ToggleUsingBottomBar extends AppEvent {
+  final bool useBottomBar;
+
+  ToggleUsingBottomBar(this.useBottomBar);
+}
 class ToggleDisplayBrightnessButtonInAppBar extends AppEvent {
   final bool showBrightnessButtonInAppBar;
 
@@ -428,6 +449,7 @@ class LoadLaunchCountEvent extends AppEvent {
 ///APP STATE
 class AppState {
   final bool useMaterial3;
+  final bool useBottomBar;
   final ThemeMode themeMode;
   final ColorSeed colorSelected;
   final ColorImageProvider imageSelected;
@@ -435,7 +457,6 @@ class AppState {
   final ColorSelectionMethod colorSelectionMethod;
   final AppLanguage language;
   final int launchCount;
-  // final bool useNavigationRail;
   final bool showBrightnessButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
   final bool showColorSeedButtonInAppBar;
@@ -447,7 +468,6 @@ class AppState {
       case ThemeMode.system:
         return WidgetsBinding.instance.window.platformBrightness ==
             Brightness.light;
-      //return View.of(context).window.platformBrightness == Brightness.light;
       case ThemeMode.light:
         return true;
       case ThemeMode.dark:
@@ -457,6 +477,7 @@ class AppState {
 
   AppState({
     required this.useMaterial3,
+    required this.useBottomBar,
     required this.showBrightnessButtonInAppBar,
     required this.showMaterialDesignButtonInAppBar,
     required this.showColorSeedButtonInAppBar,
@@ -473,6 +494,7 @@ class AppState {
 
   AppState copyWith({
     bool? useMaterial3,
+    bool? useBottomBar,
     bool? showBrightnessButtonInAppBar,
     bool? showMaterialDesignButtonInAppBar,
     bool? showColorSeedButtonInAppBar,
@@ -488,6 +510,7 @@ class AppState {
   }) {
     return AppState(
       useMaterial3: useMaterial3 ?? this.useMaterial3,
+      useBottomBar: useBottomBar ?? this.useBottomBar,
       showBrightnessButtonInAppBar:
           showBrightnessButtonInAppBar ?? this.showBrightnessButtonInAppBar,
       showMaterialDesignButtonInAppBar: showMaterialDesignButtonInAppBar ??

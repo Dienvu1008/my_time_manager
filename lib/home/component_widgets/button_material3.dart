@@ -24,3 +24,59 @@ class Material3Button extends StatelessWidget {
     );
   }
 }
+
+class Material3MenuItemButton extends StatelessWidget {
+  const Material3MenuItemButton({
+    required this.handleMaterialVersionChange,
+    this.showTooltipBelow = true,
+  });
+
+  final void Function() handleMaterialVersionChange;
+  final bool showTooltipBelow;
+
+  @override
+  Widget build(BuildContext context) {
+    final useMaterial3 = Theme.of(context).useMaterial3;
+    return MenuItemButton(
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.center,
+        runAlignment: WrapAlignment.spaceAround,
+        children: [
+          useMaterial3
+              ? const SizedBox(
+                  width: 100,
+                  child: Padding(
+                      padding: EdgeInsets.only(left: 5),
+                      child: Text('Material 3')))
+              : const SizedBox(
+                  width: 100,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 5),
+                    child: Text('Material 2'),
+                  ),
+                ),
+
+          const SizedBox(
+            width: 20,
+          ),
+          // Switch(
+          //     value: useMaterial3,
+          //     onChanged: (_) {
+          //       handleMaterialVersionChange();
+          //     })
+          SizedBox(
+              width: 50,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child:           Switch(
+                    value: useMaterial3,
+                    onChanged: (_) {
+                      handleMaterialVersionChange();
+                    })
+              ))
+        ],
+      ),
+    );
+  }
+}

@@ -10,6 +10,7 @@ class TaskCard extends StatefulWidget {
   final Function(Task) onTaskEdit;
   final Function(Task) onTaskDelete;
   final Function(Task) onTaskToggleComplete;
+  final bool isProVersion;
 
   const TaskCard({
     Key? key,
@@ -17,6 +18,7 @@ class TaskCard extends StatefulWidget {
     required this.onTaskEdit,
     required this.onTaskDelete,
     required this.onTaskToggleComplete,
+    required this.isProVersion,
   }) : super(key: key);
 
   @override
@@ -33,7 +35,7 @@ class _TaskCardState extends State<TaskCard> {
         : ColorScheme.light(primary: taskColor);
     final backgroundColor = myColorScheme.primaryContainer;
     final labelColor = contrastColor(backgroundColor);
-
+    final textTheme = Theme.of(context).textTheme;
     return Card(
         color: backgroundColor,
         child: Row(
@@ -42,6 +44,7 @@ class _TaskCardState extends State<TaskCard> {
               child: GestureDetector(
                 onTap: () => widget.onTaskEdit(widget.task),
                 child: ListTile(
+                    contentPadding: const EdgeInsets.only(right:0, left: 8),
                     title: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -60,20 +63,14 @@ class _TaskCardState extends State<TaskCard> {
                             ),
                           Text(
                             widget.task.title,
-                            style: TextStyle(
-                              color: labelColor,
-                              decoration: widget.task.isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
+                            style: widget.task.isCompleted
+                                ? textTheme.labelLarge!.copyWith(
+                                    decoration: TextDecoration.lineThrough,
+                                    color: labelColor)
+                                : textTheme.labelLarge!
+                                    .copyWith(color: labelColor),
                           ),
                         ]),
-                    // subtitle: widget.task.description.isNotEmpty
-                    //     ? Text(
-                    //         widget.task.description,
-                    //         style: TextStyle(color: labelColor),
-                    //       )
-                    //     : null,
                     trailing: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert, color: labelColor),
                       onSelected: (String result) {
@@ -84,6 +81,25 @@ class _TaskCardState extends State<TaskCard> {
                         } else if (result == 'mark_completion') {
                           widget.onTaskToggleComplete(widget.task);
                         } else if (result == 'schedule') {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            showDragHandle: true,
+                            builder: (BuildContext context) =>
+                                ShowOrSetTimeIntervalsBottomSheet(
+                              title: widget.task.title,
+                              color: widget.task.color,
+                              description: widget.task.description,
+                              location: widget.task.location,
+                              targetType: TargetType.about,
+                              targetAtLeast: double.negativeInfinity,
+                              targetAtMost: double.infinity,
+                              unit: '',
+                              subtasks: [],
+                              taskId: widget.task.id,
+                              isSetTimeIntervalPage: true,
+                            ),
+                          );
                         } else if (result == 'planned') {
                           showModalBottomSheet(
                             context: context,
@@ -105,7 +121,11 @@ class _TaskCardState extends State<TaskCard> {
                             ),
                           );
                         } else if (result == 'focus_timer') {
-                          showComingSoonDialog(context);
+                          if (widget.isProVersion) {
+                            showComingSoonDialog(context);
+                          } else {
+                            showWillBeAvaiableOnProVersionDialog(context);
+                          }
                         }
                       },
                       itemBuilder: (BuildContext context) =>
@@ -119,8 +139,25 @@ class _TaskCardState extends State<TaskCard> {
                                   : Icons.check_box_outline_blank),
                               const SizedBox(width: 8),
                               widget.task.isCompleted
-                                  ? Expanded(child: Text(localizations!.markAsIncompleted))
-                                  : Expanded(child: Text(localizations!.markAsCompleted),)
+                                  ? Expanded(
+                                      child: Text(
+                                          localizations!.markAsIncompleted))
+                                  : Expanded(
+                                      child:
+                                          Text(localizations!.markAsCompleted),
+                                    )
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'schedule',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.hourglass_empty_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(localizations.schedule),
+                              )
                             ],
                           ),
                         ),
@@ -130,7 +167,9 @@ class _TaskCardState extends State<TaskCard> {
                             children: [
                               const Icon(Icons.event_note_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.planned),)
+                              Expanded(
+                                child: Text(localizations.planned),
+                              )
                             ],
                           ),
                         ),
@@ -140,7 +179,9 @@ class _TaskCardState extends State<TaskCard> {
                             children: [
                               const Icon(Icons.timelapse_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.focusRightNow),)
+                              Expanded(
+                                child: Text(localizations.focusRightNow),
+                              )
                             ],
                           ),
                         ),
@@ -150,7 +191,9 @@ class _TaskCardState extends State<TaskCard> {
                             children: [
                               const Icon(Icons.edit_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.editTask),)
+                              Expanded(
+                                child: Text(localizations.editTask),
+                              )
                             ],
                           ),
                         ),
@@ -160,7 +203,9 @@ class _TaskCardState extends State<TaskCard> {
                             children: [
                               const Icon(Icons.delete_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.deleteTask),)
+                              Expanded(
+                                child: Text(localizations.deleteTask),
+                              )
                             ],
                           ),
                         ),

@@ -12,6 +12,7 @@ class MeasurableTaskCard extends StatefulWidget {
   final Function(MeasurableTask) onHasBeenDoneUpdate;
   final bool Function(MeasurableTask) isMeasurableTaskCardExpanded;
   final Function(MeasurableTask) onMeasurableTaskCardExpanded;
+  final bool isProVersion;
 
   const MeasurableTaskCard({
     Key? key,
@@ -22,6 +23,7 @@ class MeasurableTaskCard extends StatefulWidget {
     required this.onHasBeenDoneUpdate,
     required this.isMeasurableTaskCardExpanded,
     required this.onMeasurableTaskCardExpanded,
+    required this.isProVersion,
   }) : super(key: key);
 
   @override
@@ -29,42 +31,6 @@ class MeasurableTaskCard extends StatefulWidget {
 }
 
 class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
-  // static Color contrastColor(Color color) {
-  //   final brightness = ThemeData.estimateBrightnessForColor(color);
-  //   switch (brightness) {
-  //     case Brightness.dark:
-  //       return Colors.white;
-  //     case Brightness.light:
-  //       return Colors.black;
-  //   }
-  // }
-
-  // Phần chương trình này sẽ gây ra việc nháy màn hình khi mở rộng TaskListCard hoặc chuyển từ widget khác về overview
-
-  // bool _isExpanded = true;
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _loadIsExpanded();
-  // }
-
-  // void _loadIsExpanded() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   final isExpanded =
-  //       prefs.getBool('isExpanded_${widget.measurableTask.id}') ?? true;
-  //   if (mounted) {
-  //     setState(() {
-  //       _isExpanded = isExpanded;
-  //     });
-  //   }
-  // }
-
-  // void _saveIsExpanded() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   prefs.setBool('isExpanded_${widget.measurableTask.id}', _isExpanded);
-  // }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
@@ -74,7 +40,7 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
         : ColorScheme.light(primary: measurableTaskColor);
     final backgroundColor = myColorScheme.primaryContainer;
     final labelColor = contrastColor(backgroundColor);
-
+    final textTheme = Theme.of(context).textTheme;
     return Card(
       color: backgroundColor,
       child: Row(
@@ -83,20 +49,11 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
             child: GestureDetector(
               onTap: () => widget.onMeasurableTaskEdit(widget.measurableTask),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ListTile(
-                    //dense: true,
-                    //contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
-                    // title: Text(
-                    //   widget.measurableTask.title,
-                    //   style: TextStyle(
-                    //     color: labelColor,
-                    //     decoration: widget.measurableTask.isCompleted
-                    //         ? TextDecoration.lineThrough
-                    //         : null,
-                    //   ),
-                    // ),
+                    contentPadding: const EdgeInsets.only(right:0, left: 8),
                     title: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -104,8 +61,7 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                             Container(
                               decoration: BoxDecoration(
                                 color: Colors.red,
-                                borderRadius: BorderRadius.circular(
-                                    5), // bo tròn viền tại đây
+                                borderRadius: BorderRadius.circular(5),
                               ),
                               child: Text(
                                 localizations!.important,
@@ -115,35 +71,30 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                             ),
                           Text(
                             widget.measurableTask.title,
-                            style: TextStyle(
-                              color: labelColor,
-                              decoration: widget.measurableTask.isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
+                            style: widget.measurableTask.isCompleted
+                                ? textTheme.labelLarge!.copyWith(
+                                    decoration: TextDecoration.lineThrough,
+                                    color: labelColor)
+                                : textTheme.labelLarge!
+                                    .copyWith(color: labelColor),
                           ),
                         ]),
-                    // subtitle: widget.measurableTask.description.isNotEmpty
-                    //     ? Text(
-                    //         widget.measurableTask.description,
-                    //         style: TextStyle(color: labelColor),
-                    //       )
-                    //     : null,
                     trailing: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert, color: labelColor),
                       onSelected: (String result) {
-                        if (result == 'option1') {
+                        if (result == 'edit') {
                           widget.onMeasurableTaskEdit(widget.measurableTask);
-                        } else if (result == 'option2') {
+                        } else if (result == 'delete') {
                           widget.onMeasurableTaskDelete(widget.measurableTask);
-                        } else if (result == 'option3') {
+                        } else if (result == 'completion') {
                           widget.onMeasurableTaskToggleComplete(
                               widget.measurableTask);
-                        } else if (result == 'option4') {
+                        } else if (result == 'schedule') {
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
                             showDragHandle: true,
+                            enableDrag: true,
                             builder: (BuildContext context) =>
                                 ShowOrSetTimeIntervalsBottomSheet(
                               title: widget.measurableTask.title,
@@ -160,7 +111,7 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                               isSetTimeIntervalPage: true,
                             ),
                           );
-                        } else if (result == 'option6') {
+                        } else if (result == 'expand') {
                           widget.onMeasurableTaskCardExpanded(
                               widget.measurableTask);
                           // setState(() => _isExpanded = !_isExpanded);
@@ -187,13 +138,17 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                             ),
                           );
                         } else if (result == 'focus_timer') {
-                          showComingSoonDialog(context);
+                          if (widget.isProVersion) {
+                            showComingSoonDialog(context);
+                          } else {
+                            showWillBeAvaiableOnProVersionDialog(context);
+                          }
                         }
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
                         PopupMenuItem<String>(
-                          value: 'option6',
+                          value: 'expand',
                           child: Row(
                             children: [
                               Icon(//_isExpanded
@@ -205,13 +160,18 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                               //_isExpanded
                               widget.isMeasurableTaskCardExpanded(
                                       widget.measurableTask)
-                                  ? Expanded(child: Text(localizations!.hideTargetInfor))
-                                  : Expanded(child: Text(localizations!.showTargetInfor),)
+                                  ? Expanded(
+                                      child:
+                                          Text(localizations!.hideTargetInfor))
+                                  : Expanded(
+                                      child:
+                                          Text(localizations!.showTargetInfor),
+                                    )
                             ],
                           ),
                         ),
                         PopupMenuItem<String>(
-                          value: 'option3',
+                          value: 'completion',
                           child: Row(
                             children: [
                               Icon(widget.measurableTask.isCompleted
@@ -219,8 +179,25 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                                   : Icons.check_box_outline_blank),
                               const SizedBox(width: 8),
                               widget.measurableTask.isCompleted
-                                  ? Expanded(child: Text(localizations.markAsIncompleted))
-                                  : Expanded(child: Text(localizations.markAsCompleted),)
+                                  ? Expanded(
+                                      child:
+                                          Text(localizations.markAsIncompleted))
+                                  : Expanded(
+                                      child:
+                                          Text(localizations.markAsCompleted),
+                                    )
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'schedule',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.hourglass_empty_outlined),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(localizations.schedule),
+                              )
                             ],
                           ),
                         ),
@@ -230,7 +207,9 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                             children: [
                               const Icon(Icons.event_note_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.planned),)
+                              Expanded(
+                                child: Text(localizations.planned),
+                              )
                             ],
                           ),
                         ),
@@ -240,27 +219,33 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                             children: [
                               const Icon(Icons.timelapse_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.focusRightNow),)
+                              Expanded(
+                                child: Text(localizations.focusRightNow),
+                              )
                             ],
                           ),
                         ),
                         PopupMenuItem<String>(
-                          value: 'option1',
+                          value: 'edit',
                           child: Row(
                             children: [
                               const Icon(Icons.edit_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.editTask),)
+                              Expanded(
+                                child: Text(localizations.editTask),
+                              )
                             ],
                           ),
                         ),
                         PopupMenuItem<String>(
-                          value: 'option2',
+                          value: 'delete',
                           child: Row(
                             children: [
                               const Icon(Icons.delete_outlined),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(localizations.deleteTask),)
+                              Expanded(
+                                child: Text(localizations.deleteTask),
+                              )
                             ],
                           ),
                         ),
@@ -271,8 +256,6 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                       .isMeasurableTaskCardExpanded(widget.measurableTask))
                     ListTile(
                       dense: true,
-                      //contentPadding: const EdgeInsets.symmetric(horizontal: 0.0),
-                      //contentPadding: EdgeInsets.symmetric(vertical: 0.0),
                       title: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -280,86 +263,33 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                               TargetType.about)
                             Text(
                               '${localizations!.targetAbout} ${widget.measurableTask.targetAtLeast} ${localizations.to} ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
-                              style: TextStyle(color: labelColor),
+                              style: textTheme.labelMedium!
+                                  .copyWith(color: labelColor),
                             ),
                           if (widget.measurableTask.targetType ==
                               TargetType.atLeast)
                             Text(
                               '${localizations!.targetAtLeast} ${widget.measurableTask.targetAtLeast} ${widget.measurableTask.unit}',
-                              style: TextStyle(color: labelColor),
+                              style: textTheme.labelMedium!
+                                  .copyWith(color: labelColor),
                             ),
                           if (widget.measurableTask.targetType ==
                               TargetType.atMost)
                             Text(
                               '${localizations!.targetAtMost} ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
-                              style: TextStyle(color: labelColor),
+                              style: textTheme.labelMedium!
+                                  .copyWith(color: labelColor),
                             ),
+                          Center(
+                            child: ActionChip(
+                              label: Text(
+                                '${localizations!.hasBeenDone} ${widget.measurableTask.howMuchHasBeenDone} ${widget.measurableTask.unit}',
+                              ),
+                              onPressed: () => widget
+                                  .onHasBeenDoneUpdate(widget.measurableTask),
+                            ),
+                          ),
                         ],
-                      ),
-                    ),
-                  // Visibility(
-                  //   visible: widget.isMeasurableTaskCardExpanded(
-                  //       widget.measurableTask), //_isExpanded,
-                  //   child: Column(
-                  //     children: [
-                  //       // if (widget
-                  //       //         .measurableTask.description.isNotEmpty ||
-                  //       //     widget.measurableTask.description != '')
-                  //       //   Text(
-                  //       //     widget.measurableTask.description,
-                  //       //     style: TextStyle(color: labelColor),
-                  //       //   ),
-                  //       if (widget.measurableTask.targetType ==
-                  //           TargetType.about)
-                  //         Text(
-                  //           'Target: about ${widget.measurableTask.targetAtLeast} to ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
-                  //           style: TextStyle(color: labelColor),
-                  //         ),
-                  //       if (widget.measurableTask.targetType ==
-                  //           TargetType.atLeast)
-                  //         Text(
-                  //           'Target: at least ${widget.measurableTask.targetAtLeast} ${widget.measurableTask.unit}',
-                  //           style: TextStyle(color: labelColor),
-                  //         ),
-                  //       if (widget.measurableTask.targetType ==
-                  //           TargetType.atMost)
-                  //         Text(
-                  //           'Target: at most ${widget.measurableTask.targetAtMost} ${widget.measurableTask.unit}',
-                  //           style: TextStyle(color: labelColor),
-                  //         ),
-                  //     ],
-                  //   ),
-                  // ),
-
-                  // Visibility(
-                  //   visible: widget.isMeasurableTaskCardExpanded(
-                  //       widget.measurableTask), //_isExpanded,
-                  //   child: ListTile(
-                  //     title: ActionChip(
-                  //       label: Text(
-                  //         'Has been done: ${widget.measurableTask.howMuchHasBeenDone} ${widget.measurableTask.unit}',
-                  //       ),
-                  //       onPressed: () =>
-                  //           widget.onHasBeenDoneUpdate(widget.measurableTask),
-                  //     ),
-                  //   ),
-                  // )
-                  if (widget
-                      .isMeasurableTaskCardExpanded(widget.measurableTask))
-                    ListTile(
-                      dense: true,
-                      //contentPadding: const EdgeInsets.symmetric(horizontal: 0.0),
-                      //contentPadding: EdgeInsets.symmetric(vertical: 0.0),
-                      title: ActionChip(
-                        label: Text(
-                          '${localizations!.hasBeenDone} ${widget.measurableTask.howMuchHasBeenDone} ${widget.measurableTask.unit}',
-                        ),
-
-                        // Text(
-                        //   localizations!.hasBeenDone ${widget.measurableTask.howMuchHasBeenDone} ${widget.measurableTask.unit},
-                        // ),
-                        onPressed: () =>
-                            widget.onHasBeenDoneUpdate(widget.measurableTask),
                       ),
                     ),
                 ],

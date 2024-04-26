@@ -30,10 +30,10 @@ const List<NavigationDestination> navBarTasksScreenDestinations = [
     label: 'Timeline',
     selectedIcon: Icon(Icons.timeline),
   ),
-  NavigationDestination(
-    tooltip: '',
-    icon: Icon(Icons.table_chart_outlined),
-    label: 'Timetable',
-    selectedIcon: Icon(Icons.table_chart),
-  ),
+  // NavigationDestination(
+  //   tooltip: '',
+  //   icon: Icon(Icons.table_chart_outlined),
+  //   label: 'Timetable',
+  //   selectedIcon: Icon(Icons.table_chart),
+  // ),
 ];

@@ -298,6 +298,13 @@ class TimeInterval {
       isNextMonth = false;
     }
 
+    // bool occursOnDate(DateTime currentDate) {
+    //   return currentDate == startDate ||
+    //       currentDate == endDate ||
+    //       (currentDate.isBefore(endDate.withoutTime) &&
+    //           currentDate.isAfter(date.withoutTime));
+    // }
+
 
   }
   Map<String, dynamic> toMap() {
@@ -443,6 +450,29 @@ class TimeInterval {
         color: color ?? this.color,
         title: title ?? this.title);
   }
+
+  bool get isFullDayEvent {
+    return false;
+    // return (startTime == null ||
+    //     endTime == null ||
+    //     (startTime!.isDayStart && endTime!.isDayStart));
+  }
+
+  bool get isRangingEvent {
+    return false;
+    // final diff = endDate.withoutTime.difference(date.withoutTime).inDays;
+    //
+    // return diff > 0 && !isFullDayEvent;
+  }
+
+  bool occursOnDate(DateTime currentDate) {
+    return currentDate == startDate ||
+        currentDate == endDate ||
+        (currentDate.isBefore(endDate!) &&
+            currentDate.isAfter(startDate!));
+  }
+
+
 
   // @override
   // String toString() {
