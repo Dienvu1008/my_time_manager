@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
-import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:my_time_manager/shared/appflowy_description.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_completion.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description_editor.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_importance.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_location.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/listtile_notes_attachment.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_schedule.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_tasklist.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_title.dart';
@@ -19,7 +21,7 @@ class AddOrEditTaskWithSubtasksPage extends StatefulWidget {
       {Key? key, this.taskWithSubtasks, required this.taskList})
       : super(key: key);
   final TaskList taskList;
-  final TaskWithSubtasks? taskWithSubtasks;
+  final Task? taskWithSubtasks;
 
   @override
   _AddOrEditTaskWithSubtasksPageState createState() =>
@@ -29,7 +31,7 @@ class AddOrEditTaskWithSubtasksPage extends StatefulWidget {
 class _AddOrEditTaskWithSubtasksPageState
     extends State<AddOrEditTaskWithSubtasksPage> {
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+  late final EditorState _descriptionEditorState;
   final TextEditingController _locationController = TextEditingController();
   final DatabaseManager _databaseManager = DatabaseManager();
   List<Subtask> _subtasks = [];
@@ -38,6 +40,7 @@ class _AddOrEditTaskWithSubtasksPageState
   Color _taskWithSubtasksColor = ColorSeed.baseColor.color;
   bool _isCompleted = false;
   bool _isImportant = false;
+  List<String> _noteIds = [];
 
   @override
   void initState() {
@@ -46,9 +49,10 @@ class _AddOrEditTaskWithSubtasksPageState
       widget.taskWithSubtasks?.title != null
           ? _titleController.text = widget.taskWithSubtasks!.title
           : _titleController.text = '';
-      widget.taskWithSubtasks?.description != null
-          ? _descriptionController.text = widget.taskWithSubtasks!.description
-          : _descriptionController.text = '';
+      _descriptionEditorState = AppFlowyDescription.buildEditorState(
+        docJson: widget.taskWithSubtasks!.descriptionDoc,
+        plainText: widget.taskWithSubtasks!.description,
+      );
       widget.taskWithSubtasks?.location != null
           ? _locationController.text = widget.taskWithSubtasks!.location
           : _locationController.text = '';
@@ -59,15 +63,31 @@ class _AddOrEditTaskWithSubtasksPageState
       _id = widget.taskWithSubtasks!.id;
       _isCompleted = widget.taskWithSubtasks!.isCompleted;
       _isImportant = widget.taskWithSubtasks!.isImportant;
+      _noteIds = List<String>.from(widget.taskWithSubtasks!.noteIds);
     } else {
       _id = const Uuid().v4();
+      _descriptionEditorState = AppFlowyDescription.buildEditorState(
+        docJson: '',
+        plainText: '',
+      );
     }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    _descriptionEditorState.dispose();
+    super.dispose();
   }
 
   Future<void> _onSave() async {
     final id = _id;
     final title = _titleController.text;
-    final description = _descriptionController.text;
+    final description =
+        AppFlowyDescription.extractPlainText(_descriptionEditorState);
+    final descriptionDoc =
+        AppFlowyDescription.encodeDoc(_descriptionEditorState);
     final location = _locationController.text;
     final isCompleted = widget.taskWithSubtasks == null ? false : _isCompleted;
     final isImportant = widget.taskWithSubtasks == null ? false : _isImportant;
@@ -75,21 +95,23 @@ class _AddOrEditTaskWithSubtasksPageState
     final taskListId = widget.taskList.id;
     final subtasks = _subtasks;
 
-    final taskWithSubtasks = TaskWithSubtasks(
+    final taskWithSubtasks = Task(
       id: id,
       title: title,
       description: description,
+      descriptionDoc: descriptionDoc,
       location: location,
       isCompleted: isCompleted,
       isImportant: isImportant,
       color: color,
       taskListId: taskListId,
       subtasks: subtasks,
+      noteIds: _noteIds,
     );
 
     widget.taskWithSubtasks == null
-        ? await _databaseManager.insertTaskWithSubtasks(taskWithSubtasks)
-        : await _databaseManager.updateTaskWithSubtasks(taskWithSubtasks);
+        ? await _databaseManager.insertTask(taskWithSubtasks)
+        : await _databaseManager.updateTask(taskWithSubtasks);
     Navigator.pop(context, taskWithSubtasks);
   }
 
@@ -140,9 +162,9 @@ class _AddOrEditTaskWithSubtasksPageState
                 ..._subtasks.reversed.map((subtask) => CheckboxListTile(
                       dense: true,
                       controlAffinity: ListTileControlAffinity.leading,
-                      value: subtask.isSubtaskCompleted,
+                      value: subtask.isCompleted,
                       onChanged: (value) => setState(
-                          () => subtask.isSubtaskCompleted = value ?? false),
+                          () => subtask.isCompleted = value ?? false),
                       title: GestureDetector(
                         onTap: () async {
                           final TextEditingController _controller =
@@ -181,7 +203,7 @@ class _AddOrEditTaskWithSubtasksPageState
                         child: Text(
                           subtask.title,
                           style: TextStyle(
-                            decoration: subtask.isSubtaskCompleted
+                            decoration: subtask.isCompleted
                                 ? TextDecoration.lineThrough
                                 : null,
                           ),
@@ -212,20 +234,16 @@ class _AddOrEditTaskWithSubtasksPageState
                 ]),
                 const SizedBox(height: 12),
                 const Divider(height: 4),
-                DescriptionListTile(
-                    descriptionController: _descriptionController),
+                DescriptionEditorTile(
+                  editorState: _descriptionEditorState,
+                ),
                 if (widget.taskWithSubtasks != null)
                   ScheduleListTile(
-                      title: widget.taskWithSubtasks!.title,
-                      color: widget.taskWithSubtasks!.color,
-                      description: widget.taskWithSubtasks!.description,
-                      location: widget.taskWithSubtasks!.location,
-                      targetType: TargetType.about,
-                      targetAtLeast: double.negativeInfinity,
-                      targetAtMost: double.infinity,
-                      unit: '',
-                      subtasks: widget.taskWithSubtasks!.subtasks,
-                      taskWithSubtasksId: _id),
+                      task: widget.taskWithSubtasks!),
+                NotesAttachmentListTile(
+                  noteIds: _noteIds,
+                  onChanged: (ids) => setState(() => _noteIds = ids),
+                ),
                 LocationListTile(
                   locationController: _locationController,
                 ),
@@ -272,7 +290,7 @@ class _AddOrEditTaskWithSubtasksPageState
             onPressed: () {
               setState(() {
                 _subtasks.add(Subtask(
-                  isSubtaskCompleted: false,
+                  isCompleted: false,
                   title: _subtaskTitleController.text,
                 ));
               });

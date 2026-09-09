@@ -3,14 +3,12 @@ import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_
 
 class ShowTimeIntervalsBottomSheet extends StatefulWidget {
   final String? taskId;
-  final String? measurableTaskId;
-  final String? taskWithSubtasksId;
+  final String? subtaskId;
 
   const ShowTimeIntervalsBottomSheet({
     super.key,
     this.taskId,
-    this.measurableTaskId,
-    this.taskWithSubtasksId,
+    this.subtaskId,
   });
 
   @override
@@ -76,10 +74,8 @@ class _ShowTimeIntervalsBottomSheetState
                       Expanded(
                         child: TimeIntervalOfTaskOrEventPage(
                           taskId: widget.taskId,
-                          measurableTaskId: widget.measurableTaskId,
-                          taskWithSubtasksId: widget.taskWithSubtasksId, 
+                          subtaskId: widget.subtaskId,
                           selectedTimeIntervals: 'today',
-                    
                         ),
                       ),
                       AppBar(

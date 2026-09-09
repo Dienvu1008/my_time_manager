@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_completion.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description_editor.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_importance.dart';
+import 'package:my_time_manager/shared/appflowy_description.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_location.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/listtile_notes_attachment.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_schedule.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_target_block.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_tasklist.dart';
@@ -19,7 +22,7 @@ class AddOrEditMeasurableTaskPage extends StatefulWidget {
       {Key? key, this.measurableTask, required this.taskList})
       : super(key: key);
   final TaskList taskList;
-  final MeasurableTask? measurableTask;
+  final Task? measurableTask;
 
   @override
   _AddOrEditMeasurableTaskPageState createState() =>
@@ -29,7 +32,7 @@ class AddOrEditMeasurableTaskPage extends StatefulWidget {
 class _AddOrEditMeasurableTaskPageState
     extends State<AddOrEditMeasurableTaskPage> {
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+  late final EditorState _descriptionEditorState;
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _unitController = TextEditingController();
   final TextEditingController _hasBeenDoneController = TextEditingController();
@@ -43,6 +46,7 @@ class _AddOrEditMeasurableTaskPageState
   bool _isCompleted = false;
   bool _isImportant = false;
   String _id = '';
+  List<String> _noteIds = [];
 
   @override
   void initState() {
@@ -51,9 +55,10 @@ class _AddOrEditMeasurableTaskPageState
       widget.measurableTask?.title != null
           ? _titleController.text = widget.measurableTask!.title
           : _titleController.text = '';
-      widget.measurableTask?.description != null
-          ? _descriptionController.text = widget.measurableTask!.description
-          : _descriptionController.text = '';
+      _descriptionEditorState = AppFlowyDescription.buildEditorState(
+        docJson: widget.measurableTask!.descriptionDoc,
+        plainText: widget.measurableTask!.description,
+      );
       widget.measurableTask?.location != null
           ? _locationController.text = widget.measurableTask!.location
           : _locationController.text = '';
@@ -79,15 +84,33 @@ class _AddOrEditMeasurableTaskPageState
       _id = widget.measurableTask!.id;
       _isCompleted = widget.measurableTask!.isCompleted;
       _isImportant = widget.measurableTask!.isImportant;
+      _noteIds = List<String>.from(widget.measurableTask!.noteIds);
     } else {
       _id = const Uuid().v4();
+      _descriptionEditorState =
+          AppFlowyDescription.buildEditorState(docJson: '', plainText: '');
     }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    _unitController.dispose();
+    _hasBeenDoneController.dispose();
+    _targetAtLeastController.dispose();
+    _targetAtMostController.dispose();
+    _descriptionEditorState.dispose();
+    super.dispose();
   }
 
   Future<void> _onSave() async {
     final id = _id;
     final title = _titleController.text;
-    final description = _descriptionController.text;
+    final description =
+        AppFlowyDescription.extractPlainText(_descriptionEditorState);
+    final descriptionDoc =
+        AppFlowyDescription.encodeDoc(_descriptionEditorState);
     final location = _locationController.text;
     final isCompleted = widget.measurableTask == null ? false : _isCompleted;
     final isImportant = widget.measurableTask == null ? false : _isImportant;
@@ -179,26 +202,29 @@ class _AddOrEditMeasurableTaskPageState
       return;
     }
 
-    final MeasurableTask measurableTask = MeasurableTask(
+    final Task measurableTask = Task(
       id: id,
       title: title,
       isCompleted: isCompleted,
       isImportant: isImportant,
       description: description,
+      descriptionDoc: descriptionDoc,
       location: location,
       color: color,
       taskListId: taskListId,
+      isMeasurable: true,
       targetAtLeast: targetAtLeast,
       targetAtMost: targetAtMost,
       targetType: targetType,
       unit: unit,
       howMuchHasBeenDone: howMuchHasBeenDone,
+      noteIds: _noteIds,
     );
 
     // Add save code here
     widget.measurableTask == null
-        ? await _databaseManager.insertMeasurableTask(measurableTask)
-        : await _databaseManager.updateMeasurableTask(measurableTask);
+        ? await _databaseManager.insertTask(measurableTask)
+        : await _databaseManager.updateTask(measurableTask);
     Navigator.pop(context, measurableTask);
   }
 
@@ -254,21 +280,16 @@ class _AddOrEditMeasurableTaskPageState
                 onTargetTypeChanged: (value) =>
                     setState(() => _targetType = value),
               ),
-              DescriptionListTile(
-                  descriptionController: _descriptionController),
+              DescriptionEditorTile(
+                  editorState: _descriptionEditorState),
               if (widget.measurableTask != null)
                 ScheduleListTile(
-                  title: widget.measurableTask!.title,
-                  color: widget.measurableTask!.color,
-                  description: widget.measurableTask!.description,
-                  location: widget.measurableTask!.location,
-                  targetAtLeast: widget.measurableTask!.targetAtLeast,
-                  targetAtMost: widget.measurableTask!.targetAtMost,
-                  targetType: widget.measurableTask!.targetType,
-                  unit: widget.measurableTask!.unit,
-                  subtasks: [],
-                  measurableTaskId: _id,
+                  task: widget.measurableTask!,
                 ),
+              NotesAttachmentListTile(
+                noteIds: _noteIds,
+                onChanged: (ids) => setState(() => _noteIds = ids),
+              ),
               LocationListTile(locationController: _locationController),
               CompletionListTile(
                 isCompleted: _isCompleted,

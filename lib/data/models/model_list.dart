@@ -11,6 +11,9 @@ class TaskList extends Equatable {
   final String id;
   final String title;
   final String description;
+
+  /// JSON document appflowy_editor cho mô tả có định dạng (rỗng = chưa có).
+  final String descriptionDoc;
   final Color color;
   final List<String> dataFiles;
   final DateTime updateTimeStamp;
@@ -19,6 +22,7 @@ class TaskList extends Equatable {
     String? id,
     required this.title,
     String? description,
+    String? descriptionDoc,
     Color? color,
     List<String>? dataFiles,
     DateTime? updateTimeStamp,
@@ -28,6 +32,7 @@ class TaskList extends Equatable {
         //),
         id = id ?? const Uuid().v4(),
         description = description ?? '',
+        descriptionDoc = descriptionDoc ?? '',
         color = color ?? Colors.white,
         dataFiles = dataFiles ?? [],
         updateTimeStamp = updateTimeStamp ?? DateTime.now();
@@ -37,6 +42,7 @@ class TaskList extends Equatable {
       'id': id,
       'title': title,
       'description': description,
+      'descriptionDoc': descriptionDoc,
       'color': color.value,
       'dataFiles': jsonEncode(dataFiles),
       'updateTimeStamp': updateTimeStamp.toIso8601String(),
@@ -48,6 +54,7 @@ class TaskList extends Equatable {
       id: map['id'],
       title: map['title'],
       description: map['description'],
+      descriptionDoc: map['descriptionDoc'] as String?,
       color: Color(map['color']),
       dataFiles: List<String>.from(jsonDecode(map['dataFiles'])),
       updateTimeStamp: DateTime.parse(map['updateTimeStamp']),
@@ -58,11 +65,13 @@ class TaskList extends Equatable {
     String? id,
     String? title,
     String? description,
+    String? descriptionDoc,
   }) {
     return TaskList(
         id: id ?? this.id,
         title: title ?? this.title,
-        description: description ?? this.description);
+        description: description ?? this.description,
+        descriptionDoc: descriptionDoc ?? this.descriptionDoc);
   }
 
   //static TaskList fromJson(JsonMap json) => _$TaskListFromJson(json);
@@ -70,7 +79,8 @@ class TaskList extends Equatable {
   //JsonMap toJson() => _$TaskListToJson(this);
 
   TaskList.create(this.id, this.title, this.description, this.color,
-      this.dataFiles, this.updateTimeStamp);
+      this.dataFiles, this.updateTimeStamp)
+      : descriptionDoc = '';
 
   TaskList.update(
       {required this.id,
@@ -78,7 +88,8 @@ class TaskList extends Equatable {
       required this.description,
       required this.color,
       required this.dataFiles,
-      required this.updateTimeStamp});
+      required this.updateTimeStamp})
+      : descriptionDoc = '';
 
   String toJson() => json.encode(toMap());
 

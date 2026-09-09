@@ -341,9 +341,27 @@ class DayViewNewState<T extends Object?> extends State<DayViewNew<T>> {
 
   TimeIntervalController<T>? _controller;
 
-  late ScrollController _scrollController;
+  // Mỗi trang (mỗi ngày) có ScrollController RIÊNG. Trước đây dùng chung một
+  // controller cho mọi trang -> khi chuyển trang bằng animation (nút </>), hai
+  // trang cùng tồn tại và cùng attach một controller -> Flutter ném lỗi
+  // "ScrollController attached to multiple scroll views" lặp lại mỗi frame ->
+  // treo hẳn. Tách riêng theo index để tránh xung đột.
+  final Map<int, ScrollController> _scrollControllers = {};
 
-  ScrollController get scrollController => _scrollController;
+  /// Offset cuộn ban đầu cho một trang mới tạo.
+  double get _initialScrollOffset =>
+      widget.scrollOffset ??
+      widget.startDuration.inMinutes * widget.heightPerMinute;
+
+  /// Lấy (hoặc tạo) ScrollController cho trang [index].
+  ScrollController _scrollControllerFor(int index) {
+    return _scrollControllers.putIfAbsent(
+      index,
+      () => ScrollController(initialScrollOffset: _initialScrollOffset),
+    );
+  }
+
+  ScrollController get scrollController => _scrollControllerFor(_currentIndex);
 
   late VoidCallback _reloadCallback;
 
@@ -361,9 +379,6 @@ class DayViewNewState<T extends Object?> extends State<DayViewNew<T>> {
     _regulateCurrentDate();
 
     _calculateHeights();
-    _scrollController = ScrollController(
-        initialScrollOffset: widget.scrollOffset ??
-            widget.startDuration.inMinutes * widget.heightPerMinute);
     _pageController = PageController(initialPage: _currentIndex);
     _timeIntervalArranger =
         widget.timeIntervalArranger ?? SideTimeIntervalArranger<T>();
@@ -427,14 +442,19 @@ class DayViewNewState<T extends Object?> extends State<DayViewNew<T>> {
   void dispose() {
     _controller?.removeListener(_reloadCallback);
     _pageController.dispose();
+    for (final controller in _scrollControllers.values) {
+      controller.dispose();
+    }
+    _scrollControllers.clear();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeAreaWrapper(
-      option: widget.safeAreaOption,
-      child: LayoutBuilder(builder: (context, constraint) {
+    return //SafeAreaWrapper(
+      //option: widget.safeAreaOption,
+      //child:
+      LayoutBuilder(builder: (context, constraint) {
         _width = widget.width ?? constraint.maxWidth;
         _updateViewDimensions();
         return SizedBox(
@@ -541,7 +561,7 @@ class DayViewNewState<T extends Object?> extends State<DayViewNew<T>> {
                             minuteSlotSize: widget.minuteSlotSize,
                             scrollNotifier: _scrollConfiguration,
                             fullDayEventBuilder: _fullDayEventBuilder,
-                            scrollController: _scrollController,
+                            scrollController: _scrollControllerFor(index),
                             showHalfHours: widget.showHalfHours,
                             showQuarterHours: widget.showQuarterHours,
                             halfHourIndicatorSettings:
@@ -560,7 +580,8 @@ class DayViewNewState<T extends Object?> extends State<DayViewNew<T>> {
             ],
           ),
         );
-      }),
+      },
+      //),
     );
   }
 
@@ -846,7 +867,12 @@ class DayViewNewState<T extends Object?> extends State<DayViewNew<T>> {
         _currentIndex = index;
       });
     }
-    animateToDuration(widget.startDuration);
+    // Cuộn tới startDuration cho trang mới — nhưng chỉ SAU khi frame dựng xong
+    // và trên đúng ScrollController của trang đích, tránh gọi animateTo lúc
+    // controller chưa attach (gây lỗi/treo khi đang chuyển trang).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      animateToDuration(widget.startDuration);
+    });
     widget.onPageChange?.call(_currentDate, _currentIndex);
   }
 
@@ -983,13 +1009,17 @@ class DayViewNewState<T extends Object?> extends State<DayViewNew<T>> {
     );
   }
 
-  /// Animate to specific scroll controller offset
+  /// Animate to specific scroll controller offset (trên trang đang hiển thị).
   void animateTo(
     double offset, {
     Duration duration = const Duration(milliseconds: 200),
     Curve curve = Curves.linear,
   }) {
-    _scrollController.animateTo(
+    final controller = _scrollControllerFor(_currentIndex);
+    // Chỉ cuộn khi controller đã attach đúng một view; nếu chưa (đang chuyển
+    // trang) thì bỏ qua để tránh lỗi "attached to multiple/no scroll views".
+    if (controller.positions.length != 1) return;
+    controller.animateTo(
       offset,
       duration: duration,
       curve: curve,

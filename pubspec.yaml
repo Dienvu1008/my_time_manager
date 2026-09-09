@@ -1,7 +1,7 @@
 name: my_time_manager
 description: A powerful application to manage your time
 publish_to: 'none' 
-version: 1.4.5+17
+version: 1.5.3+23
 environment:
   sdk: '>=3.0.1 <4.0.0'
 dependencies:
@@ -13,41 +13,102 @@ dependencies:
   url_launcher: ^6.1.8
   sqflite: ^2.0.0+2
   intl: any
-  bloc: ^8.1.1
-  flutter_bloc: ^8.1.1
+  bloc: ^9.0.0
+  flutter_bloc: ^9.0.0
   equatable: ^2.0.5
-  uuid: ^3.0.7
+  uuid: ^4.5.0
   json_annotation: ^4.6.0
   meta: ^1.7.0
-  #firebase_core: ^2.13.1
-  #firebase_auth: ^4.6.2
-  #google_sign_in: ^5.2.1
+  # --- Authentication (Firebase) ---
+  # firebase_core: khởi tạo Firebase, bắt buộc cho mọi plugin Firebase.
+  # firebase_auth: đăng nhập/đăng ký email-password, Google, reset mật khẩu,
+  #                theo dõi trạng thái đăng nhập và tự persist session.
+  # google_sign_in: flow Google Sign-In native trên Android (không hỗ trợ Windows).
+  # http: dùng cho flow OAuth thủ công của Google trên Windows (đổi authorization
+  #       code lấy token qua endpoint của Google).
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.0
+  # google_sign_in giữ ở dòng 6.x: bản 7.x viết lại API hoàn toàn (bỏ
+  # GoogleSignIn(), signIn(), authentication.accessToken, canAccessScopes...),
+  # trong khi AuthRepository của app dùng API 6.x. firebase_auth KHÔNG phụ thuộc
+  # google_sign_in nên giữ 6.x an toàn, tránh viết lại toàn bộ flow OAuth.
+  google_sign_in: ^6.2.1
+  http: ^1.2.0
+  # cloud_firestore: đồng bộ dữ liệu focus session lên đám mây. Cùng dòng với
+  # firebase_core 3.x. Chỉ hoạt động khi Firebase đã được cấu hình + đăng nhập.
+  cloud_firestore: ^6.0.0
+  # flutter_local_notifications: thông báo hệ thống thật khi hết giờ (mobile).
+  flutter_local_notifications: ^18.0.1
+  # audioplayers: phát âm thanh báo hết giờ (chủ yếu cho desktop).
+  audioplayers: ^6.1.0
   shared_preferences: ^2.1.2
   sqflite_common_ffi: ^2.2.5
+  # Pinned to the last real (pre-eol) release so sqlite3.dll is bundled on
+  # Windows via the classic CMake build scripts. The 0.6.0+eol release is an
+  # empty stub, and sqlite3 3.x uses experimental build hooks that do not
+  # bundle the DLL on Windows by default.
+  sqlite3_flutter_libs: 0.5.42
+  sqlite3: ^2.9.4
   path_provider: ^2.0.15
-  font_awesome_flutter: ^10.5.0
-  flutter_native_timezone: ^2.0.0
+  # font_awesome_flutter: icon GitHub trong màn About Us (FaIcon/FontAwesomeIcons).
+  # Bản 11.x: FaIconData không còn extends IconData (IconData đã bị đánh dấu
+  # final trong Flutter mới) -> bắt buộc dùng bản này để build được.
+  font_awesome_flutter: ^11.0.0
+  #flutter_native_timezone: ^2.0.0  # đã ngừng hỗ trợ -> thay bằng flutter_timezone
   google_maps_flutter: ^2.1.1
-  file_picker: ^5.5.0
+  google_mobile_ads: ^9.1.0
+  webview_flutter_android: ^4.10.9
+  webview_flutter: ^4.10.0
+  file_picker: ^9.0.0
   image_picker: ^1.0.1
-  #device_calendar: ^0.1.1
+  # device_calendar: đọc/ghi lịch hệ thống của thiết bị (Android/iOS). Không hỗ
+  # trợ desktop -> DeviceCalendarService tự trả rỗng trên Windows.
+  device_calendar: ^4.3.3
+  # timezone: dùng trực tiếp TZDateTime khi tạo/sửa event lịch thiết bị
+  # (device_calendar yêu cầu TZDateTime) và khi lên lịch notification.
+  timezone: ^0.9.0
+  # flutter_timezone: lấy tên múi giờ hiện tại của thiết bị để đặt tz.local,
+  # đảm bảo notification được lên lịch đúng giờ địa phương. Cũng thay thế cho
+  # flutter_native_timezone (đã ngừng hỗ trợ). Bản 5.x trả về TimezoneInfo,
+  # dùng .identifier để lấy tên IANA.
+  flutter_timezone: ^5.0.0
   table_calendar: ^3.0.9
   flutter_background_service: ^5.0.5
-  flutter_local_notifications: ^16.3.0
-  device_info_plus: ^9.1.1
+  #flutter_local_notifications: ^16.2.0
+  device_info_plus: ^12.0.0
   flutter_background_service_android: ^6.2.2
+  open_file: any
+  # csv: xuất/nhập dữ liệu dạng CSV (export ra để xem/sửa ngoài).
+  csv: ^8.0.0
+  # appflowy_editor: trình soạn thảo block (rich text) cho tính năng Ghi chú.
+  # Dùng nhánh git 'main' (v6.1.0) vì bản pub.dev cũ khai báo intl ^0.19.0 xung
+  # đột với flutter_localizations; nhánh main đã dùng intl ^0.20.2 và tương
+  # thích Flutter mới (DeltaTextInputClient).
+  appflowy_editor:
+    git:
+      url: https://github.com/AppFlowy-IO/appflowy-editor.git
+      ref: "main"
+  # path: nối đường dẫn file (join) khi ghi file export. Trước đây dùng gián
+  # tiếp qua sqflite; khai báo tường minh vì đã dùng trực tiếp.
+  path: ^1.8.0
+  # Hai package local đã được đưa vào trong dự án (thư mục packages/) để dự án
+  # tự chứa, không phụ thuộc vị trí bên ngoài trên ổ cứng.
   time_manager:
-    path: ../time_manager
+    path: packages/time_manager
   calendar_widgets:
-    path: ../calendar_widgets
+    path: packages/calendar_widgets
 
-  
+# appflowy_editor (main) cần file_picker ^10 và device_info_plus ^12, cao hơn
+# ràng buộc của app (^9 / ^11). Ép lên bản editor cần — API app dùng
+# (saveFile/pickFiles, DeviceInfoPlugin) ổn định ở các bản này.
+dependency_overrides:
+  file_picker: ^10.3.10
+  device_info_plus: ^12.3.0
 
-  
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^6.0.0
   build_runner: ^2.1.7
   json_serializable: ^6.3.1
 flutter:
@@ -55,5 +116,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    # Âm thanh báo hết giờ cho Focus Timer (desktop). Đặt file alarm.mp3 vào
+    # assets/sounds/. Nếu chưa có file, app vẫn chạy (lỗi phát âm thanh được bỏ qua).
+    - assets/sounds/
 
 

@@ -1,190 +1,506 @@
 # My Time Manager
 
-<p align="center">
-<img src="./res/ic_launcher.png" height="100" alt="My Time Manager" />
-</p>
+A cross-platform time-management application built with **Flutter**: manage tasks, calendar events, notes, and a Pomodoro focus timer, plus supporting features such as trash, archive, backup/restore, and calendar synchronization.
 
-We are aiming to create the simplest yet most detailed app to manage your time for all your activities in life. You can use this app as a to-do list, calendar, habit tracker, pomodoro timer for focus mode, and you can review statistics that reflect your efforts at any given time. 
+- **Supported platforms:** Android, iOS, Windows, Linux, macOS, Web (some features are platform-dependent — see [Platform notes](#platform-notes)).
+- **Version:** `1.5.3+23` (see `pubspec.yaml`).
+- **Storage:** local-first with SQLite; optional cloud sync via Firebase.
 
-This app is continuously being developed and refined. In the future, the app will be available on multiple platforms such as iOS, MacOS, Windows, Linux... and you will be able to sync data across all platforms.
+---
 
-<div style="display: flex; justify-content: space-around;">
-<div>
+## Table of contents
 
-**Free Version**
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [User guide](#user-guide)
+- [Getting started (for developers)](#getting-started-for-developers)
+- [Project architecture](#project-architecture)
+  - [Layer overview](#layer-overview)
+  - [Directory structure](#directory-structure)
+  - [Data layer](#data-layer)
+  - [Data models](#data-models)
+  - [State management](#state-management)
+  - [Startup and navigation](#startup-and-navigation)
+  - [Local packages](#local-packages)
+- [Database schema](#database-schema)
+- [Calendar sync flow](#calendar-sync-flow)
+- [Platform notes](#platform-notes)
+- [Notable dependency constraints](#notable-dependency-constraints)
 
-[<img src="./res/get_it_on_google_play.png"
-alt="Get it on Google Play" 
-height="80">](https://play.google.com/store/apps/details?id=com.dienvu.mytimemanager.free)
+---
 
-</div>
-<div>
+## Screenshots
 
-**Paid Version**
+> Images are stored in the `res/` folder of the repository.
 
-[<img src="./res/get_it_on_google_play.png"
-alt="Get it on Google Play" 
-height="80">](https://play.google.com/store/apps/details?id=com.dienvu.mytimemanager.pro)
+**Overview & task types**
 
-</div>
-</div>
+| Overview | Task | Measurable task | Task with subtasks |
+| --- | --- | --- | --- |
+| ![Overview](res/overview.jpg) | ![Task](res/task.jpg) | ![Measurable task](res/measurabletask.jpg) | ![Task with subtasks](res/taskwithsubtasks.jpg) |
 
-**THE DIFFERENCE COMPARED TO THOUSANDS OF OTHER TIME MANAGEMENT APPLICATIONS?**
+**Planning & timeline**
 
-This application can help you create, track, and edit every detail in your long-term plans or daily activities in a flexible and natural way.
+| Planned | Set time interval | Plan tracking | Timeline |
+| --- | --- | --- | --- |
+| ![Planned](res/planned.jpg) | ![Set time interval](res/settimeinterval.jpg) | ![Plan tracking](res/plan-tracking.jpg) | ![Timeline](res/timeline.jpg) |
 
-For example, in your studies, you need to read a book within a certain period of time.
+**Calendar views**
 
-Day 1:
+| Daily | Weekly | Monthly |
+| --- | --- | --- |
+| ![Daily view](res/example-daily-view.jpg) | ![Weekly view](res/example-weekly-view.jpg) | ![Monthly view](res/example-monthly-view.jpg) |
 
-Time: 9-11am. Read chapters 1,2. Location: school library. Note: remember to bring your student card to borrow books at the library
+**Light / dark mode**
 
-Time: 3-5pm. Read chapter 3. Location: Cafeteria.
+![Light and dark mode](res/dark_light_mode.gif)
 
-Time: 8-9pm. Continue reading chapter 3. Location: At home.
+---
 
-Day 2:
+## Features
 
-Time: 8-10am. Read chapter 4. Location: At home.
+- **Task management:** create/edit tasks that belong to task lists. A single task can be:
+  - a **plain task**,
+  - a **measurable task** (`isMeasurable`: at-least / at-most / about target, unit, progress done),
+  - a task **with subtasks** — each subtask can itself be measurable and be scheduled independently.
+- **Time planning (time intervals):** attach time ranges (start/end date and time) to a task or subtask; supports notification reminders.
+- **Calendar:** a `CalendarEvent` model compatible with Google Calendar (supports lists, soft-delete, archive, and sync fields).
+- **Notes:** block/rich-text editor based on `appflowy_editor`.
+- **Focus timer (Pomodoro):** a globally running focus timer with a floating (PiP) window, alarm sound, and system notifications.
+- **Trash:** soft-delete with automatic purge after a configurable retention period (default 30 days).
+- **Archive:** hide tasks/lists from the main screens without deleting them.
+- **Backup & restore:** export/import data (JSON/CSV/text) via `backup_service`/`import_service`; every record carries a `deviceId` to help resolve conflicts on import.
+- **Calendar sync:** with the device calendar and with Google Calendar.
+- **Authentication (optional):** Firebase Auth (email/password, Google Sign-In). The app still runs if Firebase is not configured.
+- **UI customization:** Material 2/3, light/dark/system, color from a seed or from an image, optional bottom bar, and **13 languages** (cs, de, en, es, fr, it, ja, ko, no, ru, sv, vi, zh).
 
-Day 3:…
+---
 
-You can create a list named 'Research and Study' and add a task 'Read a book' with details as above. When you want to track or change the plan for the task 'Read a book', you just need to click on the item of the task 'Read a book' and review all the details of this task. You can also review the time frames of this task on the daily, weekly, or monthly calendar screens.
+## User guide
 
-Another example for tracking your daily activities. You want to plan for the Squat exercise as below:
+> This section describes end-user usage. The concrete screen layout is driven by `Home` (bottom navigation bar or side rail, depending on settings).
 
-Monday:
+**Tasks & lists**
+1. Open the **Tasks** screen to view lists and tasks (Overview / Timeline).
+2. Create a new task. To track it quantitatively, enable the **measurable target** (enter a target and a unit). To break it down, add **subtasks**.
+3. On the task edit page, use the **"Schedule"** tile to set time intervals; you can add notification **reminders**.
 
-Time: 6-7pm. Goal: at least 100 times. Location: gym room. Note: don’t forget to bring a water bottle!
+**Calendar**
+- The **Calendar** screen shows events. An event can belong to a list and can be synced with the device calendar and Google Calendar (once configured / signed in).
 
-Wednesday:
+**Notes**
+- The **Notes** screen lets you compose rich-text notes. Notes can be attached to tasks/time intervals.
 
-Time: 12-1pm. Goal: at least 50 times. Location: at home.
+**Focus timer (Pomodoro)**
+- Pick a task (or none) and start a focus session. Enable the **run-in-background** option so the timer keeps running when you leave the screen; a floating window shows progress.
 
-Friday:
+**Trash & archive**
+- Deleted items go to **Trash** and can be restored; the system auto-purges them after the configured retention period.
+- Use **Archive** to hide items from the main screens while keeping their data.
 
-Time: 6pm- unknown end time. Goal: at least 100 times. Location: at home.
+**Backup / restore**
+- Go to **Settings** to export data (JSON/CSV/text) or import from a file. Records carry a `deviceId` to help merge data imported from another device.
 
-Sunday: …
+**Appearance & language**
+- In **Settings**: switch light/dark, Material 2/3, choose colors (seed or image based), task card style, which buttons appear in the AppBar, and the language.
 
-You can create a list named ‘Workout’ and add a quantitative task with the title ‘Squat’ and add all the details in the plan above. Your plans will be displayed as below:
+---
 
-<div style="text-align: center">
-    <table>
-        <tr>
-            <td style="text-align: center">
-                <a href="./res/example-read-a-book.jpg">
-                    <img src="./res/example-read-a-book.jpg" width="200"/>
-                </a>
-            </td>            
-            <td style="text-align: center">
-                <a href="./res/example-squat.jpg">
-                    <img src="./res/example-squat.jpg" width="200"/>
-                </a>
-            </td>
-            <td style="text-align: center">
-                <a href="./res/example-timeline-show.jpg">
-                    <img src="./res/example-timeline-show.jpg" width="200" />
-                </a>
-            </td>
-        </tr>
-        <tr>
-            <td style="text-align: center">
-                <a href="./res/example-daily-view.jpg">
-                    <img src="./res/example-daily-view.jpg" width="200"/>
-                </a>
-            </td>
-            <td style="text-align: center">
-                <a href="./res/example-weekly-view.jpg">
-                    <img src="./res/example-weekly-view.jpg" width="200"/>
-                </a>
-            </td>
-            <td style="text-align: center">
-                <a href="./res/example-monthly-view.jpg">
-                    <img src="./res/example-monthly-view.jpg"  width="200"/>
-                </a>
-            </td>
-        </tr>
-    </table>
-</div>
+## Getting started (for developers)
 
+**Requirements**
+- Flutter SDK compatible with Dart `>=3.0.1 <4.0.0`.
+- On Windows desktop: a C++/CMake build toolchain (SQLite runs through FFI; the DLL is bundled by `sqlite3_flutter_libs`).
 
+**Install & run**
+```bash
+flutter pub get
+flutter run                 # choose an available device/platform
+```
 
-**Application view**
+**Static analysis**
+```bash
+flutter analyze
+```
+> Temporary backup folders are excluded from analysis in `analysis_options.yaml`.
 
-<div style="text-align: center">
-    <table>
-        <tr>
-            <td style="text-align: center">
-                <a href="./res/overview.jpg">
-                    <img src="./res/overview.jpg" width="200"/>
-                </a>
-            </td>            
-            <td style="text-align: center">
-                <a href="./res/timeline.jpg">
-                    <img src="./res/timeline.jpg" width="200"/>
-                </a>
-            </td>
-            <td style="text-align: center">
-                <a href="./res/plan-tracking.jpg">
-                    <img src="./res/plan-tracking.jpg" width="200" />
-                </a>
-            </td>
-        </tr>
-        <tr>
-            <td style="text-align: center">
-                <a href="./res/task.jpg">
-                    <img src="./res/task.jpg" width="200"/>
-                </a>
-            </td>
-            <td style="text-align: center">
-                <a href="./res/measurabletask.jpg">
-                    <img src="./res/measurabletask.jpg" width="200"/>
-                </a>
-            </td>
-            <td style="text-align: center">
-                <a href="./res/taskwithsubtasks.jpg">
-                    <img src="./res/taskwithsubtasks.jpg"  width="200"/>
-                </a>
-            </td>
-        </tr>
-    </table>
-</div>
+**Firebase (optional)**
+- If you have not run `flutterfire configure`, `firebase_options.dart` is a placeholder and the app runs in **no-auth mode** (sign-in is skipped, local features still work). Once configured, sign-in and Firestore sync become available.
 
-**See video**
+**Code generation (if you change models that use json_serializable)**
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
 
-[![Watch the video](https://i.ytimg.com/vi/SO-OVcBwWQE/oar2.jpg?sqp=-oaymwEdCJUDENAFSFWQAgHyq4qpAwwIARUAAIhCcAHAAQY=&rs=AOn4CLBF2t8dR2R-seFsPHIdsmcPoYg-kA)](https://www.youtube.com/shorts/SO-OVcBwWQE)
+---
 
+## Project architecture
 
-### Still To Do:
-This project is continuously being refined. Some interface elements and functions similar to those of Google Calendar, Samsung Calendar, Microsoft To Do, etc., will gradually be added and continuously improved in the future.
+### Layer overview
 
-* ~~Add measurable tasks and tasks with subtasks models.~~
-* ~~Add the function to switch between light and dark mode.~~
-* ~~Add the function to select colors for the theme.~~
-* ~~Add the function to switch the interface between Material Design 2 and 3.~~
-* ~~Add the function to select language.~~
-* Add file attachment feature for tasks and events.
-* Add alarm feature for tasks and events.
-* Add account creation feature and sync data with Firebase.
-* Add offline data backup feature.
-* Add focus timer and concentration music feature. Create statistical graphs of focused time periods by day, week, month, year.
-* Add day, week, month, year views for the calendar. Add a function that allows adding new tasks and events or planning for pre-created tasks and events by clicking on the time slots in the calendar.
-* Create widgets to display on the home screen and lock screen.
-* Modify widgets for large screen types of tablets, windows, macos.
+The app follows a **local-first** model with clear layering:
 
+```
+UI (screens / component_widgets / view)
+        │  reads/writes through
+State management (BLoC/Cubit + ChangeNotifier)
+        │
+Data layer (DatabaseManager, services: backup/import, sync, device_calendar)
+        │
+Persistence (SQLite via sqflite / sqflite_common_ffi)   +   Optional cloud (Firebase Auth / Firestore)
+```
 
-### Support us
-We hope this application will be useful for you in managing your time, helping you achieve many important goals in life, and of course, don’t forget to take time to enjoy your life.
+- The **UI** does not access the database directly in scattered places; most access goes through the `DatabaseManager` singleton and controllers/blocs.
+- **Cloud is optional**: if Firebase is not ready, the sync layers use **NoOp** implementations so the app runs fully offline.
 
-We’re glad to hear that you find the application useful! Your support and feedback are greatly appreciated. If you enjoy using the app, please consider rating it on the app store and sharing it with your friends. This helps us reach more people and continue to improve the app. 
+### Directory structure
 
-We understand the importance of a clean, ad-free user experience, and we strive to maintain this. However, the development and maintenance of the app do require financial resources. If you’re able to, consider upgrading to the paid version of the software or buying us a cup of coffee. Your support goes a long way in helping us continue to develop and improve the app. Thank you!
+```
+lib/
+├── main.dart                  # Entry point: init notifications, deviceId, SQLite FFI, purge trash, Firebase
+├── firebase_options.dart      # Firebase configuration (placeholder until configured)
+├── app/
+│   ├── app.dart               # Root App widget: MaterialApp, theme, locale, AppBloc, global providers
+│   └── app_localizations.dart # Translations (13 languages)
+├── auth/                       # Authentication (Firebase): bloc/ data/ view/, auth_config.dart
+├── data/
+│   ├── database/              # database_manager.dart (schema, CRUD, migration), sample_data.dart
+│   ├── models/                # Data models (see below)
+│   ├── backup/                # backup_service.dart (export), import_service.dart (import)
+│   ├── sync/                  # calendar_sync_manager + device/google calendar sync services
+│   ├── device_calendar/       # device_calendar_service.dart (read/write the system calendar)
+│   └── device_id_provider.dart# Device identity for export/import
+├── home/                       # Home shell, data_controller (ChangeNotifier), timetable
+├── screen_tasks/               # Task screens (overview, timeline) + component_widgets
+├── screen_calendar/            # Calendar screens
+├── screen_notes/               # Notes (appflowy_editor)
+├── screen_focus_timer/         # Pomodoro: bloc/ data/ view/ + timer_bloc.dart
+├── screen_archive/             # Archive
+├── screen_trash/               # Trash
+├── screen_settings/            # Settings
+├── screen_about_us/            # About
+├── screen_material_design/     # Material Design showcase
+├── ads_mob/                    # AdMob integration (currently disabled in main.dart)
+├── shared/                     # appflowy_description.dart (helper for the description editor)
+└── utils/                      # constants.dart, utils.dart, widget_coming_soon.dart
 
-[<img src="./res/paypal.jpg"
-alt="Get it on Google Play" 
-height="40">](https://www.paypal.me/dienvu1008)
+packages/
+├── time_manager/               # Local plugin (rrule, timezone) — time/recurrence logic, has native code
+└── calendar_widgets/           # Local package — customized calendar widgets (table calendar)
+```
 
-<img src="./res/techcombank.jpg" height="200" alt="My Time Manager" />
+Repeated naming convention across features: `bloc/` (state), `data/` (repository/service), `view/` (UI), and `component_widgets/` (reusable child widgets).
 
-<img src="./res/momo.jpg" height="200" alt="My Time Manager" />
+### Data layer
+
+- **`DatabaseManager`** (`lib/data/database/database_manager.dart`): a singleton that opens SQLite, defines the schema, provides CRUD for every table, and manages **version-based migration**. It also owns soft-delete/trash, archive, reminders, and the list of tables used for export/import.
+- **Services:**
+  - `backup/backup_service.dart` — exports data (JSON/CSV/text). CSV uses `CsvEncoder` from the `csv` 8.x package.
+  - `backup/import_service.dart` — imports data from a file.
+  - `sync/` — `calendar_sync_manager.dart` orchestrates; `device_calendar_sync_service.dart` and `google_calendar_sync_service.dart` are the two sync backends.
+  - `device_calendar/device_calendar_service.dart` — reads/writes the system calendar (mobile only).
+- **`device_id_provider.dart`** — generates/loads `deviceId`; every record written on this machine carries the `deviceId` to help resolve conflicts on import.
+
+### Data models
+
+In `lib/data/models/`:
+
+- **`model_task.dart` — the unified `Task` model (core).** The app previously split tasks into 3 types (`Task`, `MeasurableTask`, `TaskWithSubtasks`); they are now merged into **one** `Task`:
+  - `isMeasurable = true` ⇒ the task has a measurement target (`targetType`/`targetAtLeast`/`targetAtMost`/`unit`/`howMuchHasBeenDone`).
+  - a non-empty `subtasks` list ⇒ the task has subtasks (`hasSubtasks` is a convenience getter).
+  - `Subtask` has `id`, `title`, `isCompleted`, and can also be measurable.
+  - `TargetType`: `atLeast`, `atMost`, `about`.
+- **`model_measurable_task.dart` / `model_task_with_subtasks.dart`** — now just **re-export files** for backward compatibility, exporting `Task`/`Subtask`/`TargetType` from `model_task.dart`.
+- **`model_list.dart`** — `TaskList` (a list that holds tasks/events).
+- **`model_time_interval.dart`** — `TimeInterval` (a planned time range), linked to a task via `taskId` and to a subtask via `subtaskId`.
+- **`model_calendar_event.dart`** — `CalendarEvent`, compatible with Google Calendar.
+- **`model_note.dart`** — `Note`.
+- **`models.dart`** — barrel export.
+
+### State management
+
+A mix of mechanisms, chosen by scope:
+
+- **BLoC / Cubit (`bloc`, `flutter_bloc`):**
+  - `AppBloc` (in `app/app.dart`) — app-wide UI configuration (theme, color, language, settings), **persisted through `SharedPreferences`**.
+  - `AuthBloc` (`auth/bloc`) — sign-in state.
+  - `PomodoroBloc` — provided **globally** (a single instance that lives for the app's whole lifetime) so the timer keeps running across screens.
+- **`ChangeNotifier`:** `home/data_controller.dart` (`DataController`) manages the calendar/time-interval display data.
+- **Repository/Service:** `FocusRepository` (local-first) with a Firestore sync layer enabled when Firebase is ready, otherwise a `NoOpFocusSyncService`.
+
+### Startup and navigation
+
+Sequence in `main.dart`:
+1. `WidgetsFlutterBinding.ensureInitialized()`.
+2. Initialize `NotificationService` (loads timezone) and request notification permissions.
+3. Initialize `DeviceIdProvider` and set the `deviceId` on `DatabaseManager`.
+4. On desktop: `sqfliteFfiInit()` + set `databaseFactory = databaseFactoryFfi`.
+5. Purge expired trash (`purgeExpiredTrash`; retention days read from `SharedPreferences`).
+6. Initialize Firebase inside a `try/catch`; if it fails or is unconfigured, `firebaseReady = false`.
+7. `runApp(App(...))`.
+
+`App` (in `app/app.dart`) builds `MaterialApp` with theme/locale from `AppBloc`, provides `FocusRepository` + `PomodoroBloc` globally, and:
+- If Firebase is ready ⇒ provides `AuthRepository`/`AuthBloc` and wraps `Home` in **`AuthGate`** (redirects based on sign-in state). There is an `AuthConfig.bypassAuth` flag to go straight to `Home` during testing.
+- Otherwise ⇒ goes straight to `Home` (no-auth mode).
+- Every screen is wrapped in `PomodoroFloatingOverlay` (the floating Pomodoro window).
+
+> **AdMob** (`ads_mob/`, `google_mobile_ads`) is currently **disabled** in `main.dart`; re-enable it following the comment at the end of `main()` once you have a valid App ID.
+
+### Local packages
+
+Located in `packages/`, referenced by `path` in `pubspec.yaml` so the project is self-contained:
+
+- **`time_manager`** — an internal plugin (declares native code for Android/iOS/Windows/…): handles time and recurrence logic (`rrule`, `timezone`).
+- **`calendar_widgets`** — a calendar-widget package (a table-calendar variant) used by the calendar screens.
+
+---
+
+## Database schema
+
+- Current schema version: **11** (see `_initDatabase`/`_onCreate`/`_onUpgrade`).
+- SQLite runs through **FFI** on desktop (`sqflite_common_ffi`). Foreign keys are enabled (`PRAGMA foreign_keys = ON`).
+- Nested objects (subtasks, attendees, reminders, recurrence, etc.) are stored as **JSON strings** in `TEXT` columns.
+
+### Tables
+
+**`tasklists`** — task/event lists.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | TEXT | Primary key |
+| title | TEXT | |
+| description | TEXT | Plain-text description |
+| descriptionDoc | TEXT | appflowy_editor JSON (rich text) |
+| color | INTEGER | ARGB value |
+| dataFiles | TEXT | JSON list of attachment paths |
+| updateTimeStamp | TEXT | |
+| isDeleted | INTEGER | Soft-delete, default 0 |
+| deletedAt | TEXT | |
+| isArchived | INTEGER | Default 0 |
+| archivedAt | TEXT | |
+| deviceId | TEXT | Source device |
+
+**`tasks`** — the unified task model.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | TEXT | Primary key |
+| taskListId | TEXT | FK → `tasklists(id)` ON DELETE CASCADE |
+| isCompleted | INTEGER | NOT NULL |
+| isImportant | INTEGER | NOT NULL |
+| title | TEXT | |
+| description | TEXT | |
+| descriptionDoc | TEXT | Rich-text JSON |
+| location | TEXT | |
+| color | INTEGER | |
+| tags | TEXT | JSON list |
+| dataFiles | TEXT | JSON list |
+| noteIds | TEXT | JSON list of attached note ids |
+| isMeasurable | INTEGER | NOT NULL, default 0 |
+| targetAtLeast | REAL | |
+| targetAtMost | REAL | |
+| targetType | INTEGER | `TargetType` index |
+| unit | TEXT | |
+| howMuchHasBeenDone | REAL | |
+| subtasks | TEXT | JSON list of `Subtask` |
+| updateTimeStamp | TEXT | |
+| isDeleted / deletedAt | INTEGER / TEXT | Soft-delete |
+| isArchived / archivedAt | INTEGER / TEXT | Archive |
+| deviceId | TEXT | |
+
+**`timeintervals`** — planned time ranges for a task or subtask.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | TEXT | Primary key |
+| isCompleted | INTEGER | NOT NULL |
+| isImportant | INTEGER | NOT NULL |
+| taskId | TEXT | FK → `tasks(id)` ON DELETE CASCADE |
+| subtaskId | TEXT | Points to a subtask (subtasks live inside `tasks.subtasks`) |
+| location | TEXT | |
+| color | INTEGER | |
+| title | TEXT | |
+| description | TEXT | |
+| descriptionDoc | TEXT | Rich-text JSON |
+| startDate / endDate | TEXT | |
+| startTime / endTime | INTEGER | Minutes-of-day (nullable) |
+| isStartDateUndefined | INTEGER | NOT NULL |
+| isEndDateUndefined | INTEGER | NOT NULL |
+| isStartTimeUndefined | INTEGER | NOT NULL |
+| isEndTimeUndefined | INTEGER | NOT NULL |
+| targetAtLeast / targetAtMost | REAL | |
+| targetType | INTEGER | |
+| unit | TEXT | |
+| howMuchHasBeenDone | REAL | |
+| subtasks | TEXT | JSON list |
+| dataFiles | TEXT | JSON list |
+| noteIds | TEXT | JSON list |
+| updateTimeStamp | TEXT | |
+| timeZone | TEXT | |
+| deviceId | TEXT | |
+| reminders | TEXT | JSON list of minutes-before for notifications |
+
+**`calendar_events`** — Google-Calendar-compatible events (added in v11).
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | TEXT | Primary key |
+| taskListId | TEXT | FK → `tasklists(id)` ON DELETE CASCADE |
+| title / description / location | TEXT | |
+| color | INTEGER | |
+| colorId | TEXT | Google color id |
+| startDateTime / endDateTime | TEXT | |
+| isAllDay | INTEGER | NOT NULL, default 0 |
+| recurrence | TEXT | JSON (RRULE lines) |
+| recurringEventId | TEXT | |
+| originalStartTime | TEXT | |
+| attendees | TEXT | JSON list |
+| organizerEmail / organizerDisplayName / creatorEmail | TEXT | |
+| status / visibility / transparency | TEXT | |
+| guestsCanInviteOthers | INTEGER | NOT NULL, default 1 |
+| guestsCanModify | INTEGER | NOT NULL, default 0 |
+| guestsCanSeeOtherGuests | INTEGER | NOT NULL, default 1 |
+| reminders | TEXT | JSON list |
+| conferenceUrl | TEXT | |
+| dataFiles / noteIds | TEXT | JSON list |
+| iCalUID | TEXT | |
+| googleEventId | TEXT | Remote event id (set once synced) |
+| calendarId | TEXT | |
+| etag | TEXT | For optimistic concurrency (If-Match) |
+| sequence | INTEGER | NOT NULL, default 0 |
+| created / updated | TEXT | |
+| syncStatus | TEXT | `EventSyncStatus` (localOnly / pendingUpdate / pendingDelete / synced) |
+| isDeleted / deletedAt | INTEGER / TEXT | Soft-delete |
+| isArchived / archivedAt | INTEGER / TEXT | Archive |
+| deviceId | TEXT | |
+
+**`events`** — a simpler legacy event table (kept as-is).
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | TEXT | Primary key |
+| taskListId | TEXT | FK → `tasklists(id)` ON DELETE CASCADE |
+| title / description / location | TEXT | |
+| color | INTEGER | |
+| startTimeStamp / endTimeStamp | INTEGER | |
+| tags / dataFiles | TEXT | JSON list |
+| updateTimeStamp | TEXT | |
+| deviceId | TEXT | |
+
+**`focus_sessions`** — recorded Pomodoro sessions (no FK: `taskId` may reference different sources or be null; `taskTitle` is stored so stats survive task deletion).
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | TEXT | Primary key |
+| taskType | INTEGER | NOT NULL |
+| taskId | TEXT | |
+| taskTitle | TEXT | Snapshot of the task title |
+| startTime / endTime | TEXT | NOT NULL |
+| focusDurationSeconds | INTEGER | NOT NULL |
+| completed | INTEGER | NOT NULL |
+| synced | INTEGER | NOT NULL (Firestore sync flag) |
+| deviceId | TEXT | |
+
+**`notes`** — rich-text notes.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | TEXT | Primary key |
+| title | TEXT | |
+| contentJson | TEXT | appflowy_editor document JSON |
+| createdAt / updatedAt | TEXT | |
+| deviceId | TEXT | |
+
+### Triggers
+
+Created by `_createTaskTriggers` (used both on create and on the v9 upgrade):
+- `update_timeintervals_of_task_title_color_isImportant` — `AFTER UPDATE OF title, color, isImportant ON tasks`: propagates title/color/importance changes down to the task's time intervals.
+- `delete_timeintervals_of_task` — `AFTER DELETE ON tasks`: removes the task's time intervals.
+
+### Migration milestones (`_onUpgrade`)
+
+`_onUpgrade` applies steps sequentially (`if (oldVersion < N)`); each step only touches tables that **already exist at that version**.
+
+| Version | Change |
+| --- | --- |
+| v2 | Add `focus_sessions` table |
+| v3 | Add soft-delete columns (`isDeleted`/`deletedAt`) |
+| v4 | Add `deviceId` column |
+| v5 | Add `reminders` to `timeintervals` |
+| v6 | Add `notes` table |
+| v7 | Add `descriptionDoc` column |
+| v8 | Add `noteIds` column |
+| **v9** | Merge the 3 task types into the unified `Task`; rebuild `tasks`/`timeintervals` and triggers |
+| v10 | Add archive columns (`isArchived`/`archivedAt`) |
+| **v11** | Add the `calendar_events` table |
+
+> Tables introduced in a later version (e.g. `calendar_events` in v11) are **not** altered by earlier steps — they are created with all their columns already present.
+
+---
+
+## Calendar sync flow
+
+`CalendarSyncManager` (in `data/sync/`) is the high-level orchestrator. It connects `AuthRepository.calendarAccessToken` (a real OAuth access token) to `GoogleCalendarSyncService`, and stores sync configuration in `SharedPreferences`: enabled flag, selected `calendarId` (default `'primary'`), a per-calendar `syncToken` (for incremental sync), and a `taskListId` to attach pulled events to.
+
+The UI only calls `syncNow()`. A two-way sync **pushes local changes first, then pulls remote changes**:
+
+```
+                         CalendarSyncManager.syncNow()
+                                     │
+                 read config from SharedPreferences
+              (calendarId, taskListId, saved syncToken)
+                                     │
+                    GoogleCalendarSyncService.syncTwoWay()
+                                     │
+          ┌──────────────────────────┴──────────────────────────┐
+          │  1) PUSH  (pushPending)                              │
+          │     for each local event by syncStatus:              │
+          │       • localOnly      → POST create (remote)        │
+          │       • pendingUpdate  → PATCH update (If-Match etag) │
+          │                          or POST create if no id      │
+          │       • pendingDelete  → DELETE remote                │
+          │       • synced         → skip                         │
+          └──────────────────────────┬──────────────────────────┘
+                                     │
+          ┌──────────────────────────┴──────────────────────────┐
+          │  2) PULL  (pull)                                     │
+          │     • incremental if a syncToken exists              │
+          │     • otherwise full sync within a ±1 year window     │
+          │     • upsert events locally (mark syncStatus=synced) │
+          │     • attach new events to taskListId (if set)       │
+          │     • follow nextPageToken across pages              │
+          └──────────────────────────┬──────────────────────────┘
+                                     │
+              save nextSyncToken for the next incremental sync
+                                     │
+                 return CalendarSyncOutcome(upserted, deleted)
+```
+
+Key points:
+- **Optimistic concurrency:** updates send `If-Match: <etag>` so the server rejects the write if the event changed remotely.
+- **Sync-token expiry:** if Google returns HTTP `410` (token expired), the saved token is cleared so the next run performs a full sync.
+- **Error handling:** all errors are caught and reported through `CalendarSyncOutcome(success, upserted, deleted, error)` — a sync failure never crashes the app.
+- **Device calendar:** `device_calendar_sync_service.dart` provides a separate backend for the system calendar (mobile only).
+
+---
+
+## Platform notes
+
+- **Desktop (Windows/Linux/macOS):** SQLite runs through FFI. `sqlite3_flutter_libs` is **pinned to 0.5.42** so the `sqlite3` DLL is bundled via the classic CMake scripts (the `0.6.0+eol` release is an empty stub).
+- **Windows & Google Sign-In:** there is no native flow; Google sign-in uses a manual OAuth flow via `http` (exchanging the authorization code for a token).
+- **Device calendar:** supported only on Android/iOS; on desktop `DeviceCalendarService` returns empty results.
+- **Notifications/sound:** system notifications are mainly for mobile; the alarm sound (`assets/sounds/alarm.mp3`) is mainly for desktop (the app still runs if the file is missing).
+
+---
+
+## Notable dependency constraints
+
+Documented in detail in `pubspec.yaml`; the tricky points, summarized:
+
+- **`google_sign_in: ^6.2.1`** — kept on the 6.x line because 7.x fully rewrote the API; `firebase_auth` does not depend on `google_sign_in`.
+- **`csv: ^8.0.0`** — the new API uses `CsvEncoder` (`ListToCsvConverter` was removed).
+- **`font_awesome_flutter: ^11.0.0`** — 10.x breaks because `IconData` is now `final` in newer Flutter.
+- **`timezone: ^0.9.0`** — required by the local `time_manager` plugin and for scheduling notifications.
+- **`flutter_timezone: ^5.0.0`** — returns `TimezoneInfo`; use `.identifier` to get the IANA name.
+- **`appflowy_editor`** — uses the git `main` branch (to avoid an `intl` conflict with `flutter_localizations`).
+- **`dependency_overrides`**: `file_picker: ^10.3.10`, `device_info_plus: ^12.3.0` (required by the `appflowy_editor` main branch).

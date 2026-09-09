@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
+import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:my_time_manager/shared/appflowy_description.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description_editor.dart';
 import 'package:uuid/uuid.dart';
 
 class AddOrEditTaskListPage extends StatefulWidget {
@@ -14,14 +17,17 @@ class AddOrEditTaskListPage extends StatefulWidget {
 
 class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+  late final EditorState _descriptionEditorState;
   final DatabaseManager _databaseManager = DatabaseManager();
   String _id = '';
 
   Future<void> _onSave() async {
     final id = _id;
     final title = _titleController.text;
-    final description = _descriptionController.text;
+    final description =
+        AppFlowyDescription.extractPlainText(_descriptionEditorState);
+    final descriptionDoc =
+        AppFlowyDescription.encodeDoc(_descriptionEditorState);
 
     if (title.isEmpty) {
       showDialog(
@@ -41,13 +47,17 @@ class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
     }
 
     widget.taskList == null
-        ? await _databaseManager.insertTaskList(
-            TaskList(id: id, title: title, description: description))
+        ? await _databaseManager.insertTaskList(TaskList(
+            id: id,
+            title: title,
+            description: description,
+            descriptionDoc: descriptionDoc))
         : await _databaseManager.updateTaskList(
             TaskList(
               id: widget.taskList?.id,
               title: title,
               description: description,
+              descriptionDoc: descriptionDoc,
             ),
           );
 
@@ -55,6 +65,7 @@ class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
       id: id,
       title: title,
       description: description,
+      descriptionDoc: descriptionDoc,
     );
 
     Navigator.pop(context, taskList);
@@ -66,10 +77,24 @@ class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
     if (widget.taskList != null) {
       _id = widget.taskList!.id;
       _titleController.text = widget.taskList!.title;
-      _descriptionController.text = widget.taskList!.description;
+      _descriptionEditorState = AppFlowyDescription.buildEditorState(
+        docJson: widget.taskList!.descriptionDoc,
+        plainText: widget.taskList!.description,
+      );
     } else {
       _id = const Uuid().v4();
+      _descriptionEditorState = AppFlowyDescription.buildEditorState(
+        docJson: '',
+        plainText: '',
+      );
     }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionEditorState.dispose();
+    super.dispose();
   }
 
   @override
@@ -108,14 +133,8 @@ class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
                   ),
                 ),
                 const SizedBox(height: 16.0),
-                TextField(
-                  controller: _descriptionController,
-                  maxLines: null,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: localizations.description,
-                    floatingLabelBehavior: FloatingLabelBehavior.auto,
-                  ),
+                DescriptionEditorTile(
+                  editorState: _descriptionEditorState,
                 ),
               ],
             ),

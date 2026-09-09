@@ -1,313 +1,90 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+// AdMob tạm tắt (xem khối bị comment ở cuối main). Bật lại import khi dùng lại.
+// import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
+import 'data/database/database_manager.dart';
+import 'data/device_id_provider.dart';
+import 'firebase_options.dart';
+import 'screen_focus_timer/data/notification_service.dart';
 
-void main() {
+Future<void> main() async {
+  // Bắt buộc gọi trước khi dùng plugin (Firebase, sqflite...) trong main async.
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Khởi tạo dịch vụ thông báo (bao gồm nạp timezone) cho Focus Timer và tính
+  // năng nhắc lịch. An toàn, tự bỏ qua nếu lỗi.
+  await NotificationService.instance.init();
+  // Xin quyền thông báo + báo thức chính xác (Android 13+/12+, iOS). Không chặn
+  // khởi động: bọc try/catch ở bên trong service.
+  await NotificationService.instance.requestPermissions();
+
+  // Định danh thiết bị (deviceId) cho tính năng export/import: mọi bản ghi ghi
+  // từ máy này sẽ mang deviceId này. An toàn nếu lỗi (deviceId = null).
+  await DeviceIdProvider.init();
+  if (DeviceIdProvider.deviceId != null) {
+    DatabaseManager.setCurrentDeviceId(DeviceIdProvider.deviceId!);
+  }
+
+  // Cấu hình SQLite FFI cho desktop (giữ nguyên như trước).
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
 
-  bool isProVersion = false;
-  runApp(App(isProVersion: isProVersion));
+  // Dọn thùng rác: xóa vĩnh viễn các mục đã quá số ngày giữ. Đọc số ngày từ
+  // SharedPreferences (cùng key với AppBloc), mặc định 30. Bọc try/catch để lỗi
+  // dọn rác không bao giờ chặn app khởi động.
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final retentionDays = prefs.getInt('trashRetentionDays') ?? 30;
+    await DatabaseManager().purgeExpiredTrash(retentionDays);
+  } catch (e) {
+    debugPrint('Dọn thùng rác khi khởi động lỗi: $e');
+  }
+
+  // Khởi tạo Firebase. Bọc try/catch để nếu bạn CHƯA chạy `flutterfire
+  // configure` (file firebase_options.dart còn là placeholder), app vẫn mở được
+  // và ta biết rõ auth chưa dùng được, thay vì crash với thông báo khó hiểu.
+  bool firebaseReady = false;
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    firebaseReady = true;
+  } catch (e) {
+    // Ghi log để dễ chẩn đoán trong lúc phát triển.
+    debugPrint('Firebase chưa khởi tạo được: $e');
+  }
+
+  const bool isProVersion = false;
+
+  runApp(App(isProVersion: isProVersion, firebaseReady: firebaseReady));
+
+  // --- AdMob TẠM THỜI BỊ TẮT ---
+  // Tài khoản AdMob đang bị deactivate nên khởi tạo Google Mobile Ads sẽ gây
+  // crash lúc mở app (MobileAdsInitProvider cần App ID hợp lệ). Bật lại khối
+  // dưới đây (và meta-data APPLICATION_ID trong AndroidManifest.xml, cùng import
+  // google_mobile_ads ở đầu file) sau khi có tài khoản/App ID thật.
+  //
+  // if (Platform.isAndroid || Platform.isIOS) {
+  //   MobileAds.instance.initialize().then((InitializationStatus status) {
+  //     AppOpenAd.load(
+  //       adUnitId: 'ca-app-pub-9963949507176831/9067116788',
+  //       request: AdRequest(),
+  //       adLoadCallback: AppOpenAdLoadCallback(
+  //         onAdLoaded: (AppOpenAd ad) {
+  //           ad.show();
+  //         },
+  //         onAdFailedToLoad: (LoadAdError error) {
+  //           debugPrint('AppOpenAd failed to load: $error');
+  //         },
+  //       ),
+  //     );
+  //   });
+  // }
 }
- 
-//  import 'dart:async';
-// import 'dart:io';
-// import 'dart:ui';
-
-// import 'package:device_info_plus/device_info_plus.dart';
-// import 'package:flutter/material.dart';
-// import 'package:flutter_background_service/flutter_background_service.dart';
-// import 'package:flutter_background_service_android/flutter_background_service_android.dart';
-// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-
-// Future<void> main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   await initializeService();
-//   runApp(const MyApp());
-// }
-
-// Future<void> initializeService() async {
-//   final service = FlutterBackgroundService();
-
-//   /// OPTIONAL, using custom notification channel id
-//   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-//     'my_foreground', // id
-//     'MY FOREGROUND SERVICE', // title
-//     description:
-//         'This channel is used for important notifications.', // description
-//     importance: Importance.low, // importance must be at low or higher level
-//   );
-
-//   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-//       FlutterLocalNotificationsPlugin();
-
-//   if (Platform.isIOS || Platform.isAndroid) {
-//     await flutterLocalNotificationsPlugin.initialize(
-//       const InitializationSettings(
-//         iOS: DarwinInitializationSettings(),
-//         android: AndroidInitializationSettings('ic_bg_service_small'),
-//       ),
-//     );
-//   }
-
-//   await flutterLocalNotificationsPlugin
-//       .resolvePlatformSpecificImplementation<
-//           AndroidFlutterLocalNotificationsPlugin>()
-//       ?.createNotificationChannel(channel);
-
-//   await service.configure(
-//     androidConfiguration: AndroidConfiguration(
-//       // this will be executed when app is in foreground or background in separated isolate
-//       onStart: onStart,
-
-//       // auto start service
-//       autoStart: true,
-//       isForegroundMode: true,
-
-//       notificationChannelId: 'my_foreground',
-//       initialNotificationTitle: 'AWESOME SERVICE',
-//       initialNotificationContent: 'Initializing',
-//       foregroundServiceNotificationId: 888,
-//     ),
-//     iosConfiguration: IosConfiguration(
-//       // auto start service
-//       autoStart: true,
-
-//       // this will be executed when app is in foreground in separated isolate
-//       onForeground: onStart,
-
-//       // you have to enable background fetch capability on xcode project
-//       onBackground: onIosBackground,
-//     ),
-//   );
-// }
-
-// // to ensure this is executed
-// // run app from xcode, then from xcode menu, select Simulate Background Fetch
-
-// @pragma('vm:entry-point')
-// Future<bool> onIosBackground(ServiceInstance service) async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   DartPluginRegistrant.ensureInitialized();
-
-//   SharedPreferences preferences = await SharedPreferences.getInstance();
-//   await preferences.reload();
-//   final log = preferences.getStringList('log') ?? <String>[];
-//   log.add(DateTime.now().toIso8601String());
-//   await preferences.setStringList('log', log);
-
-//   return true;
-// }
-
-// @pragma('vm:entry-point')
-// void onStart(ServiceInstance service) async {
-//   // Only available for flutter 3.0.0 and later
-//   DartPluginRegistrant.ensureInitialized();
-
-//   // For flutter prior to version 3.0.0
-//   // We have to register the plugin manually
-
-//   SharedPreferences preferences = await SharedPreferences.getInstance();
-//   await preferences.setString("hello", "world");
-
-//   /// OPTIONAL when use custom notification
-//   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-//       FlutterLocalNotificationsPlugin();
-
-//   if (service is AndroidServiceInstance) {
-//     service.on('setAsForeground').listen((event) {
-//       service.setAsForegroundService();
-//     });
-
-//     service.on('setAsBackground').listen((event) {
-//       service.setAsBackgroundService();
-//     });
-//   }
-
-//   service.on('stopService').listen((event) {
-//     service.stopSelf();
-//   });
-
-//   // bring to foreground
-//   Timer.periodic(const Duration(seconds: 1), (timer) async {
-//     if (service is AndroidServiceInstance) {
-//       if (await service.isForegroundService()) {
-//         /// OPTIONAL for use custom notification
-//         /// the notification id must be equals with AndroidConfiguration when you call configure() method.
-//         flutterLocalNotificationsPlugin.show(
-//           888,
-//           'COOL SERVICE',
-//           'Awesome ${DateTime.now()}',
-//           const NotificationDetails(
-//             android: AndroidNotificationDetails(
-//               'my_foreground',
-//               'MY FOREGROUND SERVICE',
-//               icon: 'ic_bg_service_small',
-//               ongoing: true,
-//             ),
-//           ),
-//         );
-
-//         // if you don't using custom notification, uncomment this
-//         service.setForegroundNotificationInfo(
-//           title: "My App Service",
-//           content: "Updated at ${DateTime.now()}",
-//         );
-//       }
-//     }
-
-//     /// you can see this log in logcat
-//     print('FLUTTER BACKGROUND SERVICE: ${DateTime.now()}');
-
-//     // test using external plugin
-//     final deviceInfo = DeviceInfoPlugin();
-//     String? device;
-//     if (Platform.isAndroid) {
-//       final androidInfo = await deviceInfo.androidInfo;
-//       device = androidInfo.model;
-//     }
-
-//     if (Platform.isIOS) {
-//       final iosInfo = await deviceInfo.iosInfo;
-//       device = iosInfo.model;
-//     }
-
-//     service.invoke(
-//       'update',
-//       {
-//         "current_date": DateTime.now().toIso8601String(),
-//         "device": device,
-//       },
-//     );
-//   });
-// }
-
-// class MyApp extends StatefulWidget {
-//   const MyApp({Key? key}) : super(key: key);
-
-//   @override
-//   State<MyApp> createState() => _MyAppState();
-// }
-
-// class _MyAppState extends State<MyApp> {
-//   String text = "Stop Service";
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       home: Scaffold(
-//         appBar: AppBar(
-//           title: const Text('Service App'),
-//         ),
-//         body: Column(
-//           children: [
-//             StreamBuilder<Map<String, dynamic>?>(
-//               stream: FlutterBackgroundService().on('update'),
-//               builder: (context, snapshot) {
-//                 if (!snapshot.hasData) {
-//                   return const Center(
-//                     child: CircularProgressIndicator(),
-//                   );
-//                 }
-
-//                 final data = snapshot.data!;
-//                 String? device = data["device"];
-//                 DateTime? date = DateTime.tryParse(data["current_date"]);
-//                 return Column(
-//                   children: [
-//                     Text(device ?? 'Unknown'),
-//                     Text(date.toString()),
-//                   ],
-//                 );
-//               },
-//             ),
-//             ElevatedButton(
-//               child: const Text("Foreground Mode"),
-//               onPressed: () {
-//                 FlutterBackgroundService().invoke("setAsForeground");
-//               },
-//             ),
-//             ElevatedButton(
-//               child: const Text("Background Mode"),
-//               onPressed: () {
-//                 FlutterBackgroundService().invoke("setAsBackground");
-//               },
-//             ),
-//             ElevatedButton(
-//               child: Text(text),
-//               onPressed: () async {
-//                 final service = FlutterBackgroundService();
-//                 var isRunning = await service.isRunning();
-//                 if (isRunning) {
-//                   service.invoke("stopService");
-//                 } else {
-//                   service.startService();
-//                 }
-
-//                 if (!isRunning) {
-//                   text = 'Stop Service';
-//                 } else {
-//                   text = 'Start Service';
-//                 }
-//                 setState(() {});
-//               },
-//             ),
-//             const Expanded(
-//               child: LogView(),
-//             ),
-//           ],
-//         ),
-//         floatingActionButton: FloatingActionButton(
-//           onPressed: () {},
-//           child: const Icon(Icons.play_arrow),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// class LogView extends StatefulWidget {
-//   const LogView({Key? key}) : super(key: key);
-
-//   @override
-//   State<LogView> createState() => _LogViewState();
-// }
-
-// class _LogViewState extends State<LogView> {
-//   late final Timer timer;
-//   List<String> logs = [];
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-//       final SharedPreferences sp = await SharedPreferences.getInstance();
-//       await sp.reload();
-//       logs = sp.getStringList('log') ?? [];
-//       if (mounted) {
-//         setState(() {});
-//       }
-//     });
-//   }
-
-//   @override
-//   void dispose() {
-//     timer.cancel();
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return ListView.builder(
-//       itemCount: logs.length,
-//       itemBuilder: (context, index) {
-//         final log = logs.elementAt(index);
-//         return Text(log);
-//       },
-//     );
-//   }
-// }

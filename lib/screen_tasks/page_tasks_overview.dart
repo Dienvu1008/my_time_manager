@@ -1,18 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_time_manager/data/models/model_calendar_event.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
-import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/card_calendar_event.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_calendar_event.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_list.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_measurable_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task_with_subtasks.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/card_measurale_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/card_task.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/card_task_with_subtasks.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_time_interval.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../app/app_localizations.dart';
 import '../data/database/database_manager.dart';
@@ -28,6 +24,20 @@ import '../home/component_widgets/button_show_timeline_calendar.dart';
 import '../home/component_widgets/button_use_bottom_bar.dart';
 import '../utils/constants.dart';
 import '../utils/utils.dart';
+
+/// Vị trí FAB giống [FloatingActionButtonLocation.endFloat] nhưng được nâng
+/// thêm [bottomOffset] pixel để không bị thanh điều hướng dưới che mất.
+class _EndFloatRaised extends FloatingActionButtonLocation {
+  const _EndFloatRaised({this.bottomOffset = 0});
+  final double bottomOffset;
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
+    final base = FloatingActionButtonLocation.endFloat
+        .getOffset(scaffoldGeometry);
+    return Offset(base.dx, base.dy - bottomOffset);
+  }
+}
 
 class TasksOverviewPage extends StatefulWidget {
   final Function handleBrightnessChange;
@@ -77,6 +87,13 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
   late SharedPreferences _prefs;
   List<TaskList>? _taskLists;
 
+  /// Các item "tự do" (task/calendar event không thuộc danh sách nào) hiển thị
+  /// ở cấp cao nhất của màn Overview, ngang hàng với các card danh sách.
+  List<dynamic> _looseItems = [];
+
+  /// True khi speed-dial FAB đang mở.
+  bool _fabOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -91,9 +108,37 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
       taskLists
           .sort((a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
     }
+    final looseTasks = await _databaseManager.tasksWithoutTaskList();
+    final looseEvents = await _databaseManager.calendarEventsWithoutTaskList();
     //if(mounted)
-    setState(() => _taskLists = taskLists);
+    setState(() {
+      _taskLists = taskLists;
+      _looseItems = [...looseTasks, ...looseEvents];
+    });
     //_taskLists = taskLists;
+  }
+
+  /// Di chuyển một item (Task hoặc CalendarEvent) sang danh sách [newListId]
+  /// (null = đưa ra cấp cao nhất). Dùng cho kéo-thả.
+  Future<void> _moveItemToList(dynamic item, String? newListId) async {
+    if (item is Task) {
+      if (item.taskListId == newListId) return;
+      await _databaseManager.moveTask(item.id, newListId);
+    } else if (item is CalendarEvent) {
+      if (item.taskListId == newListId) return;
+      await _databaseManager.moveCalendarEvent(item.id, newListId);
+    } else {
+      return;
+    }
+    await _init();
+    if (mounted) {
+      final where = newListId == null
+          ? 'ra ngoài danh sách'
+          : 'vào danh sách';
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Đã chuyển $where.')));
+    }
   }
 
   void _reorderTaskLists(int oldIndex, int newIndex) {
@@ -107,9 +152,24 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
   }
 
   Future<void> _onTaskListDelete(TaskList taskList) async {
-    await _databaseManager.deleteTaskList(taskList.id);
+    // Soft-delete: Ä‘Æ°a danh sÃ¡ch (vÃ  task con) vÃ o thÃ¹ng rÃ¡c.
+    await _databaseManager.softDeleteTaskList(taskList.id);
     _taskLists!.remove(taskList.id);
     await _saveOrder();
+  }
+
+  /// Lưu trữ cả một danh sách (và các task con của nó): ẩn khỏi màn chính nhưng
+  /// không xóa. Có thể bỏ lưu trữ lại từ màn Lưu trữ.
+  Future<void> _onTaskListArchive(TaskList taskList) async {
+    await _databaseManager.archiveTaskList(taskList.id);
+    _taskLists!.remove(taskList.id);
+    await _saveOrder();
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+            SnackBar(content: Text('Đã lưu trữ "${taskList.title}".')));
+    }
   }
 
   Future<void> _deleteDatabase() async {
@@ -120,6 +180,35 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
   Future<void> _addTaskList(TaskList taskList) async {
     setState(() => _taskLists!.insert(0, taskList));
     await _saveOrder();
+  }
+
+  // --- Các luồng tạo từ speed-dial FAB ---
+
+  Future<void> _createTaskList() async {
+    final taskList = await showDialog<TaskList>(
+      context: context,
+      builder: (context) => AddOrEditTaskListPage(),
+    );
+    if (taskList != null) await _addTaskList(taskList);
+  }
+
+  /// Tạo task mới. taskList = null nên trang tạo hiện ô chọn danh sách (hoặc
+  /// "Không thuộc danh sách nào"). Sau khi tạo, nạp lại để hiện đúng vị trí.
+  Future<void> _createTask() async {
+    final task = await showDialog<Task>(
+      context: context,
+      builder: (context) => const AddOrEditTaskPage(),
+    );
+    if (task != null) await _init();
+  }
+
+  Future<void> _createCalendarEvent() async {
+    final event = await Navigator.of(context).push<CalendarEvent>(
+      MaterialPageRoute(
+        builder: (_) => const AddOrEditCalendarEventPage(),
+      ),
+    );
+    if (event != null) await _init();
   }
 
   Future<void> _saveOrder() async {
@@ -191,59 +280,283 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
               ]),
           Expanded(
             child: Scaffold(
-              body: TaskListsHolder(
-                onReorder: _reorderTaskLists,
-                taskLists: _taskLists ?? [],
-                onTaskListDelete: (value) async {
-                  _onTaskListDelete(value);
-                },
-                onTaskListEdit: (TaskList taskList) async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => AddOrEditTaskListPage(taskList: taskList),
-                      fullscreenDialog: false,
-                    ),
-                  );
-                  final updatedTaskLists = await _databaseManager.taskLists();
-                  final order = _prefs.getStringList('taskListOrder');
-                  if (order != null) {
-                    updatedTaskLists.sort((a, b) =>
-                        order.indexOf(a.id).compareTo(order.indexOf(b.id)));
-                  }
-                  setState(() => _taskLists = updatedTaskLists);
-                },
-                isProVersion: widget.isProVersion,
+              // Nâng FAB lên khỏi thanh điều hướng dưới để không che tab
+              // "Timeline" và bảo đảm luôn nhấn được nút thêm danh sách.
+              floatingActionButtonLocation:
+                  const _EndFloatRaised(bottomOffset: 72),
+              body: ListView(
+                padding: const EdgeInsets.only(bottom: 96),
+                children: [
+                  // Danh sách các list-card (có thể sắp xếp thứ tự). Mỗi card
+                  // đồng thời là DragTarget nhận task/event thả vào.
+                  TaskListsHolder(
+                    onReorder: _reorderTaskLists,
+                    taskLists: _taskLists ?? [],
+                    onItemMovedToList: _moveItemToList,
+                    onTaskListDelete: (value) async {
+                      _onTaskListDelete(value);
+                    },
+                    onTaskListArchive: (value) async {
+                      _onTaskListArchive(value);
+                    },
+                    onTaskListEdit: (TaskList taskList) async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              AddOrEditTaskListPage(taskList: taskList),
+                          fullscreenDialog: false,
+                        ),
+                      );
+                      final updatedTaskLists =
+                          await _databaseManager.taskLists();
+                      final order = _prefs.getStringList('taskListOrder');
+                      if (order != null) {
+                        updatedTaskLists.sort((a, b) =>
+                            order.indexOf(a.id).compareTo(order.indexOf(b.id)));
+                      }
+                      setState(() => _taskLists = updatedTaskLists);
+                    },
+                    isProVersion: widget.isProVersion,
+                  ),
+                  // Khu vực item "tự do" (không thuộc list nào) — cũng là nơi
+                  // thả để gỡ item khỏi list.
+                  _buildLooseItemsSection(),
+                ],
               ),
-              floatingActionButton:
-                  //Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  FloatingActionButton.small(
-                onPressed: () async {
-                  final taskList = await showDialog<TaskList>(
-                    context: context,
-                    builder: (context) => AddOrEditTaskListPage(),
-                  );
-                  if (taskList != null) {
-                    await _addTaskList(taskList);
-                  }
-                },
-                heroTag: 'addTaskList',
-                child: const Icon(Icons.add),
-              ),
-
-              // const SizedBox(
-              //   width: 10.0,
-              //   height: 20.0,
-              // ),
-              // FloatingActionButton(
-              //   onPressed: _deleteDatabase,
-              //   child: const Icon(Icons.delete),
-              //),
-              //]
-              //),
+              floatingActionButton: _buildSpeedDial(),
             ),
           )
         ],
       ),
+    );
+  }
+
+  /// Khu vực hiển thị các item không thuộc danh sách nào. Là một DragTarget: thả
+  /// một task/event vào đây sẽ gỡ nó khỏi danh sách hiện tại.
+  Widget _buildLooseItemsSection() {
+    return DragTarget<_ItemDragData>(
+      onWillAcceptWithDetails: (details) => details.data.item != null,
+      onAcceptWithDetails: (details) =>
+          _moveItemToList(details.data.item, null),
+      builder: (context, candidate, rejected) {
+        final highlight = candidate.isNotEmpty;
+        return Container(
+          margin: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: highlight
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).dividerColor,
+              width: highlight ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: highlight
+                ? Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.06)
+                : null,
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.inbox_outlined,
+                        size: 18, color: Theme.of(context).hintColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Không thuộc danh sách',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ],
+                ),
+              ),
+              if (_looseItems.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    highlight
+                        ? 'Thả vào đây để gỡ khỏi danh sách'
+                        : 'Chưa có mục nào. Kéo một task/sự kiện ra đây để tách khỏi danh sách.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Theme.of(context).hintColor),
+                  ),
+                )
+              else
+                ..._looseItems.map(_buildLooseItemCard),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Một item tự do, bọc trong LongPressDraggable để kéo vào danh sách.
+  Widget _buildLooseItemCard(dynamic item) {
+    final Widget card;
+    if (item is Task) {
+      card = TaskCard(
+        key: ValueKey(item),
+        task: item,
+        onTaskEdit: (t) async {
+          final tl = t.taskListId == null
+              ? null
+              : await _databaseManager.taskList(t.taskListId!);
+          if (!mounted) return;
+          await Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => AddOrEditTaskPage(task: t, taskList: tl),
+          ));
+          await _init();
+        },
+        onTaskDelete: (t) async {
+          await _databaseManager.softDeleteTask(t.id);
+          await _init();
+        },
+        onTaskArchive: (t) async {
+          await _databaseManager.archiveTask(t.id);
+          await _init();
+        },
+        onTaskToggleComplete: (t) async {
+          await _databaseManager.updateTask(
+              t.copyWith(isCompleted: !t.isCompleted));
+          await _init();
+        },
+        isProVersion: widget.isProVersion,
+      );
+    } else if (item is CalendarEvent) {
+      card = CalendarEventCard(
+        key: ValueKey(item),
+        event: item,
+        onEdit: (e) async {
+          await Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => AddOrEditCalendarEventPage(event: e),
+          ));
+          await _init();
+        },
+        onDelete: (e) async {
+          await _databaseManager.softDeleteCalendarEvent(e.id);
+          await _init();
+        },
+        onArchive: (e) async {
+          await _databaseManager.archiveCalendarEvent(e.id);
+          await _init();
+        },
+      );
+    } else {
+      return const SizedBox.shrink();
+    }
+
+    return LongPressDraggable<_ItemDragData>(
+      data: _ItemDragData(item),
+      feedback: Material(
+        elevation: 6,
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width - 48,
+          child: Opacity(opacity: 0.9, child: card),
+        ),
+      ),
+      childWhenDragging: Opacity(opacity: 0.4, child: card),
+      child: card,
+    );
+  }
+
+  /// Speed-dial FAB: nút chính bật/tắt 3 nút tạo (danh sách / task / sự kiện).
+  Widget _buildSpeedDial() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (_fabOpen) ...[
+          _MiniFab(
+            heroTag: 'fab_list',
+            icon: Icons.playlist_add_outlined,
+            label: 'Danh sách',
+            onTap: () async {
+              setState(() => _fabOpen = false);
+              await _createTaskList();
+            },
+          ),
+          const SizedBox(height: 10),
+          _MiniFab(
+            heroTag: 'fab_task',
+            icon: Icons.check_circle_outline,
+            label: 'Công việc',
+            onTap: () async {
+              setState(() => _fabOpen = false);
+              await _createTask();
+            },
+          ),
+          const SizedBox(height: 10),
+          _MiniFab(
+            heroTag: 'fab_event',
+            icon: Icons.event_outlined,
+            label: 'Sự kiện',
+            onTap: () async {
+              setState(() => _fabOpen = false);
+              await _createCalendarEvent();
+            },
+          ),
+          const SizedBox(height: 10),
+        ],
+        FloatingActionButton(
+          heroTag: 'fab_main',
+          onPressed: () => setState(() => _fabOpen = !_fabOpen),
+          child: AnimatedRotation(
+            turns: _fabOpen ? 0.125 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Dữ liệu kéo-thả cho một item (task/calendar event) ở màn Overview.
+class _ItemDragData {
+  const _ItemDragData(this.item);
+  final dynamic item;
+}
+
+/// Nút nhỏ kèm nhãn dùng trong speed-dial FAB.
+class _MiniFab extends StatelessWidget {
+  const _MiniFab({
+    required this.heroTag,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String heroTag;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Card(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Text(label),
+          ),
+        ),
+        const SizedBox(width: 10),
+        FloatingActionButton.small(
+          heroTag: heroTag,
+          onPressed: onTap,
+          child: Icon(icon),
+        ),
+      ],
     );
   }
 }
@@ -252,17 +565,24 @@ class TaskListsHolder extends StatefulWidget {
   const TaskListsHolder({
     Key? key,
     required this.onTaskListDelete,
+    this.onTaskListArchive,
     required this.onTaskListEdit,
     required this.onReorder,
     required this.taskLists,
     required this.isProVersion,
+    this.onItemMovedToList,
   }) : super(key: key);
 
   final Function(TaskList) onTaskListDelete;
+  final Function(TaskList)? onTaskListArchive;
   final Function(TaskList) onTaskListEdit;
   final Function(int, int) onReorder;
   final List<TaskList> taskLists;
   final bool isProVersion;
+
+  /// Được gọi khi kéo-thả một item (Task/CalendarEvent) vào một danh sách.
+  final Future<void> Function(dynamic item, String? newListId)?
+      onItemMovedToList;
 
   @override
   _TaskListsHolderState createState() => _TaskListsHolderState();
@@ -272,12 +592,15 @@ class _TaskListsHolderState extends State<TaskListsHolder> {
   @override
   Widget build(BuildContext context) {
     return ReorderableListView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       onReorder: widget.onReorder,
       children: List.generate(widget.taskLists.length, (index) {
         final taskList = widget.taskLists[index];
         return TaskListCard(
           key: ValueKey(taskList),
           taskList: taskList,
+          onItemMovedToList: widget.onItemMovedToList,
           onTaskListDelete: (TaskList taskList) async {
             final shouldDelete = await showDialog<bool>(
               context: context,
@@ -304,6 +627,12 @@ class _TaskListsHolderState extends State<TaskListsHolder> {
             }
           },
           onTaskListEdit: widget.onTaskListEdit,
+          onTaskListArchive: widget.onTaskListArchive == null
+              ? null
+              : (TaskList taskList) async {
+                  widget.onTaskListArchive!(taskList);
+                  setState(() => widget.taskLists.remove(taskList));
+                },
           isProVersion: widget.isProVersion,
         );
       }),
@@ -317,13 +646,20 @@ class TaskListCard extends StatefulWidget {
     required this.taskList,
     required this.onTaskListEdit,
     required this.onTaskListDelete,
+    this.onTaskListArchive,
     required this.isProVersion,
+    this.onItemMovedToList,
   }) : super(key: key);
 
   final TaskList taskList;
   final Function(TaskList) onTaskListEdit;
   final Function(TaskList) onTaskListDelete;
+  final Function(TaskList)? onTaskListArchive;
   final bool isProVersion;
+
+  /// Kéo-thả một item vào danh sách này.
+  final Future<void> Function(dynamic item, String? newListId)?
+      onItemMovedToList;
 
   @override
   _TaskListCardState createState() => _TaskListCardState();
@@ -333,9 +669,9 @@ class _TaskListCardState extends State<TaskListCard> {
   final DatabaseManager _databaseManager = DatabaseManager();
   late SharedPreferences _prefs;
   bool _isExpanded = false;
-  final Map<String, bool> _isTaskWithSubtasksCardsExpanded = {};
-  final Map<String, bool> _isMeasurableTaskCardsExpanded = {};
-  late List<dynamic> _items;
+  // Khá»Ÿi táº¡o rá»—ng Ä‘á»ƒ build Ä‘áº§u tiÃªn (trÆ°á»›c khi _init náº¡p xong báº¥t Ä‘á»“ng bá»™)
+  // khÃ´ng gáº·p LateInitializationError. Danh sÃ¡ch tháº­t Ä‘Æ°á»£c gÃ¡n trong _init().
+  List<dynamic> _items = [];
 
   @override
   void initState() {
@@ -346,27 +682,14 @@ class _TaskListCardState extends State<TaskListCard> {
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
     final tasks = await _databaseManager.tasksOfTaskList(widget.taskList.id);
-    final measurableTasks =
-        await _databaseManager.measurableTasksOfTaskList(widget.taskList.id);
-    final tasksWithSubtasks =
-        await _databaseManager.tasksWithSubtasksOfTaskList(widget.taskList.id);
     final events = await _databaseManager.eventsOfTaskList(widget.taskList.id);
+    final calendarEvents =
+        await _databaseManager.calendarEventsOfTaskList(widget.taskList.id);
     final List<dynamic> items = [
       ...tasks,
-      ...measurableTasks,
-      ...tasksWithSubtasks,
       ...events,
+      ...calendarEvents,
     ];
-
-    for (var taskWithSubtasks in tasksWithSubtasks) {
-      _isTaskWithSubtasksCardsExpanded[taskWithSubtasks.id] =
-          _prefs.getBool('isExpanded_${taskWithSubtasks.id}') ?? false;
-    }
-
-    for (var measurableTask in measurableTasks) {
-      _isMeasurableTaskCardsExpanded[measurableTask.id] =
-          _prefs.getBool('isExpanded_${measurableTask.id}') ?? false;
-    }
 
     final order = _prefs.getStringList('itemsOrder');
     if (order != null) {
@@ -406,23 +729,9 @@ class _TaskListCardState extends State<TaskListCard> {
     await _databaseManager.updateTask(_task);
   }
 
-  Future<void> _onMeasurableTaskToggleCompleted(
-      MeasurableTask measurableTask) async {
-    MeasurableTask _measurableTask = measurableTask.copyWith(
-      isCompleted: !measurableTask.isCompleted,
-    );
-    final index = _items.indexWhere((item) => item.id == _measurableTask.id);
-    if (index != -1) {
-      setState(() {
-        _items[index] = _measurableTask;
-      });
-    }
-    await _databaseManager.updateMeasurableTask(_measurableTask);
-  }
-
-  Future<void> _onHasBeenDoneUpdate(MeasurableTask measurableTask) async {
+  Future<void> _onHasBeenDoneUpdate(Task task) async {
     final TextEditingController _hasBeenDoneController = TextEditingController(
-      text: measurableTask.howMuchHasBeenDone.toString(),
+      text: task.howMuchHasBeenDone.toString(),
     );
     showDialog(
       context: context,
@@ -441,17 +750,17 @@ class _TaskListCardState extends State<TaskListCard> {
           ),
           TextButton(
             onPressed: () async {
-              MeasurableTask _measurableTask = measurableTask.copyWith(
+              Task _task = task.copyWith(
                   howMuchHasBeenDone:
                       double.parse(_hasBeenDoneController.text));
               final index =
-                  _items.indexWhere((item) => item.id == _measurableTask.id);
+                  _items.indexWhere((item) => item.id == _task.id);
               if (index != -1) {
                 setState(() {
-                  _items[index] = _measurableTask;
+                  _items[index] = _task;
                 });
               }
-              await _databaseManager.updateMeasurableTask(_measurableTask);
+              await _databaseManager.updateTask(_task);
               Navigator.pop(context);
             },
             child: Text(AppLocalizations.of(context)!.update),
@@ -461,30 +770,15 @@ class _TaskListCardState extends State<TaskListCard> {
     );
   }
 
-  Future<void> _onTaskWithSubtasksToggleCompleted(
-      TaskWithSubtasks taskWithSubtasks) async {
-    TaskWithSubtasks _taskWithSubtasks =
-        taskWithSubtasks.copyWith(isCompleted: !taskWithSubtasks.isCompleted);
-    final index = _items.indexWhere((item) => item.id == _taskWithSubtasks.id);
+  Future<void> _onSubtasksChanged(Task task) async {
+    final index = _items.indexWhere((item) => item.id == task.id);
     if (index != -1) {
       setState(() {
-        _items[index] = _taskWithSubtasks;
-      });
-    }
-    await _databaseManager.updateTaskWithSubtasks(_taskWithSubtasks);
-  }
-
-  Future<void> _onSubtasksChanged(TaskWithSubtasks taskWithSubtasks) async {
-    TaskWithSubtasks _taskWithSubtasks = taskWithSubtasks;
-
-    final index = _items.indexWhere((item) => item.id == _taskWithSubtasks.id);
-    if (index != -1) {
-      setState(() {
-        _items[index] = _taskWithSubtasks;
+        _items[index] = task;
       });
     }
 
-    await _databaseManager.updateTaskWithSubtasks(_taskWithSubtasks);
+    await _databaseManager.updateTask(task);
   }
 
   Future<void> _onTaskDelete(Task task) async {
@@ -513,85 +807,69 @@ class _TaskListCardState extends State<TaskListCard> {
         _items.remove(task);
       });
       await _saveOrder();
-      await _databaseManager.deleteTask(task.id);
+      // Soft-delete: Ä‘Æ°a vÃ o thÃ¹ng rÃ¡c thay vÃ¬ xÃ³a vÄ©nh viá»…n.
+      await _databaseManager.softDeleteTask(task.id);
     }
   }
 
-  Future<void> _onMeasurableTaskDelete(MeasurableTask measurableTask) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        final localizations = AppLocalizations.of(context);
-        return AlertDialog(
-          title: Text(localizations!.deleteTask),
-          content: Text(localizations.areYouSureYouWantToDeleteThisTask),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(localizations.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(localizations.delete),
-            ),
-          ],
-        );
-      },
-    );
-    if (result == true) {
-      setState(() {
-        _items.remove(measurableTask);
-      });
-      await _saveOrder();
-      await _databaseManager.deleteMeasurableTask(measurableTask.id);
+  /// Lưu trữ một task: ẩn khỏi màn chính (không xóa). Người dùng có thể bỏ lưu
+  /// trữ lại từ màn Lưu trữ.
+  Future<void> _onTaskArchive(Task task) async {
+    setState(() {
+      _items.remove(task);
+    });
+    await _saveOrder();
+    await _databaseManager.archiveTask(task.id);
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Đã lưu trữ "${task.title}".')));
     }
   }
 
-  Future<void> _onTaskWithSubtasksDelete(
-      TaskWithSubtasks taskWithSubtasks) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        final localizations = AppLocalizations.of(context);
-        return AlertDialog(
-          title: Text(localizations!.deleteTask),
-          content: Text(localizations.areYouSureYouWantToDeleteThisTask),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(localizations.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(localizations.delete),
-            ),
-          ],
-        );
-      },
+  // --- Handlers cho CalendarEvent ---
+
+  Future<void> _onCalendarEventEdit(CalendarEvent event) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddOrEditCalendarEventPage(
+          event: event,
+          taskList: widget.taskList,
+        ),
+      ),
     );
-    if (result == true) {
-      setState(() {
-        _items.remove(taskWithSubtasks);
-      });
-      await _saveOrder();
-      await _databaseManager.deleteTaskWithSubtasks(taskWithSubtasks.id);
+    final updated = await _databaseManager.calendarEvent(event.id);
+    final index = _items.indexWhere((item) => item.id == event.id);
+    if (index != -1 && updated != null && mounted) {
+      setState(() => _items[index] = updated);
     }
+  }
+
+  Future<void> _onCalendarEventDelete(CalendarEvent event) async {
+    // Soft-delete: đưa vào thùng rác thay vì xóa vĩnh viễn.
+    await _databaseManager.softDeleteCalendarEvent(event.id);
+    await _saveOrder();
+  }
+
+  Future<void> _onCalendarEventArchive(CalendarEvent event) async {
+    await _databaseManager.archiveCalendarEvent(event.id);
+    await _saveOrder();
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+            SnackBar(content: Text('Đã lưu trữ "${event.title}".')));
+    }
+  }
+
+  Future<void> _addCalendarEvent(CalendarEvent event) async {
+    setState(() => _items.insert(0, event));
+    await _saveOrder();
+    _init();
   }
 
   Future<void> _addTask(Task task) async {
     setState(() => _items.insert(0, task));
-    await _saveOrder();
-    _init();
-  }
-
-  Future<void> _addMeasurableTask(MeasurableTask measurableTask) async {
-    setState(() => _items.insert(0, measurableTask));
-    await _saveOrder();
-    _init();
-  }
-
-  Future<void> _addTaskWithSubtasks(TaskWithSubtasks taskWithSubtasks) async {
-    setState(() => _items.insert(0, taskWithSubtasks));
     await _saveOrder();
     _init();
   }
@@ -601,37 +879,33 @@ class _TaskListCardState extends State<TaskListCard> {
     await _prefs.setStringList('itemsOrder', order);
   }
 
-  void _onTaskWithSubtasksCardExpanded(
-      TaskWithSubtasks taskWithSubtasks) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isExpanded =
-        _isTaskWithSubtasksCardsExpanded[taskWithSubtasks.id] ?? false;
-    setState(() {
-      _isTaskWithSubtasksCardsExpanded[taskWithSubtasks.id] = !isExpanded;
-    });
-    await prefs.setBool('isExpanded_${taskWithSubtasks.id}', !isExpanded);
-  }
-
-  void _onMeasurableTaskCardExpanded(MeasurableTask measurableTask) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isExpanded =
-        _isMeasurableTaskCardsExpanded[measurableTask.id] ?? false;
-    setState(() {
-      _isMeasurableTaskCardsExpanded[measurableTask.id] = !isExpanded;
-    });
-    await prefs.setBool('isExpanded_${measurableTask.id}', !isExpanded);
-  }
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context)
         .textTheme
         .apply(displayColor: Theme.of(context).colorScheme.onSurface);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(0.0),
-        child: Column(children: [
-          Row(
+    // Bọc card trong DragTarget để có thể thả task/event vào danh sách này.
+    return DragTarget<_ItemDragData>(
+      onWillAcceptWithDetails: (details) =>
+          widget.onItemMovedToList != null && details.data.item != null,
+      onAcceptWithDetails: (details) =>
+          widget.onItemMovedToList?.call(details.data.item, widget.taskList.id),
+      builder: (context, candidate, rejected) {
+        final highlight = candidate.isNotEmpty;
+        return Card(
+          shape: highlight
+              ? RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                )
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.all(0.0),
+            child: Column(children: [
+              Row(
             children: [
               IconButton(
                 icon:
@@ -661,10 +935,12 @@ class _TaskListCardState extends State<TaskListCard> {
                 taskList: widget.taskList,
                 onTaskListDelete: () =>
                     widget.onTaskListDelete(widget.taskList),
+                onTaskListArchive: widget.onTaskListArchive == null
+                    ? null
+                    : () => widget.onTaskListArchive!(widget.taskList),
                 onTaskListEdit: () => widget.onTaskListEdit(widget.taskList),
                 addTask: (value) => _addTask(value),
-                addMeasurableTask: (value) => _addMeasurableTask(value),
-                addTaskWithSubtasks: (value) => _addTaskWithSubtasks(value),
+                addCalendarEvent: (value) => _addCalendarEvent(value),
               ),
             ],
           ),
@@ -725,74 +1001,18 @@ class _TaskListCardState extends State<TaskListCard> {
               },
               onTaskToggleComplete: _onTaskToggleCompleted,
               onTaskDelete: _onTaskDelete,
-              onMeasurableTaskEdit: (MeasurableTask measurableTask) async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => AddOrEditMeasurableTaskPage(
-                      measurableTask: measurableTask,
-                      taskList: widget.taskList,
-                    ),
-                    fullscreenDialog: false,
-                  ),
-                );
-                final updatedMeasurableTask =
-                    await _databaseManager.measurableTask(measurableTask.id);
-                final index = _items
-                    .indexWhere((item) => item.id == updatedMeasurableTask.id);
-                if (index != -1) {
-                  setState(() {
-                    _items[index] = updatedMeasurableTask;
-                  });
-                }
-              },
-              onMeasurableTaskToggleComplete: _onMeasurableTaskToggleCompleted,
-              onMeasurableTaskDelete: _onMeasurableTaskDelete,
+              onTaskArchive: _onTaskArchive,
               onHasBeenDoneUpdate: _onHasBeenDoneUpdate,
-              isMeasurableTaskCardExpanded: (MeasurableTask measurableTask) {
-                return _isMeasurableTaskCardsExpanded[measurableTask.id] ??
-                    false;
-              },
-              onMeasurableTaskCardExpanded: (MeasurableTask measurableTask) {
-                _onMeasurableTaskCardExpanded(measurableTask);
-              },
-              onTaskWithSubtasksEdit:
-                  (TaskWithSubtasks taskWithSubtasks) async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => AddOrEditTaskWithSubtasksPage(
-                      taskWithSubtasks: taskWithSubtasks,
-                      taskList: widget.taskList,
-                    ),
-                    fullscreenDialog: false,
-                  ),
-                );
-                final updatedTaskWithSubtasks = await _databaseManager
-                    .taskWithSubtasks(taskWithSubtasks.id);
-                final index = _items.indexWhere(
-                    (item) => item.id == updatedTaskWithSubtasks.id);
-                if (index != -1) {
-                  setState(() {
-                    _items[index] = updatedTaskWithSubtasks;
-                  });
-                }
-              },
-              onTaskWithSubtasksToggleComplete:
-                  _onTaskWithSubtasksToggleCompleted,
-              onTaskWithSubtasksDelete: _onTaskWithSubtasksDelete,
               onSubtasksChanged: _onSubtasksChanged,
-              isTaskWithSubtasksCardExpanded:
-                  (TaskWithSubtasks taskWithSubtasks) {
-                return _isTaskWithSubtasksCardsExpanded[taskWithSubtasks.id] ??
-                    false;
-              },
-              onTaskWithSubtasksCardExpanded:
-                  (TaskWithSubtasks taskWithSubtasks) {
-                _onTaskWithSubtasksCardExpanded(taskWithSubtasks);
-              },
+              onCalendarEventEdit: _onCalendarEventEdit,
+              onCalendarEventDelete: _onCalendarEventDelete,
+              onCalendarEventArchive: _onCalendarEventArchive,
               isProVersion: widget.isProVersion,
             ),
-        ]),
-      ),
+            ]),
+          ),
+        );
+      },
     );
   }
 }
@@ -802,16 +1022,16 @@ class TaskListCardOptions extends StatelessWidget {
       {super.key,
       required this.onTaskListEdit,
       required this.onTaskListDelete,
+      this.onTaskListArchive,
       required this.taskList,
       required this.addTask,
-      required this.addMeasurableTask,
-      required this.addTaskWithSubtasks});
+      this.addCalendarEvent});
 
   final Function() onTaskListEdit;
   final Function() onTaskListDelete;
+  final Function()? onTaskListArchive;
   final Function(Task) addTask;
-  final Function(MeasurableTask) addMeasurableTask;
-  final Function(TaskWithSubtasks) addTaskWithSubtasks;
+  final Function(CalendarEvent)? addCalendarEvent;
   final TaskList taskList;
 
   @override
@@ -849,35 +1069,16 @@ class TaskListCardOptions extends StatelessWidget {
             ),
             MenuItemButton(
               onPressed: () async {
-                final measurableTask = await showDialog<MeasurableTask>(
-                  context: context,
-                  builder: (context) => AddOrEditMeasurableTaskPage(
-                    taskList: taskList,
+                final event = await Navigator.of(context).push<CalendarEvent>(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        AddOrEditCalendarEventPage(taskList: taskList),
                   ),
                 );
-                if (measurableTask != null) {
-                  await addMeasurableTask(measurableTask);
+                if (event != null) {
+                  addCalendarEvent?.call(event);
                 }
               },
-              child: Text(localizations.addANewMeasureableTask),
-            ),
-            MenuItemButton(
-              onPressed: () async {
-                final taskWithSubtasks = await showDialog<TaskWithSubtasks>(
-                  context: context,
-                  builder: (context) => AddOrEditTaskWithSubtasksPage(
-                    taskList: taskList,
-                  ),
-                );
-                if (taskWithSubtasks != null) {
-                  await addTaskWithSubtasks(taskWithSubtasks);
-                }
-              },
-              child: Text(localizations
-                  .addANewTaskWithSubTasks), //Text(localizations.addANewTaskWithSubtasks),
-            ),
-            MenuItemButton(
-              onPressed: () => showComingSoonDialog(context),
               child: Text(localizations.addANewEvent),
             ),
           ],
@@ -903,6 +1104,19 @@ class TaskListCardOptions extends StatelessWidget {
             ],
           ),
         ),
+        if (onTaskListArchive != null)
+          MenuItemButton(
+            onPressed: onTaskListArchive,
+            child: Row(
+              children: [
+                const Icon(Icons.archive_outlined),
+                const SizedBox(
+                  width: 5,
+                ),
+                Text(localizations.archive)
+              ],
+            ),
+          ),
         MenuItemButton(
           onPressed: onTaskListDelete,
           child: Row(
@@ -927,39 +1141,25 @@ class ItemsHolder extends StatefulWidget {
     required this.onReorder,
     required this.onTaskEdit,
     required this.onTaskDelete,
+    required this.onTaskArchive,
     required this.onTaskToggleComplete,
-    required this.onMeasurableTaskEdit,
-    required this.onMeasurableTaskDelete,
-    required this.onMeasurableTaskToggleComplete,
     required this.onHasBeenDoneUpdate,
-    required this.isMeasurableTaskCardExpanded,
-    required this.onMeasurableTaskCardExpanded,
-    required this.onTaskWithSubtasksEdit,
-    required this.onTaskWithSubtasksDelete,
-    required this.onTaskWithSubtasksToggleComplete,
     required this.onSubtasksChanged,
-    required this.isTaskWithSubtasksCardExpanded,
-    required this.onTaskWithSubtasksCardExpanded,
+    required this.onCalendarEventEdit,
+    required this.onCalendarEventDelete,
+    required this.onCalendarEventArchive,
     required this.isProVersion,
   }) : super(key: key);
 
   final Function(Task) onTaskEdit;
   final Function(Task) onTaskDelete;
+  final Function(Task) onTaskArchive;
   final Function(Task) onTaskToggleComplete;
-
-  final Function(MeasurableTask) onMeasurableTaskEdit;
-  final Function(MeasurableTask) onMeasurableTaskDelete;
-  final Function(MeasurableTask) onMeasurableTaskToggleComplete;
-  final Function(MeasurableTask) onHasBeenDoneUpdate;
-  final bool Function(MeasurableTask) isMeasurableTaskCardExpanded;
-  final Function(MeasurableTask) onMeasurableTaskCardExpanded;
-
-  final Function(TaskWithSubtasks) onTaskWithSubtasksEdit;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksDelete;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksToggleComplete;
-  final Function(TaskWithSubtasks) onSubtasksChanged;
-  final bool Function(TaskWithSubtasks) isTaskWithSubtasksCardExpanded;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksCardExpanded;
+  final Function(Task) onHasBeenDoneUpdate;
+  final Function(Task) onSubtasksChanged;
+  final Function(CalendarEvent) onCalendarEventEdit;
+  final Function(CalendarEvent) onCalendarEventDelete;
+  final Function(CalendarEvent) onCalendarEventArchive;
   final List<dynamic> items;
   final Function(int, int) onReorder;
   final bool isProVersion;
@@ -969,21 +1169,41 @@ class ItemsHolder extends StatefulWidget {
 }
 
 class _ItemsHolderState extends State<ItemsHolder> {
+  /// Bọc một card item trong LongPressDraggable để kéo sang danh sách khác.
+  Widget _draggable(dynamic item, Widget card) {
+    return LongPressDraggable<_ItemDragData>(
+      key: ValueKey(item),
+      data: _ItemDragData(item),
+      feedback: Material(
+        elevation: 6,
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width - 64,
+          child: Opacity(opacity: 0.9, child: card),
+        ),
+      ),
+      childWhenDragging: Opacity(opacity: 0.4, child: card),
+      child: card,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ReorderableListView(
-
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      onReorder: widget.onReorder,
+    // Column các card (mỗi card là nguồn kéo). Bỏ ReorderableListView vì xung
+    // đột cử chỉ long-press với kéo-thả giữa các danh sách; thứ tự trong list
+    // không còn tự sắp (kéo-thả liên-list là tính năng ưu tiên).
+    return Column(
       children: List.generate(widget.items.length, (index) {
         final item = widget.items[index];
         if (item is Task) {
-          return TaskCard(
-            key: ValueKey(item),
+          final card = TaskCard(
             task: item,
             onTaskDelete: (Task task) async {
               widget.onTaskDelete(task);
+              widget.items.remove(task);
+            },
+            onTaskArchive: (Task task) async {
+              widget.onTaskArchive(task);
               widget.items.remove(task);
             },
             onTaskEdit: (Task task) async {
@@ -992,352 +1212,31 @@ class _ItemsHolderState extends State<ItemsHolder> {
             onTaskToggleComplete: (Task task) async {
               widget.onTaskToggleComplete(task);
             },
+            onHasBeenDoneUpdate: widget.onHasBeenDoneUpdate,
+            onSubtasksChanged: widget.onSubtasksChanged,
             isProVersion: widget.isProVersion,
           );
-        } else if (item is MeasurableTask) {
-          return MeasurableTaskCard(
-            key: ValueKey(item),
-            measurableTask: item,
-            onMeasurableTaskDelete: (MeasurableTask measurableTask) async {
-              widget.onMeasurableTaskDelete(measurableTask);
-              widget.items.remove(measurableTask);
+          return _draggable(item, card);
+        } else if (item is CalendarEvent) {
+          final card = CalendarEventCard(
+            event: item,
+            onEdit: (CalendarEvent e) async {
+              widget.onCalendarEventEdit(e);
             },
-            onMeasurableTaskEdit: (MeasurableTask measurableTask) async {
-              widget.onMeasurableTaskEdit(measurableTask);
+            onDelete: (CalendarEvent e) async {
+              widget.onCalendarEventDelete(e);
+              widget.items.remove(e);
             },
-            onMeasurableTaskToggleComplete:
-                (MeasurableTask measurableTask) async {
-              widget.onMeasurableTaskToggleComplete(measurableTask);
+            onArchive: (CalendarEvent e) async {
+              widget.onCalendarEventArchive(e);
+              widget.items.remove(e);
             },
-            onHasBeenDoneUpdate: (MeasurableTask measurableTask) async {
-              widget.onHasBeenDoneUpdate(measurableTask);
-            },
-            isMeasurableTaskCardExpanded: widget.isMeasurableTaskCardExpanded,
-            onMeasurableTaskCardExpanded: (MeasurableTask measurableTask) {
-              widget.onMeasurableTaskCardExpanded(measurableTask);
-            },
-            isProVersion: widget.isProVersion,
           );
-        } else if (item is TaskWithSubtasks) {
-          return TaskWithSubtasksCard(
-            key: ValueKey(item),
-            taskWithSubtasks: item,
-            onTaskWithSubtasksDelete:
-                (TaskWithSubtasks taskWithSubtasks) async {
-              widget.onTaskWithSubtasksDelete(taskWithSubtasks);
-              widget.items.remove(taskWithSubtasks);
-            },
-            onTaskWithSubtasksEdit: (TaskWithSubtasks taskWithSubtasks) async {
-              widget.onTaskWithSubtasksEdit(taskWithSubtasks);
-            },
-            onTaskWithSubtasksToggleComplete:
-                (TaskWithSubtasks taskWithSubtasks) async {
-              widget.onTaskWithSubtasksToggleComplete(taskWithSubtasks);
-            },
-            onSubtasksChanged: (TaskWithSubtasks taskWithSubtasks) {
-              widget.onSubtasksChanged(taskWithSubtasks);
-            },
-            onTaskWithSubtasksCardExpanded:
-                (TaskWithSubtasks taskWithSubtasks) {
-              widget.onTaskWithSubtasksCardExpanded(taskWithSubtasks);
-            },
-            isTaskWithSubtasksCardExpanded:
-                widget.isTaskWithSubtasksCardExpanded,
-            isProVersion: widget.isProVersion,
-          );
-        } else if (item is Event) {
+          return _draggable(item, card);
         } else {
-          return const SizedBox();
+          return SizedBox(key: ValueKey(item));
         }
-        throw '';
       }),
-    );
-  }
-}
-
-class TaskWithSubtasksBloc
-    extends Bloc<TaskWithSubtasksEvent, TaskWithSubtasksState> {
-  final TaskWithSubtasks taskWithSubtasks;
-  late SharedPreferences _prefs;
-
-  TaskWithSubtasksBloc(this.taskWithSubtasks)
-      : super(TaskWithSubtasksInitial()) {
-    on<InitTaskWithSubtasks>((event, emit) async {
-      _prefs = await SharedPreferences.getInstance();
-      final isExpanded =
-          _prefs.getBool('isExpanded_${taskWithSubtasks.id}') ?? true;
-      emit(TaskWithSubtasksLoaded(isExpanded));
-    });
-
-    on<SaveIsExpanded>((event, emit) async {
-      _prefs.setBool('isExpanded_${taskWithSubtasks.id}', event.isExpanded);
-    });
-  }
-}
-
-abstract class TaskWithSubtasksEvent {}
-
-class InitTaskWithSubtasks extends TaskWithSubtasksEvent {}
-
-class SaveIsExpanded extends TaskWithSubtasksEvent {
-  final bool isExpanded;
-
-  SaveIsExpanded(this.isExpanded);
-}
-
-abstract class TaskWithSubtasksState {}
-
-class TaskWithSubtasksInitial extends TaskWithSubtasksState {}
-
-class TaskWithSubtasksLoaded extends TaskWithSubtasksState {
-  final bool isExpanded;
-
-  TaskWithSubtasksLoaded(this.isExpanded);
-}
-
-class BlocTaskWithSubtasksCard extends StatelessWidget {
-  final TaskWithSubtasks taskWithSubtasks;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksEdit;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksDelete;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksToggleComplete;
-  final Function(TaskWithSubtasks) onSubtasksChanged;
-
-  const BlocTaskWithSubtasksCard({
-    Key? key,
-    required this.taskWithSubtasks,
-    required this.onTaskWithSubtasksEdit,
-    required this.onTaskWithSubtasksDelete,
-    required this.onTaskWithSubtasksToggleComplete,
-    required this.onSubtasksChanged,
-  }) : super(key: key);
-
-  static Color contrastColor(Color color) {
-    final brightness = ThemeData.estimateBrightnessForColor(color);
-    switch (brightness) {
-      case Brightness.dark:
-        return Colors.white;
-      case Brightness.light:
-        return Colors.black;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final taskWithSubtasksColor = taskWithSubtasks.color;
-    final myColorScheme = Theme.of(context).brightness == Brightness.dark
-        ? ColorScheme.dark(primary: taskWithSubtasksColor)
-        : ColorScheme.light(primary: taskWithSubtasksColor);
-    final backgroundColor = myColorScheme.primaryContainer;
-    final labelColor = contrastColor(backgroundColor);
-
-    return BlocProvider(
-      create: (context) =>
-          TaskWithSubtasksBloc(taskWithSubtasks)..add(InitTaskWithSubtasks()),
-      child: BlocBuilder<TaskWithSubtasksBloc, TaskWithSubtasksState>(
-        builder: (context, state) {
-          if (state is TaskWithSubtasksInitial) {
-            return const CircularProgressIndicator();
-          } else if (state is TaskWithSubtasksLoaded) {
-            return Card(
-              color: backgroundColor,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => onTaskWithSubtasksEdit(taskWithSubtasks),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ListTile(
-                            title: Text(
-                              taskWithSubtasks.title,
-                              style: TextStyle(
-                                color: labelColor,
-                                decoration: taskWithSubtasks.isCompleted
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                              ),
-                            ),
-                            subtitle: taskWithSubtasks.description.isNotEmpty
-                                ? Text(
-                                    taskWithSubtasks.description,
-                                    style: TextStyle(color: labelColor),
-                                  )
-                                : null,
-                            trailing: PopupMenuButton<String>(
-                              icon: Icon(Icons.more_vert_outlined,
-                                  color: labelColor),
-                              onSelected: (String result) {
-                                if (result == 'option1') {
-                                  onTaskWithSubtasksEdit(taskWithSubtasks);
-                                } else if (result == 'option2') {
-                                  onTaskWithSubtasksDelete(taskWithSubtasks);
-                                } else if (result == 'option3') {
-                                  onTaskWithSubtasksToggleComplete(
-                                      taskWithSubtasks);
-                                } else if (result == 'option4') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => TimeIntervalPage(
-                                            taskWithSubtasks:
-                                                taskWithSubtasks)),
-                                  );
-                                } else if (result == 'option5') {
-                                  final isExpanded = !state.isExpanded;
-                                  context
-                                      .read<TaskWithSubtasksBloc>()
-                                      .add(SaveIsExpanded(isExpanded));
-                                  context
-                                      .read<TaskWithSubtasksBloc>()
-                                      .add(InitTaskWithSubtasks());
-                                }
-                              },
-                              itemBuilder: (BuildContext context) =>
-                                  <PopupMenuEntry<String>>[
-                                PopupMenuItem<String>(
-                                  value: 'option5',
-                                  child: Row(
-                                    children: [
-                                      Icon(state.isExpanded
-                                          ? Icons.chevron_right
-                                          : Icons.expand_more),
-                                      const SizedBox(width: 8),
-                                      state.isExpanded
-                                          ? const Text('Hide sub-tasks')
-                                          : const Text('Show sub-tasks'),
-                                    ],
-                                  ),
-                                ),
-                                PopupMenuItem<String>(
-                                  value: 'option3',
-                                  child: Row(
-                                    children: [
-                                      Icon(taskWithSubtasks.isCompleted
-                                          ? Icons.check_box
-                                          : Icons.check_box_outline_blank),
-                                      const SizedBox(width: 8),
-                                      taskWithSubtasks.isCompleted
-                                          ? const Text('Mark as incompleted')
-                                          : const Text('Mark as completed'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'option4',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.hourglass_empty_outlined),
-                                      SizedBox(width: 8),
-                                      Text('Add time interval'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'option6',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.timelapse_outlined),
-                                      SizedBox(width: 8),
-                                      Text('Focus right now?'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'option1',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.edit_outlined),
-                                      SizedBox(width: 8),
-                                      Text('Edit Task'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'option2',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.delete_outlined),
-                                      SizedBox(width: 8),
-                                      Text('Delete Task'),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (state.isExpanded)
-                            ...taskWithSubtasks.subtasks.map(
-                              (subtask) => CheckboxListTile(
-                                side: BorderSide(
-                                  color: labelColor,
-                                ),
-                                activeColor: labelColor,
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                                value: subtask.isSubtaskCompleted,
-                                onChanged: (value) {
-                                  subtask.isSubtaskCompleted = value ?? false;
-                                  onSubtasksChanged(taskWithSubtasks);
-                                },
-                                title: Text(
-                                  subtask.title,
-                                  style: TextStyle(
-                                    decoration: subtask.isSubtaskCompleted
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
-                                    color: labelColor,
-                                  ),
-                                ),
-                                secondary: IconButton(
-                                  icon: Icon(
-                                    Icons.delete_outlined,
-                                    color: labelColor,
-                                  ),
-                                  onPressed: () async {
-                                    final result = await showDialog<bool>(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return AlertDialog(
-                                          title: const Text('Delete Subtask'),
-                                          content: const Text(
-                                              'Are you sure you want to delete this subtask?'),
-                                          actions: <Widget>[
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context, false),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context, true),
-                                              child: const Text('Delete'),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                    if (result == true) {
-                                      taskWithSubtasks.subtasks.remove(subtask);
-                                      onSubtasksChanged(taskWithSubtasks);
-                                    }
-                                  },
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            // Handle other states or errors here
-            return SizedBox.shrink();
-          }
-        },
-      ),
     );
   }
 }
@@ -1494,7 +1393,8 @@ class TaskListsHolderBloc
 
   Future<void> _onDeleteTaskListEvent(
       DeleteTaskListEvent event, Emitter<TaskListsHolderState> emit) async {
-    await _databaseManager.deleteTaskList(event.id);
+    // Soft-delete: Ä‘Æ°a danh sÃ¡ch (vÃ  task con) vÃ o thÃ¹ng rÃ¡c.
+    await _databaseManager.softDeleteTaskList(event.id);
     final taskLists = state.taskLists..removeWhere((b) => b.id == event.id);
     await _saveOrder(taskLists);
     emit(state.copyWith(taskLists: taskLists));

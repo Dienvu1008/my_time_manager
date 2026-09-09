@@ -3,13 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
-import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_measurable_task.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/attached_notes_view.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task_with_subtasks.dart';
 import 'package:my_time_manager/utils/utils.dart';
 
 class TimeIntervalCard extends StatefulWidget {
@@ -161,6 +158,14 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                       color: Colors.white, fontSize: 10),
                                 ),
                               ),
+                            // Icon chuông cho biết interval này có đặt nhắc.
+                            if (widget
+                                .timeInterval.reminderMinutesBefore.isNotEmpty)
+                              Icon(
+                                Icons.notifications_active_outlined,
+                                size: 14,
+                                color: labelColor,
+                              ),
                           ],
                         ),
                         RichText(
@@ -205,45 +210,14 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                         } else if (result == 'go_to_main_task') {
                           final DatabaseManager databaseManager =
                               DatabaseManager();
-                          if (widget.timeInterval.taskWithSubtasksId != null) {
-                            final id = widget.timeInterval.taskWithSubtasksId;
-                            final TaskWithSubtasks taskWithSubtasks =
-                                await databaseManager.taskWithSubtasks(id!);
-                            final TaskList taskList = await databaseManager
-                                .taskList(taskWithSubtasks.taskListId);
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AddOrEditTaskWithSubtasksPage(
-                                  taskList: taskList,
-                                  taskWithSubtasks: taskWithSubtasks,
-                                ),
-                              ),
-                            );
-                          } else if (widget.timeInterval.measurableTaskId !=
-                              null) {
-                            final id = widget.timeInterval.measurableTaskId;
-                            final MeasurableTask measurableTask =
-                                await databaseManager.measurableTask(id!);
-                            final TaskList taskList = await databaseManager
-                                .taskList(measurableTask.taskListId);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AddOrEditMeasurableTaskPage(
-                                  taskList: taskList,
-                                  measurableTask: measurableTask,
-                                ),
-                              ),
-                            );
-                          } else if (widget.timeInterval.taskId != null) {
+                          if (widget.timeInterval.taskId != null) {
                             final id = widget.timeInterval.taskId;
                             final Task task = await databaseManager.task(id!);
-                            final TaskList taskList =
-                                await databaseManager.taskList(task.taskListId);
+                            final TaskList? taskList = task.taskListId == null
+                                ? null
+                                : await databaseManager
+                                    .taskList(task.taskListId!);
+                            if (!context.mounted) return;
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -266,7 +240,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
-                        if (widget.timeInterval.taskWithSubtasksId != null)
+                        if (widget.timeInterval.subtasks.isNotEmpty)
                           PopupMenuItem<String>(
                             value: 'option5',
                             child: Row(
@@ -281,7 +255,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                               ],
                             ),
                           ),
-                        if (widget.timeInterval.measurableTaskId != null)
+                        if (widget.timeInterval.unit.isNotEmpty)
                           PopupMenuItem<String>(
                             value: 'option6',
                             child: Row(
@@ -369,12 +343,20 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                     ),
                   ),
                   if (_isExpanded &&
-                      (widget.timeInterval.measurableTaskId != null ||
+                      (widget.timeInterval.unit.isNotEmpty ||
                           widget.timeInterval.description.isNotEmpty ||
-                          widget.timeInterval.location.isNotEmpty))
+                          widget.timeInterval.location.isNotEmpty ||
+                          widget.timeInterval.noteIds.isNotEmpty))
                     ListTile(
                       title: Column(
                         children: [
+                          if (widget.timeInterval.noteIds.isNotEmpty)
+                            AttachedNotesView(
+                              noteIds: widget.timeInterval.noteIds,
+                              color: labelColor,
+                              textStyle: textTheme.labelMedium!
+                                  .copyWith(color: labelColor),
+                            ),
                           if (widget.timeInterval.description.isNotEmpty)
                             Row(
                               children: [
@@ -405,7 +387,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                                 ),
                               ],
                             ),
-                          if (widget.timeInterval.measurableTaskId != null &&
+                          if (widget.timeInterval.unit.isNotEmpty &&
                               widget.timeInterval.targetType ==
                                   TargetType.about)
                             Text(
@@ -413,7 +395,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                               style: textTheme.labelMedium!
                                   .copyWith(color: labelColor),
                             ),
-                          if (widget.timeInterval.measurableTaskId != null &&
+                          if (widget.timeInterval.unit.isNotEmpty &&
                               widget.timeInterval.targetType ==
                                   TargetType.atLeast)
                             Text(
@@ -421,7 +403,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                               style: textTheme.labelMedium!
                                   .copyWith(color: labelColor),
                             ),
-                          if (widget.timeInterval.measurableTaskId != null &&
+                          if (widget.timeInterval.unit.isNotEmpty &&
                               widget.timeInterval.targetType ==
                                   TargetType.atMost)
                             Text(
@@ -429,7 +411,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                               style: textTheme.labelMedium!
                                   .copyWith(color: labelColor),
                             ),
-                          if (widget.timeInterval.measurableTaskId != null)
+                          if (widget.timeInterval.unit.isNotEmpty)
                             Center(
                               child: ActionChip(
                                 label: Text(
@@ -448,7 +430,7 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                       ),
                     ),
                   if (_isExpanded &&
-                      widget.timeInterval.taskWithSubtasksId != null)
+                      widget.timeInterval.subtasks.isNotEmpty)
                     SingleChildScrollView(
                       physics: const NeverScrollableScrollPhysics(),
                       child: Column(
@@ -460,17 +442,17 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                               side: BorderSide(
                                 color: labelColor,
                               ),
-                              activeColor: labelColor,
+                              //activeColor: labelColor,
                               controlAffinity: ListTileControlAffinity.leading,
-                              value: subtask.isSubtaskCompleted,
+                              value: subtask.isCompleted,
                               onChanged: (value) {
                                 setState(() {
-                                  subtask.isSubtaskCompleted = value ?? false;
+                                  subtask.isCompleted = value ?? false;
                                   widget.onSubtasksChanged(widget.timeInterval);
                                 });
                               },
                               title: Text(subtask.title,
-                                  style: subtask.isSubtaskCompleted
+                                  style: subtask.isCompleted
                                       ? textTheme.labelMedium!.copyWith(
                                           decoration:
                                               TextDecoration.lineThrough)

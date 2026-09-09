@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
-import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:my_time_manager/shared/appflowy_description.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_completion.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description_editor.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_location.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/listtile_notes_attachment.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_set_time_intervals_block.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_target_block.dart';
 import 'package:my_time_manager/utils/constants.dart';
@@ -32,7 +34,7 @@ class AddOrEditTimeIntervalPage extends StatefulWidget {
 class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+  late final EditorState _descriptionEditorState;
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _unitController = TextEditingController();
   final TextEditingController _hasBeenDoneController = TextEditingController();
@@ -55,6 +57,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
   bool _isCompleted = false;
   bool _isImportant = false;
   String _id = '';
+  List<String> _noteIds = [];
 
   // String _formattedStartDate = '--/--/----';
   // String _formattedStartTime = '--:--';
@@ -69,9 +72,10 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
       widget.timeInterval?.title != null
           ? _titleController.text = widget.timeInterval!.title
           : _titleController.text = '';
-      widget.timeInterval?.description != null
-          ? _descriptionController.text = widget.timeInterval!.description
-          : _descriptionController.text = '';
+      _descriptionEditorState = AppFlowyDescription.buildEditorState(
+        docJson: widget.timeInterval!.descriptionDoc,
+        plainText: widget.timeInterval!.description,
+      );
       widget.timeInterval?.location != null
           ? _locationController.text = widget.timeInterval!.location
           : _locationController.text = '';
@@ -99,6 +103,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
           : _targetType = TargetType.about;
       _isCompleted = widget.timeInterval!.isCompleted;
       _isImportant = widget.timeInterval!.isImportant;
+      _noteIds = List<String>.from(widget.timeInterval!.noteIds);
 
       _isStartDateUndefined = widget.timeInterval!.isStartDateUndefined;
       _isStartTimeUndefined = widget.timeInterval!.isStartTimeUndefined;
@@ -156,7 +161,27 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
       });
     } else {
       _id = const Uuid().v4();
+      _descriptionEditorState = AppFlowyDescription.buildEditorState(
+        docJson: '',
+        plainText: '',
+      );
     }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    _unitController.dispose();
+    _hasBeenDoneController.dispose();
+    _targetAtLeastController.dispose();
+    _targetAtMostController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    _descriptionEditorState.dispose();
+    super.dispose();
   }
 
   Future<void> _onSave() async {
@@ -229,7 +254,10 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
 
         final id = _id;
         final title = _titleController.text;
-        final description = _descriptionController.text;
+        final description =
+            AppFlowyDescription.extractPlainText(_descriptionEditorState);
+        final descriptionDoc =
+            AppFlowyDescription.encodeDoc(_descriptionEditorState);
         final location = _locationController.text;
         final isCompleted = widget.timeInterval == null ? false : _isCompleted;
         final isImportant = widget.timeInterval == null ? false : _isImportant;
@@ -358,6 +386,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
             isCompleted: isCompleted,
             isImportant: isImportant,
             description: description,
+            descriptionDoc: descriptionDoc,
             location: location,
             color: color,
             subtasks: subtasks,
@@ -375,8 +404,8 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
             startTime: startTime,
             endTime: endTime,
             taskId: widget.timeInterval!.taskId,
-            measurableTaskId: widget.timeInterval!.measurableTaskId,
-            taskWithSubtasksId: widget.timeInterval!.taskWithSubtasksId);
+            subtaskId: widget.timeInterval!.subtaskId,
+            noteIds: _noteIds);
         if ((timeInterval.startTimestamp != null &&
                 timeInterval.endTimestamp != null &&
                 timeInterval.startTimestamp! > timeInterval.endTimestamp!) ||
@@ -557,7 +586,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                     ),
                   ),
                 ),
-                if (widget.timeInterval!.measurableTaskId != null)
+                if (widget.timeInterval!.unit.isNotEmpty)
                   TargetBlockListTile(
                     unitController: _unitController,
                     targetAtLeastController: _targetAtLeastController,
@@ -567,15 +596,15 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                     onTargetTypeChanged: (value) =>
                         setState(() => _targetType = value),
                   ),
-                if (widget.timeInterval!.taskWithSubtasksId != null)
+                if (widget.timeInterval!.subtasks.isNotEmpty)
                   const SizedBox(height: 12.0),
-                if (widget.timeInterval!.taskWithSubtasksId != null)
+                if (widget.timeInterval!.subtasks.isNotEmpty)
                   ..._subtasks.reversed.map((subtask) => CheckboxListTile(
                         dense: true,
                         controlAffinity: ListTileControlAffinity.leading,
-                        value: subtask.isSubtaskCompleted,
+                        value: subtask.isCompleted,
                         onChanged: (value) => setState(
-                            () => subtask.isSubtaskCompleted = value ?? false),
+                            () => subtask.isCompleted = value ?? false),
                         title: GestureDetector(
                           onTap: () async {
                             final TextEditingController _controller =
@@ -614,7 +643,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                           child: Text(
                             subtask.title,
                             style: TextStyle(
-                              decoration: subtask.isSubtaskCompleted
+                              decoration: subtask.isCompleted
                                   ? TextDecoration.lineThrough
                                   : null,
                             ),
@@ -630,7 +659,7 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                         ),
                       )),
                 const SizedBox(height: 12.0),
-                if (widget.timeInterval!.taskWithSubtasksId != null)
+                if (widget.timeInterval!.subtasks.isNotEmpty)
                   Row(children: [
                     TextButton(
                       onPressed: () => _showAddSubtaskDialog(context),
@@ -644,14 +673,19 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
                       ),
                     ),
                   ]),
-                if (widget.timeInterval!.taskWithSubtasksId != null)
+                if (widget.timeInterval!.subtasks.isNotEmpty)
                   const SizedBox(height: 12),
-                if (widget.timeInterval!.taskWithSubtasksId != null)
+                if (widget.timeInterval!.subtasks.isNotEmpty)
                   const Divider(
                     height: 4,
                   ),
-                DescriptionListTile(
-                    descriptionController: _descriptionController),
+                DescriptionEditorTile(
+                  editorState: _descriptionEditorState,
+                ),
+                NotesAttachmentListTile(
+                  noteIds: _noteIds,
+                  onChanged: (ids) => setState(() => _noteIds = ids),
+                ),
                 LocationListTile(locationController: _locationController),
                 CompletionListTile(
                   isUsedForTimeInterval: true,
@@ -689,8 +723,8 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
             onPressed: () {
               setState(() {
                 _subtasks.add(Subtask(
-                  isSubtaskCompleted: false,
                   title: _subtaskTitleController.text,
+                  isCompleted: false,
                 ));
               });
               Navigator.pop(context);

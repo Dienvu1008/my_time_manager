@@ -1,5 +1,17 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
+
+# Some bundled third-party SDKs (e.g. the Firebase C++ SDK downloaded during the
+# Windows build) still declare cmake_minimum_required(VERSION < 3.5). CMake 4.x
+# removed compatibility with those old minimums, which makes configuration fail
+# with "Compatibility with CMake < 3.5 has been removed from CMake.".
+# Setting this policy-minimum cache default lets those old projects configure
+# without downgrading CMake. It only affects projects that would otherwise error.
+if(NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING
+    "Minimum CMake policy version for legacy third-party subprojects" FORCE)
+endif()
+
 project(my_time_manager LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
@@ -8,7 +20,7 @@ set(BINARY_NAME "my_time_manager")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
-cmake_policy(SET CMP0063 NEW)
+cmake_policy(VERSION 3.14...3.25)
 
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -65,7 +77,13 @@ include(flutter/generated_plugins.cmake)
 set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
 # Make the "install" step default, as it's required to run.
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+# Always install next to the executable (the in-tree bundle dir). On some
+# CMake/Visual Studio combinations CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT is
+# not set, which left CMAKE_INSTALL_PREFIX at the system default
+# "C:/Program Files/${PROJECT_NAME}". The install step then failed with
+# "file cannot create directory ... Maybe need administrative privileges."
+# Forcing the prefix here keeps the runnable bundle in the build tree.
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR CMAKE_INSTALL_PREFIX MATCHES "Program Files")
   set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
 endif()
 
@@ -86,6 +104,12 @@ if(PLUGIN_BUNDLED_LIBRARIES)
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Copy the native assets provided by the build.dart from all packages.
+set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
+install(DIRECTORY "${NATIVE_ASSETS_DIR}"
+   DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+   COMPONENT Runtime)
 
 # Fully re-copy the assets directory on each build to avoid having stale files
 # from a previous install.

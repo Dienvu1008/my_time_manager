@@ -334,6 +334,60 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  String get taskCardStyle {
+    return {
+      'en': 'Task card style',
+      'vi': 'Kiểu thẻ công việc',
+      'de': 'Stil der Aufgabenkarte',
+      'cs': 'Styl karty úkolu',
+      'es': 'Estilo de la tarjeta de tarea',
+      'fr': 'Style de la carte de tâche',
+      'it': 'Stile della scheda attività',
+      'ja': 'タスクカードのスタイル',
+      'ko': '작업 카드 스타일',
+      'no': 'Stil for oppgavekort',
+      'ru': 'Стиль карточки задачи',
+      'sv': 'Stil på uppgiftskort',
+      'zh': '任务卡片样式',
+    }[locale.languageCode]!;
+  }
+
+  String get taskCardStyleFilled {
+    return {
+      'en': 'Filled background',
+      'vi': 'Nền đầy màu',
+      'de': 'Gefüllter Hintergrund',
+      'cs': 'Vyplněné pozadí',
+      'es': 'Fondo relleno',
+      'fr': 'Fond rempli',
+      'it': 'Sfondo pieno',
+      'ja': '塗りつぶし背景',
+      'ko': '채운 배경',
+      'no': 'Fylt bakgrunn',
+      'ru': 'Заливка фона',
+      'sv': 'Fylld bakgrund',
+      'zh': '填充背景',
+    }[locale.languageCode]!;
+  }
+
+  String get taskCardStyleLeadingBar {
+    return {
+      'en': 'Colored side bar',
+      'vi': 'Dải màu bên trái',
+      'de': 'Farbiger Seitenbalken',
+      'cs': 'Barevný boční pruh',
+      'es': 'Barra lateral de color',
+      'fr': 'Barre latérale colorée',
+      'it': 'Barra laterale colorata',
+      'ja': '色付きサイドバー',
+      'ko': '색상 사이드 바',
+      'no': 'Farget sidestolpe',
+      'ru': 'Цветная боковая полоса',
+      'sv': 'Färgad sidorad',
+      'zh': '彩色侧边条',
+    }[locale.languageCode]!;
+  }
+
   String get delete {
     return {
       'en': 'Delete',
@@ -853,6 +907,42 @@ class AppLocalizations {
       'ru': 'Обзор',
       'sv': 'Översikt',
       'zh': '概述',
+    }[locale.languageCode]!;
+  }
+
+  String get timeline {
+    return {
+      'en': 'Timeline',
+      'vi': 'Dòng thời gian',
+      'de': 'Zeitleiste',
+      'cs': 'Časová osa',
+      'es': 'Cronología',
+      'fr': 'Chronologie',
+      'it': 'Cronologia',
+      'ja': 'タイムライン',
+      'ko': '타임라인',
+      'no': 'Tidslinje',
+      'ru': 'Хронология',
+      'sv': 'Tidslinje',
+      'zh': '时间线',
+    }[locale.languageCode]!;
+  }
+
+  String get archive {
+    return {
+      'en': 'Archive',
+      'vi': 'Lưu trữ',
+      'de': 'Archiv',
+      'cs': 'Archiv',
+      'es': 'Archivo',
+      'fr': 'Archives',
+      'it': 'Archivio',
+      'ja': 'アーカイブ',
+      'ko': '보관함',
+      'no': 'Arkiv',
+      'ru': 'Архив',
+      'sv': 'Arkiv',
+      'zh': '归档',
     }[locale.languageCode]!;
   }
 
@@ -2308,6 +2398,37 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  String get supportUsMessage {
+    return {
+      'en':
+          'Thank you for using our app. We hope this app will make all your plans go smoothly and more conveniently. Currently, we are working hard to improve and add more useful features to the app. However, this requires us to spend more time and finance for the development team. We would be very grateful if you could help us with one of the following things:\n1. Upgrade the app to the paid version.\n2. Consider and rate our app on the Play Store.\n3. Share this app with your friends and relatives.\nBest regards!',
+      'vi':
+          'Cảm ơn bạn đã sử dụng ứng dụng của chúng tôi. Chúng tôi hy vọng ứng dụng này sẽ giúp mọi kế hoạch của bạn sẽ diễn ra trôi chảy và thuận lợi hơn. Hiện nay, chúng tôi đang rất nỗ lực để hoàn thiện và đưa thêm nhiều tính năng hữu ích vào ứng dụng. Tuy nhiên, điều này đòi hỏi chúng tôi cần thêm thời gian và tài chính cho nhóm phát triển. Chúng tôi sẽ rất biết ơn nếu bạn có thể giúp chúng tôi một trong những điều dưới đây:\n1. Nâng cấp ứng dụng lên bản trả phí.\n2. Xem xét và đánh giá ứng dụng của chúng tôi trên Play Store.\n3. Chia sẻ ứng dụng này tới bạn bè và người thân của bạn.\nTrân trọng!',
+      'de':
+          'Vielen Dank, dass Sie unsere App verwenden. Wir hoffen, dass diese App alle Ihre Pläne reibungslos und bequemer macht. Derzeit arbeiten wir hart daran, die App zu verbessern und nützlichere Funktionen hinzuzufügen. Dies erfordert jedoch mehr Zeit und Finanzen für das Entwicklungsteam. Wir wären sehr dankbar, wenn Sie uns bei einer der folgenden Dinge helfen könnten:\n1. Aktualisieren Sie die App auf die kostenpflichtige Version.\n2. Betrachten und bewerten Sie unsere App im Play Store.\n3. Teilen Sie diese App mit Ihren Freunden und Verwandten.\nMit freundlichen Grüßen!',
+      'es':
+          'Gracias por usar nuestra aplicación. Esperamos que esta aplicación haga que todos sus planes se desarrollen sin problemas y de manera más conveniente. Actualmente, estamos trabajando arduamente para mejorar y agregar más funciones útiles a la aplicación. Sin embargo, esto requiere que dediquemos más tiempo y finanzas al equipo de desarrollo. Estaríamos muy agradecidos si pudiera ayudarnos con una de las siguientes cosas:\n1. Actualice la aplicación a la versión de pago.\n2. Considere y califique nuestra aplicación en Play Store.\n3. Comparta esta aplicación con sus amigos y familiares.\n¡Saludos cordiales!',
+      'fr':
+          'Merci d\'utiliser notre application. Nous espérons que cette application rendra tous vos plans plus fluides et plus pratiques. Actuellement, nous travaillons dur pour améliorer l\'application et ajouter des fonctionnalités plus utiles. Cependant, cela nécessite plus de temps et de financement pour l\'équipe de développement. Nous serions très reconnaissants si vous pouviez nous aider avec l\'un des points suivants :\n1. Mettez à niveau l\'application vers la version payante.\n2. Considérez et évaluez notre application sur le Play Store.\n3. Partagez cette application avec vos amis et votre famille.\nCordialement!',
+      'it':
+          'Grazie per aver utilizzato la nostra app. Speriamo che questa app renda tutti i tuoi piani più fluidi e convenienti. Attualmente, stiamo lavorando duramente per migliorare l\'app e aggiungere funzionalità più utili. Tuttavia, ciò richiede più tempo e finanziamenti per il team di sviluppo. Saremmo molto grati se potessi aiutarci con una delle seguenti cose:\n1. Aggiorna l\'app alla versione a pagamento.\n2. Considera e valuta la nostra app sul Play Store.\n3. Condividi questa app con i tuoi amici e parenti.\nCordiali saluti!',
+      'ja':
+          '私たちのアプリをご利用いただきありがとうございます。このアプリが皆様の計画をスムーズに、そしてより便利に進めることを願っています。現在、私たちはアプリの改善とより有用な機能の追加に努力しています。しかし、これには開発チームにより多くの時間と資金が必要です。以下のいずれかで私たちを支援していただけると大変感謝いたします：\n1. アプリを有料版にアップグレードする。\n2. Playストアで私たちのアプリを評価・レビューする。\n3. このアプリをご友人やご家族に共有する。\nよろしくお願いいたします！',
+      'ko':
+          '저희 앱을 사용해 주셔서 감사합니다. 이 앱이 여러분의 모든 계획을 원활하게 진행하고 더 편리하게 만들어 줄 것을 바랍니다. 현재 저희는 앱을 개선하고 더 유용한 기능을 추가하기 위해 노력하고 있습니다. 그러나 이것은 개발 팀에게 더 많은 시간과 재정을 필요로 합니다. 다음 중 하나를 도와주실 수 있다면 대단히 감사하겠습니다:\n1. 앱을 유료 버전으로 업그레이드합니다.\n2. Play 스토어에서 저희 앱을 고려하고 평가합니다.\n3. 이 앱을 친구와 가족에게 공유합니다.\n감사합니다!',
+      'no':
+          'Takk for at du bruker appen vår. Vi håper denne appen vil gjøre alle planene dine jevnere og mer praktiske. For tiden jobber vi hardt for å forbedre appen og legge til flere nyttige funksjoner. Imidlertid krever dette at vi bruker mer tid og økonomi på utviklingsteamet. Vi ville være veldig takknemlige hvis du kunne hjelpe oss med en av følgende ting:\n1. Oppgrader appen til betalt versjon.\n2. Vurder og ranger appen vår på Play Store.\n3. Del denne appen med vennene dine og slektningene dine.\nMed vennlig hilsen!',
+      'ru':
+          'Спасибо за использование нашего приложения. Мы надеемся, что это приложение поможет сделать все ваши планы более плавными и удобными. В настоящее время мы усердно работаем над улучшением приложения и добавлением более полезных функций. Однако это требует от нас больше времени и финансов на команду разработчиков. Мы были бы очень благодарны, если бы вы могли помочь нам одним из следующих способов:\n1. Обновите приложение до платной версии.\n2. Рассмотрите возможность оценки нашего приложения в Play Store.\n3. Поделитесь этим приложением с друзьями и родственниками.\nС уважением!',
+      'sv':
+          'Tack för att du använder vår app. Vi hoppas att denna app kommer att göra alla dina planer smidigare och mer bekvämt. För närvarande arbetar vi hårt för att förbättra och lägga till fler användbara funktioner i appen. Men detta kräver att vi spenderar mer tid och finansiering för utvecklingsteamet. Vi skulle vara mycket tacksamma om du kunde hjälpa oss med något av följande:\n1. Uppgradera appen till betald version.\n2. Överväg och betygsätt vår app på Play Store.\n3. Dela denna app med dina vänner och släktingar.\nMed vänliga hälsningar!',
+      'cs':
+          'Děkujeme vám za používání naší aplikace. Doufáme, že tato aplikace vám pomůže, aby všechny vaše plány probíhaly hladce a pohodlněji. V současné době tvrdě pracujeme na vylepšení a přidání dalších užitečných funkcí do aplikace. To však vyžaduje, abychom věnovali více času a financí vývojovému týmu. Byli bychom velmi vděční, pokud byste nám mohli pomoci s některou z následujících věcí:\n1. Upgradujte aplikaci na placenou verzi.\n2. Zvažte a ohodnoťte naši aplikaci na Play Store.\n3. Sdílejte tuto aplikaci se svými přáteli a příbuznými.\nS pozdravem!',
+      'zh':
+          '感谢您使用我们的应用程序。我们希望这款应用程序能使您的所有计划更顺畅，更方便。目前，我们正在努力改进并添加更多有用的功能到应用程序中。然而，这需要我们为开发团队花费更多的时间和财力。如果您能帮助我们做以下事情中的一项，我们将非常感激：\n1. 将应用程序升级到付费版本。\n2. 考虑并在Play商店中为我们的应用程序评分。\n3. 将此应用程序分享给您的朋友和亲戚。\n顺祝商祺！',
+    }[locale.languageCode]!;
+  }
+
   String get minimum {
     return {
       'en': 'minimum',
@@ -2382,23 +2503,29 @@ class AppLocalizations {
 
   String get featureUnderDevelopment {
     return {
-      'en': 'This feature is under development and will be available in the Pro version',
-      'vi': 'Chức năng này đang được phát triển và sẽ xuất hiện trên phiên bản Pro',
-      'de': 'Diese Funktion befindet sich in der Entwicklung und wird in der Pro-Version verfügbar sein',
+      'en':
+          'This feature is under development and will be available in the Pro version',
+      'vi':
+          'Chức năng này đang được phát triển và sẽ xuất hiện trên phiên bản Pro',
+      'de':
+          'Diese Funktion befindet sich in der Entwicklung und wird in der Pro-Version verfügbar sein',
       'cs': 'Tato funkce je ve vývoji a bude k dispozici v Pro verzi',
-      'es': 'Esta función está en desarrollo y estará disponible en la versión Pro',
-      'fr': 'Cette fonctionnalité est en cours de développement et sera disponible dans la version Pro',
-      'it': 'Questa funzione è in fase di sviluppo e sarà disponibile nella versione Pro',
+      'es':
+          'Esta función está en desarrollo y estará disponible en la versión Pro',
+      'fr':
+          'Cette fonctionnalité est en cours de développement et sera disponible dans la version Pro',
+      'it':
+          'Questa funzione è in fase di sviluppo e sarà disponibile nella versione Pro',
       'ja': 'この機能は開発中で、Proバージョンで利用可能になります',
       'ko': '이 기능은 개발 중이며 Pro 버전에서 사용할 수 있습니다',
-      'no': 'Denne funksjonen er under utvikling og vil være tilgjengelig i Pro-versjonen',
+      'no':
+          'Denne funksjonen er under utvikling og vil være tilgjengelig i Pro-versjonen',
       'ru': 'Эта функция находится в разработке и будет доступна в Pro версии',
-      'sv': 'Denna funktion är under utveckling och kommer att finnas tillgänglig i Pro-versionen',
+      'sv':
+          'Denna funktion är under utveckling och kommer att finnas tillgänglig i Pro-versionen',
       'zh': '此功能正在开发中，将在专业版中提供',
     }[locale.languageCode]!;
   }
-
-
 
   String get featureAvailableSoon {
     return {

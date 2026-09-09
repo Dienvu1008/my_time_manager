@@ -1,7 +1,5 @@
 import 'dart:collection';
-import 'dart:io';
 
-import 'dart:math';
 import 'package:calendar_widgets/src_sticky_header/widgets/sliver_sticky_header.dart';
 import 'package:calendar_widgets/src_table_calendar/customization/calendar_builders.dart';
 import 'package:calendar_widgets/src_table_calendar/shared/utils.dart';
@@ -10,9 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
-import 'package:my_time_manager/home/data_controller_provider.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/card_time_interval.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 
 import '../home/component_widgets/button_brightness.dart';
@@ -20,12 +19,17 @@ import '../home/component_widgets/button_color_image.dart';
 import '../home/component_widgets/button_color_seed.dart';
 import '../home/component_widgets/button_language.dart';
 import '../home/component_widgets/button_material3.dart';
-import '../home/component_widgets/button_select_calendar_mode.dart';
-import '../home/component_widgets/button_show_timeline_calendar.dart';
 import '../home/component_widgets/button_use_bottom_bar.dart';
 import '../utils/constants.dart';
 import '../utils/utils.dart';
 
+/// Màn Timeline theo phong cách "Schedule view" của Google Calendar:
+///   - AppBar hiển thị tháng/năm + mũi tên để mở/thu gọn lịch lưới tháng.
+///   - Danh sách agenda cuộn liên tục: TẤT CẢ sự kiện (quá khứ + tương lai)
+///     nhóm theo ngày (chỉ ngày có sự kiện), mỗi ngày một header dính, mỗi sự
+///     kiện là một dòng gọn (giờ | thanh màu | tiêu đề + địa điểm).
+///   - Tự cuộn tới hôm nay khi mở; bấm một ngày trên lịch sẽ cuộn agenda tới
+///     ngày đó.
 class TableComplexExample extends StatefulWidget {
   final List<TimeInterval> timeIntervals;
 
@@ -47,7 +51,7 @@ class TableComplexExample extends StatefulWidget {
   final bool showLanguagesButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
 
-  TableComplexExample({
+  const TableComplexExample({
     super.key,
     required this.handleBrightnessChange,
     required this.handleMaterialVersionChange,
@@ -67,275 +71,205 @@ class TableComplexExample extends StatefulWidget {
     required this.showMaterialDesignButtonInAppBar,
     required this.timeIntervals,
   });
+
   @override
-  _TableComplexExampleState createState() => _TableComplexExampleState();
+  State<TableComplexExample> createState() => _TableComplexExampleState();
 }
 
 class _TableComplexExampleState extends State<TableComplexExample> {
   final DatabaseManager _databaseManager = DatabaseManager();
+  final ScrollController _scrollController = ScrollController();
 
-  late final ValueNotifier<List<TimeInterval>> _selectedTimeIntervals;
+  /// Tất cả interval, giữ trong state để cập nhật cục bộ khi sửa/xóa.
+  late List<TimeInterval> _timeIntervals;
+
+  /// Bản đồ ngày -> danh sách interval (đã sắp theo giờ). Chỉ chứa ngày có sự kiện.
+  late LinkedHashMap<DateTime, List<TimeInterval>> _byDay;
+
+  /// Danh sách ngày (có sự kiện) đã sắp tăng dần — thứ tự dựng agenda.
+  late List<DateTime> _days;
+
+  /// Key của header từng ngày — dùng để cuộn tới ngày đó.
+  final Map<DateTime, GlobalKey> _dayKeys = {};
+
+  /// Key đánh dấu sliver "center" (giữ ổn định để không nhảy khi rebuild).
+  final Map<DateTime, Key> _dayCenterKeys = {};
+
+  /// Ngày "trung tâm" mà agenda mở sẵn (ngày có sự kiện đầu tiên >= hôm nay).
+  /// Tính MỘT LẦN lúc khởi tạo để tránh nhảy vị trí khi sửa/xóa sự kiện.
+  DateTime? _centerDay;
+
+  /// Tháng đang hiển thị trên AppBar (theo ngày người dùng focus / cuộn tới).
   final ValueNotifier<DateTime> _focusedDay = ValueNotifier(DateTime.now());
 
-  final Set<DateTime> _selectedDays = LinkedHashSet<DateTime>(
-    equals: isSameDay,
-    hashCode: getHashCode,
-  );
-
-  List<DateTime> _selectedDaysList = [];
-  late LinkedHashMap<DateTime, List<TimeInterval>> _kTimeIntervals =
-      LinkedHashMap<DateTime, List<TimeInterval>>(
-    equals: isSameDay,
-    hashCode: getHashCode,
-  );
-
-  late PageController _pageController;
-  CalendarFormat _calendarFormat = CalendarFormat.month;
-  RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOff;
-  DateTime? _rangeStart;
-  DateTime? _rangeEnd;
-  List<TimeInterval> _timeIntervals = [];
-  bool _showCalendar = true;
+  /// Có đang mở lịch lưới tháng hay không (mặc định thu gọn — giống Google).
+  bool _showCalendar = false;
 
   @override
   void initState() {
     super.initState();
+    _timeIntervals = List<TimeInterval>.from(widget.timeIntervals);
+    _rebuildIndex();
+    _computeCenterDay();
+  }
 
-    _timeIntervals = widget.timeIntervals;
-
-    _initData();
-
-    _selectedDays.add(_focusedDay.value);
-    _selectedDaysList = _selectedDays.toList()..sort((a, b) => a.compareTo(b));
-
-    _selectedTimeIntervals =
-        ValueNotifier(_getTimeIntervalsForDay(_focusedDay.value));
+  /// Xác định ngày trung tâm (mở sẵn) MỘT LẦN: ngày có sự kiện đầu tiên >= hôm
+  /// nay, hoặc ngày cuối cùng nếu tất cả đều ở quá khứ.
+  void _computeCenterDay() {
+    if (_days.isEmpty) {
+      _centerDay = null;
+      return;
+    }
+    final now = DateTime.now();
+    final todayKey = DateTime(now.year, now.month, now.day);
+    _centerDay = _days.firstWhere(
+      (d) => !d.isBefore(todayKey),
+      orElse: () => _days.last,
+    );
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _focusedDay.dispose();
-    _selectedTimeIntervals.dispose();
-
     super.dispose();
   }
 
-  // Future<void> _loadData() async {
-  //   final timeIntervals = await _databaseManager.timeIntervals();
-  //   final kTimeIntervalSource = <DateTime, List<TimeInterval>>{};
-  //   for (final interval in timeIntervals) {
-  //     final date = (interval.startDate != null)
-  //         ? DateTime(interval.startDate!.year, interval.startDate!.month,
-  //             interval.startDate!.day)
-  //         : DateTime(interval.endDate!.year, interval.endDate!.month,
-  //             interval.endDate!.day);
-  //
-  //     if (kTimeIntervalSource.containsKey(date)) {
-  //       kTimeIntervalSource[date]!.add(interval);
-  //
-  //       // Sắp xếp các TimeInterval theo startTime
-  //       kTimeIntervalSource[date]!.sort((a, b) {
-  //         if (a.startTime == null) return -1;
-  //         if (b.startTime == null) return 1;
-  //         if (a.startTime != null && b.startTime != null) {
-  //           final aMinutes = a.startTime!.hour * 60 + a.startTime!.minute;
-  //           final bMinutes = b.startTime!.hour * 60 + b.startTime!.minute;
-  //           return aMinutes.compareTo(bMinutes);
-  //         }
-  //         return 0;
-  //       });
-  //     } else {
-  //       kTimeIntervalSource[date] = [interval];
-  //     }
-  //   }
-  //
-  //   _kTimeIntervals = LinkedHashMap<DateTime, List<TimeInterval>>(
-  //     equals: isSameDay,
-  //     hashCode: getHashCode,
-  //   )..addAll(kTimeIntervalSource);
-  //
-  //   _timeIntervals = timeIntervals;
-  // }
+  /// Chuẩn hoá về đầu ngày (bỏ giờ) để gom nhóm/tra cứu.
+  DateTime _dayOf(TimeInterval ti) {
+    final d = ti.startDate ?? ti.endDate ?? DateTime.now();
+    return DateTime(d.year, d.month, d.day);
+  }
 
-  _initData() {
-    final kTimeIntervalSource = <DateTime, List<TimeInterval>>{};
-    for (final interval in _timeIntervals) {
-      final date = (interval.startDate != null)
-          ? DateTime(interval.startDate!.year, interval.startDate!.month,
-              interval.startDate!.day)
-          : DateTime(interval.endDate!.year, interval.endDate!.month,
-              interval.endDate!.day);
-
-      if (kTimeIntervalSource.containsKey(date)) {
-        kTimeIntervalSource[date]!.add(interval);
-
-        // Sắp xếp các TimeInterval theo startTime
-        kTimeIntervalSource[date]!.sort((a, b) {
-          if (a.startTime == null) return -1;
-          if (b.startTime == null) return 1;
-          if (a.startTime != null && b.startTime != null) {
-            final aMinutes = a.startTime!.hour * 60 + a.startTime!.minute;
-            final bMinutes = b.startTime!.hour * 60 + b.startTime!.minute;
-            return aMinutes.compareTo(bMinutes);
-          }
-          return 0;
-        });
-      } else {
-        kTimeIntervalSource[date] = [interval];
-      }
+  /// Dựng lại chỉ mục ngày -> sự kiện và danh sách ngày đã sắp xếp.
+  void _rebuildIndex() {
+    final map = <DateTime, List<TimeInterval>>{};
+    for (final ti in _timeIntervals) {
+      final day = _dayOf(ti);
+      map.putIfAbsent(day, () => []).add(ti);
     }
-
-    _kTimeIntervals = LinkedHashMap<DateTime, List<TimeInterval>>(
+    // Sắp mỗi ngày theo giờ bắt đầu (không có giờ -> lên trước).
+    for (final list in map.values) {
+      list.sort((a, b) {
+        final am = a.startTime == null
+            ? -1
+            : a.startTime!.hour * 60 + a.startTime!.minute;
+        final bm = b.startTime == null
+            ? -1
+            : b.startTime!.hour * 60 + b.startTime!.minute;
+        return am.compareTo(bm);
+      });
+    }
+    final sortedDays = map.keys.toList()..sort((a, b) => a.compareTo(b));
+    _days = sortedDays;
+    _byDay = LinkedHashMap<DateTime, List<TimeInterval>>(
       equals: isSameDay,
       hashCode: getHashCode,
-    )..addAll(kTimeIntervalSource);
-  }
+    )..addAll({for (final d in sortedDays) d: map[d]!});
 
-  bool get canClearSelection =>
-      _selectedDays.isNotEmpty || _rangeStart != null || _rangeEnd != null;
-
-  List<TimeInterval> _getTimeIntervalsForDay(DateTime day) {
-    return _kTimeIntervals[day] ?? [];
-  }
-
-  List<TimeInterval> _getTimeIntervalsForDays(Iterable<DateTime> days) {
-    return [
-      for (final d in days) ..._getTimeIntervalsForDay(d),
-    ];
-  }
-
-  List<TimeInterval> _getTimeIntervalsForRange(DateTime start, DateTime end) {
-    final days = daysInRange(start, end);
-    return _getTimeIntervalsForDays(days);
-  }
-
-  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
-    setState(() {
-      if (_selectedDays.contains(selectedDay)) {
-        _selectedDays.remove(selectedDay);
-      } else {
-        _selectedDays.add(selectedDay);
-      }
-      _selectedDaysList = _selectedDays.toList()
-        ..sort((a, b) => a.compareTo(b));
-
-      _focusedDay.value = focusedDay;
-      _rangeStart = null;
-      _rangeEnd = null;
-      _rangeSelectionMode = RangeSelectionMode.toggledOff;
-    });
-
-    _selectedTimeIntervals.value = _getTimeIntervalsForDays(_selectedDaysList);
-  }
-
-  void _onRangeSelected(DateTime? start, DateTime? end, DateTime focusedDay) {
-    setState(() {
-      _focusedDay.value = focusedDay;
-      _rangeStart = start;
-      _rangeEnd = end;
-      _selectedDays.clear();
-      _rangeSelectionMode = RangeSelectionMode.toggledOn;
-
-    });
-
-    if (start != null && end != null) {
-      _selectedTimeIntervals.value = _getTimeIntervalsForRange(start, end);
-    } else if (start != null) {
-      _selectedTimeIntervals.value = _getTimeIntervalsForDay(start);
-    } else if (end != null) {
-      _selectedTimeIntervals.value = _getTimeIntervalsForDay(end);
+    // Đảm bảo mỗi ngày có một key ổn định để cuộn tới.
+    for (final d in sortedDays) {
+      _dayKeys.putIfAbsent(d, () => GlobalKey());
     }
   }
+
+  List<TimeInterval> _eventsForDay(DateTime day) => _byDay[day] ?? const [];
+
+  /// Cuộn agenda tới [day] (ngày có sự kiện gần nhất >= day nếu day không có).
+  void _scrollToDay(DateTime day) {
+    final target = DateTime(day.year, day.month, day.day);
+    // Tìm ngày có sự kiện trùng, hoặc ngày kế tiếp gần nhất.
+    DateTime? match;
+    for (final d in _days) {
+      if (!d.isBefore(target)) {
+        match = d;
+        break;
+      }
+    }
+    match ??= _days.isNotEmpty ? _days.last : null;
+    if (match == null) return;
+    final key = _dayKeys[match];
+    final ctx = key?.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+        alignment: 0.0,
+      );
+    }
+    _focusedDay.value = match;
+  }
+
+  void _scrollToToday() {
+    if (!mounted || !_scrollController.hasClients) return;
+    // Với CustomScrollView dùng center + anchor 0.0, offset 0 chính là đầu của
+    // sliver "trung tâm" (hôm nay). Cuộn về 0 là quay lại hôm nay.
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+    );
+    if (_centerDay != null) _focusedDay.value = _centerDay!;
+  }
+
+  // ------------------------------------------------------------------
+  // CRUD cục bộ (cập nhật state + DB)
+  // ------------------------------------------------------------------
 
   Future<void> _deleteTimeInterval(TimeInterval timeInterval) async {
     await _databaseManager.deleteTimeInterval(timeInterval.id);
     setState(() {
-      _timeIntervals.remove(timeInterval);
-      _selectedTimeIntervals.value.remove(timeInterval);
+      _timeIntervals.removeWhere((e) => e.id == timeInterval.id);
+      _rebuildIndex();
     });
   }
 
-  Future<void> _onTimeIntervalToggleCompleted(TimeInterval timeInterval) async {
-    TimeInterval _timeInterval =
+  Future<void> _onToggleCompleted(TimeInterval timeInterval) async {
+    final updated =
         timeInterval.copyWith(isCompleted: !timeInterval.isCompleted);
-    await _databaseManager.updateTimeInterval(_timeInterval);
-    final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
-    final index =
-        _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
-    final index2 = _selectedTimeIntervals.value
-        .indexWhere((item) => item.id == updatedTimeInterval.id);
-    if (index != -1) {
-      setState(() {
-        _timeIntervals[index] = updatedTimeInterval;
-        _selectedTimeIntervals.value[index2] = updatedTimeInterval;
-      });
-    }
+    await _databaseManager.updateTimeInterval(updated);
+    _replaceLocal(await _databaseManager.timeInterval(timeInterval.id));
   }
 
-  Future<void> _onSubtasksChanged(TimeInterval timeInterval) async {
-    TimeInterval _timeInterval = timeInterval.copyWith(
-      subtasks: timeInterval.subtasks,
-    );
-    await _databaseManager.updateTimeInterval(_timeInterval);
-    final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
-    final index =
-        _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
-    final index2 = _selectedTimeIntervals.value
-        .indexWhere((item) => item.id == updatedTimeInterval.id);
-    if (index != -1) {
-      setState(() {
-        _timeIntervals[index] = updatedTimeInterval;
-        _selectedTimeIntervals.value[index2] = updatedTimeInterval;
-      });
-    }
-  }
-
-  Future<void> _onHasBeenDoneUpdate(TimeInterval timeInterval) async {
-    final TextEditingController _hasBeenDoneController = TextEditingController(
-      text: timeInterval.howMuchHasBeenDone.toString(),
-    );
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.hasBeenDone),
-        content: TextFormField(
-          controller: _hasBeenDoneController,
-          keyboardType: const TextInputType.numberWithOptions(
-              decimal: true, signed: false),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () async {
-              TimeInterval _timeInterval = timeInterval.copyWith(
-                  howMuchHasBeenDone:
-                      double.parse(_hasBeenDoneController.text));
-              await _databaseManager.updateTimeInterval(_timeInterval);
-              final updatedTimeInterval =
-                  await _databaseManager.timeInterval(timeInterval.id);
-              final index = _timeIntervals
-                  .indexWhere((item) => item.id == updatedTimeInterval.id);
-              final index2 = _selectedTimeIntervals.value
-                  .indexWhere((item) => item.id == updatedTimeInterval.id);
-              if (index != -1) {
-                setState(() {
-                  _timeIntervals[index] = updatedTimeInterval;
-                  _selectedTimeIntervals.value[index2] = updatedTimeInterval;
-                });
-              }
-
-              Navigator.pop(context);
-            },
-            child: Text(AppLocalizations.of(context)!.update),
-          ),
-        ],
+  Future<void> _editTimeInterval(TimeInterval timeInterval) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddOrEditTimeIntervalPage(timeInterval: timeInterval),
+        fullscreenDialog: false,
       ),
     );
+    if (!mounted) return;
+    _replaceLocal(await _databaseManager.timeInterval(timeInterval.id));
+  }
+
+  /// Mở task gốc của time interval (nếu có) để xem/sửa. Sau khi quay lại, đồng
+  /// bộ lại time interval trong danh sách vì task có thể đã đổi tiêu đề/màu.
+  Future<void> _goToMainTask(TimeInterval timeInterval) async {
+    final taskId = timeInterval.taskId;
+    if (taskId == null) return;
+    final Task task = await _databaseManager.task(taskId);
+    final TaskList? taskList = task.taskListId == null
+        ? null
+        : await _databaseManager.taskList(task.taskListId!);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddOrEditTaskPage(taskList: taskList, task: task),
+      ),
+    );
+    if (!mounted) return;
+    _replaceLocal(await _databaseManager.timeInterval(timeInterval.id));
+  }
+
+  void _replaceLocal(TimeInterval updated) {
+    final index = _timeIntervals.indexWhere((e) => e.id == updated.id);
+    if (index != -1) {
+      setState(() {
+        _timeIntervals[index] = updated;
+        _rebuildIndex();
+      });
+    }
   }
 
   @override
@@ -343,207 +277,280 @@ class _TableComplexExampleState extends State<TableComplexExample> {
     return Expanded(
       child: Column(
         children: [
-          AppBar(
-              title: ValueListenableBuilder<DateTime>(
-                valueListenable: _focusedDay,
-                builder: (context, value, _) {
-                  return _CalendarHeader(
-                    focusedDay: value,
-                    //focusedDay: _focusedDayNew,
-                    clearButtonVisible: canClearSelection,
-                    onTodayButtonTap: () {
-                      setState(() => _focusedDay.value = DateTime.now());
-                      //setState(() => _focusedDayNew = DateTime.now());
-                    },
-                    onClearButtonTap: () {
-                      setState(() {
-                        _rangeStart = null;
-                        _rangeEnd = null;
-                        _selectedDays.clear();
-                        _selectedTimeIntervals.value = [];
-                        //_selectedTimeIntervalsNew = [];
-                      });
-                    },
-                    onLeftArrowTap: () {
-                      _pageController.previousPage(
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
-                    },
-                    onRightArrowTap: () {
-                      _pageController.nextPage(
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
-                    },
-                    onSelectionModeChanged: (String value) {
-                      setState(() {
-                        if (value == 'multi') {
-                          _rangeSelectionMode = RangeSelectionMode.toggledOff;
-                        } else if (value == 'range') {
-                          _rangeSelectionMode = RangeSelectionMode.toggledOn;
-                        } else if (value == 'hide calendar') {
-                          _showCalendar = false;
-                        } else if (value == 'show calendar') {
-                          _showCalendar = true;
-                        }
-                      });
-                    },
-                    rangeSelectionMode: _rangeSelectionMode,
-                    showCalendar: _showCalendar,
-                  );
-                },
-              ),
-              actions: [
-                MenuAnchor(
-                  builder: (context, controller, child) {
-                    return IconButton(
-                      onPressed: () {
-                        if (controller.isOpen) {
-                          controller.close();
-                        } else {
-                          controller.open();
-                        }
-                      },
-                      icon: const Icon(Icons.more_vert_outlined),
-                    );
-                  },
-                  menuChildren: [
-                    ShowHideCalendarMenuItemButton(
-                      handleCalendarVisibilityChange: () => setState(() {
-                        _showCalendar = !_showCalendar;
-                      }),
-                      showCalendar: _showCalendar,
+          _buildAppBar(context),
+          if (_showCalendar) _buildCalendar(context),
+          Expanded(child: _buildAgenda(context)),
+        ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // AppBar: tháng/năm + mũi tên mở lịch + menu tuỳ chọn
+  // ------------------------------------------------------------------
+
+  Widget _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: ValueListenableBuilder<DateTime>(
+        valueListenable: _focusedDay,
+        builder: (context, day, _) {
+          final headerText =
+              DateFormat.yMMMM(Localizations.localeOf(context).languageCode)
+                  .format(day);
+          return InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => setState(() => _showCalendar = !_showCalendar),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      headerText,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 16.0, fontWeight: FontWeight.bold),
                     ),
-                    if (_showCalendar)
-                      CalendarModeSubmenuButton(
-                        handleSelectionModeChange: (String value) {
-                          setState(
-                            () {
-                              if (value == 'multi') {
-                                _rangeSelectionMode =
-                                    RangeSelectionMode.toggledOff;
-                              } else if (value == 'range') {
-                                _rangeSelectionMode =
-                                    RangeSelectionMode.toggledOn;
-                              }
-                            },
-                          );
-                        },
-                        rangeSelectionMode: _rangeSelectionMode,
-                      ),
-                    if (widget.showBrightnessButtonInAppBar)
-                      BrightnessMenuItemButton(
-                        handleBrightnessChange: widget.handleBrightnessChange,
-                      ),
-                    if (widget.showMaterialDesignButtonInAppBar)
-                      Material3MenuItemButton(
-                        handleMaterialVersionChange:
-                            widget.handleMaterialVersionChange,
-                      ),
-                    //if(widget.s)
-                    UsingBottomBarMenuItemButton(
-                        handleUsingBottomBarChange:
-                            widget.handleUsingBottomBarChange,
-                        useBottomBar: widget.useBottomBar),
-                    if (widget.showColorSeedButtonInAppBar)
-                      ColorSeedSubmenuButton(
-                        handleColorSelect: widget.handleColorSelect,
-                        colorSelected: widget.colorSelected,
-                        colorSelectionMethod: widget.colorSelectionMethod,
-                      ),
-                    if (widget.showColorImageButtonInAppBar)
-                      ColorImageSubmenuButton(
-                        handleImageSelect: widget.handleImageSelect,
-                        imageSelected: widget.imageSelected,
-                        colorSelectionMethod: widget.colorSelectionMethod,
-                      ),
-                    if (widget.showLanguagesButtonInAppBar)
-                      LanguageSubmenuButton(
-                        handleLanguageSelect: widget.handleLanguageSelect,
-                        languageSelected: widget.languageSelected,
-                      ),
-                  ],
-                ),
-              ]),
-          if (_showCalendar)
-            Card(
-              child: TableCalendar<TimeInterval>(
-                firstDay: kFirstDay,
-                lastDay: kLastDay,
-                focusedDay: _focusedDay.value,
-                //focusedDay: _focusedDayNew,
-                headerVisible: false,
-                selectedDayPredicate: (day) => _selectedDays.contains(day),
-                rangeStartDay: _rangeStart,
-                rangeEndDay: _rangeEnd,
-                calendarFormat: _calendarFormat,
-                rangeSelectionMode: _rangeSelectionMode,
-                eventLoader: _getTimeIntervalsForDay,
-                daysOfWeekVisible: true,
-                startingDayOfWeek: StartingDayOfWeek.monday,
-                onDaySelected: _onDaySelected,
-                onRangeSelected: _onRangeSelected,
-                onCalendarCreated: (controller) => _pageController = controller,
-                onPageChanged: (focusedDay) => _focusedDay.value = focusedDay,
-                //onPageChanged: (focusedDay) => _focusedDayNew = focusedDay,
-                onFormatChanged: (format) {
-                  if (_calendarFormat != format) {
-                    setState(() => _calendarFormat = format);
-                  }
-                },
-                calendarBuilders:
-                    CalendarBuilders(
-                  markerBuilder: (BuildContext context, date, timeIntervals) {
-                    if (timeIntervals.isEmpty) return const SizedBox();
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      scrollDirection: Axis.horizontal,
-                      itemCount: timeIntervals.length,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          margin: const EdgeInsets.only(top: 20),
-                          padding: const EdgeInsets.all(1),
-                          child: Container(
-                            width: 5,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: timeIntervals[index].color,
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
+                  ),
+                  Icon(_showCalendar
+                      ? Icons.arrow_drop_up
+                      : Icons.arrow_drop_down),
+                ],
               ),
             ),
+          );
+        },
+      ),
+      actions: [
+        IconButton(
+          tooltip: 'Hôm nay',
+          icon: const Icon(Icons.today_outlined),
+          onPressed: () {
+            _focusedDay.value = DateTime.now();
+            _scrollToToday();
+          },
+        ),
+        MenuAnchor(
+          builder: (context, controller, child) {
+            return IconButton(
+              onPressed: () =>
+                  controller.isOpen ? controller.close() : controller.open(),
+              icon: const Icon(Icons.more_vert_outlined),
+            );
+          },
+          menuChildren: [
+            if (widget.showBrightnessButtonInAppBar)
+              BrightnessMenuItemButton(
+                handleBrightnessChange: widget.handleBrightnessChange,
+              ),
+            if (widget.showMaterialDesignButtonInAppBar)
+              Material3MenuItemButton(
+                handleMaterialVersionChange: widget.handleMaterialVersionChange,
+              ),
+            UsingBottomBarMenuItemButton(
+              handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+              useBottomBar: widget.useBottomBar,
+            ),
+            if (widget.showColorSeedButtonInAppBar)
+              ColorSeedSubmenuButton(
+                handleColorSelect: widget.handleColorSelect,
+                colorSelected: widget.colorSelected,
+                colorSelectionMethod: widget.colorSelectionMethod,
+              ),
+            if (widget.showColorImageButtonInAppBar)
+              ColorImageSubmenuButton(
+                handleImageSelect: widget.handleImageSelect,
+                imageSelected: widget.imageSelected,
+                colorSelectionMethod: widget.colorSelectionMethod,
+              ),
+            if (widget.showLanguagesButtonInAppBar)
+              LanguageSubmenuButton(
+                handleLanguageSelect: widget.handleLanguageSelect,
+                languageSelected: widget.languageSelected,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Lịch lưới tháng (mở khi nhấn mũi tên) — bấm ngày để cuộn agenda tới đó
+  // ------------------------------------------------------------------
+
+  Widget _buildCalendar(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: TableCalendar<TimeInterval>(
+        firstDay: kFirstDay,
+        lastDay: kLastDay,
+        focusedDay: _focusedDay.value,
+        headerVisible: true,
+        daysOfWeekVisible: true,
+        startingDayOfWeek: StartingDayOfWeek.monday,
+        eventLoader: _eventsForDay,
+        selectedDayPredicate: (day) => isSameDay(day, _focusedDay.value),
+        onDaySelected: (selectedDay, focusedDay) {
+          setState(() => _focusedDay.value = selectedDay);
+          _scrollToDay(selectedDay);
+        },
+        onPageChanged: (focusedDay) => _focusedDay.value = focusedDay,
+        calendarBuilders: CalendarBuilders(
+          markerBuilder: (context, date, events) {
+            if (events.isEmpty) return const SizedBox();
+            return Padding(
+              padding: const EdgeInsets.only(top: 30),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (final e in events.take(4))
+                    Container(
+                      width: 5,
+                      height: 5,
+                      margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: e.color,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Agenda: danh sách cuộn liên tục, nhóm theo ngày, header dính
+  // ------------------------------------------------------------------
+
+  Widget _buildAgenda(BuildContext context) {
+    if (_days.isEmpty) {
+      return const _EmptyAgenda();
+    }
+
+    // Ngày "trung tâm" (đã tính một lần ở initState). Nếu ngày đó không còn
+    // (bị xóa hết sự kiện), lấy ngày có sự kiện đầu tiên >= nó, hoặc ngày đầu.
+    DateTime centerDay = _centerDay ?? _days.first;
+    int centerIndex = _days.indexWhere((d) => !d.isBefore(centerDay));
+    if (centerIndex == -1) centerIndex = 0;
+    centerDay = _days[centerIndex];
+
+    final before = <Widget>[]; // các ngày trước centerDay (dựng đảo ngược)
+    final after = <Widget>[]; // centerDay trở đi
+    for (var i = 0; i < _days.length; i++) {
+      final sliver = _daySliver(_days[i]);
+      if (i < centerIndex) {
+        before.add(sliver);
+      } else {
+        after.add(sliver);
+      }
+    }
+    // Slivers phía trước center phải được liệt kê theo thứ tự NGƯỢC lại.
+    final beforeReversed = before.reversed.toList();
+
+    final centerKey = _dayCenterKeys.putIfAbsent(centerDay, () => UniqueKey());
+
+    return CustomScrollView(
+      controller: _scrollController,
+      center: centerKey,
+      anchor: 0.0,
+      slivers: [
+        ...beforeReversed,
+        // Sliver mốc center (rỗng, chỉ để đánh dấu vị trí bắt đầu).
+        SliverToBoxAdapter(key: centerKey, child: const SizedBox.shrink()),
+        ...after,
+        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+      ],
+    );
+  }
+
+  /// Dựng một sliver (header dính + danh sách sự kiện) cho [day].
+  Widget _daySliver(DateTime day) {
+    return SliverStickyHeader(
+      header: _DayHeader(key: _dayKeys[day], date: day),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, i) {
+            final ti = _eventsForDay(day)[i];
+            return _AgendaEventRow(
+              timeInterval: ti,
+              onTap: () => _editTimeInterval(ti),
+              onToggleComplete: () => _onToggleCompleted(ti),
+              onDelete: () => _deleteTimeInterval(ti),
+              onGoToMainTask: () => _goToMainTask(ti),
+            );
+          },
+          childCount: _eventsForDay(day).length,
+        ),
+      ),
+    );
+  }
+}
+
+/// Header dính cho một ngày trong agenda: số ngày to + thứ + tháng.
+/// Hôm nay được tô màu nổi bật.
+class _DayHeader extends StatelessWidget {
+  const _DayHeader({Key? key, required this.date}) : super(key: key);
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
+    final now = DateTime.now();
+    final isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
+    final accent = theme.colorScheme.primary;
+
+    final weekday = DateFormat.EEEE(locale).format(date); // Thứ Hai...
+    final monthYear = DateFormat.yMMMM(locale).format(date);
+
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Số ngày (vòng tròn nếu là hôm nay).
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isToday ? accent : Colors.transparent,
+            ),
+            child: Text(
+              '${date.day}',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isToday ? theme.colorScheme.onPrimary : null,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: AppScaffold(
-              title: 'Selected Events',
-              slivers: [
-                for (final selectedDay in _selectedDaysList)
-                  StickyHeaderList(
-                    date: selectedDay,
-                    index: _selectedDaysList.toList().indexOf(selectedDay),
-                    timeIntervals: _selectedTimeIntervals.value
-                        //_selectedTimeIntervalsNew
-                        .where(
-                            (event) => isSameDay(event.startDate, selectedDay))
-                        .toList(),
-                    deleteTimeInterval: (TimeInterval timeInterval) {
-                      _deleteTimeInterval(timeInterval);
-                    },
-                    onTimeIntervalToggleCompleted: (TimeInterval timeInterval) {
-                      _onTimeIntervalToggleCompleted(timeInterval);
-                    },
-                    onSubtasksChanged: (TimeInterval timeInterval) {
-                      _onSubtasksChanged(timeInterval);
-                    },
-                    onHasBeenDoneUpdate: (TimeInterval timeInterval) {
-                      _onHasBeenDoneUpdate(timeInterval);
-                    },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  weekday,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isToday ? accent : null,
                   ),
+                ),
+                Text(
+                  monthYear,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.hintColor),
+                ),
               ],
             ),
           ),
@@ -553,261 +560,242 @@ class _TableComplexExampleState extends State<TableComplexExample> {
   }
 }
 
-class _CalendarHeader extends StatelessWidget {
-  final DateTime focusedDay;
-  final VoidCallback onLeftArrowTap;
-  final VoidCallback onRightArrowTap;
-  final VoidCallback onTodayButtonTap;
-  final VoidCallback onClearButtonTap;
-  final void Function(String) onSelectionModeChanged;
-  final RangeSelectionMode rangeSelectionMode;
-  final bool clearButtonVisible;
-  final bool showCalendar;
+/// Một dòng sự kiện gọn kiểu Google Calendar: giờ | thanh màu | tiêu đề + nơi.
+class _AgendaEventRow extends StatelessWidget {
+  const _AgendaEventRow({
+    required this.timeInterval,
+    required this.onTap,
+    required this.onToggleComplete,
+    required this.onDelete,
+    required this.onGoToMainTask,
+  });
 
-  const _CalendarHeader({
-    Key? key,
-    required this.focusedDay,
-    required this.onLeftArrowTap,
-    required this.onRightArrowTap,
-    required this.onTodayButtonTap,
-    required this.onClearButtonTap,
-    required this.clearButtonVisible,
-    required this.onSelectionModeChanged,
-    required this.rangeSelectionMode,
-    required this.showCalendar,
-  }) : super(key: key);
+  final TimeInterval timeInterval;
+  final VoidCallback onTap;
+  final VoidCallback onToggleComplete;
+  final VoidCallback onDelete;
+  final VoidCallback onGoToMainTask;
 
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
-    final headerText =
-        DateFormat.yMMM(Localizations.localeOf(context).languageCode)
-            .format(focusedDay);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          //const SizedBox(width: 16.0),
-          SizedBox(
-            width: 120.0,
-            child: Text(
-              headerText,
-              style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-            ),
-          ),
-          if (showCalendar)
-            IconButton(
-              icon: const Icon(Icons.calendar_today_outlined),
-              //visualDensity: VisualDensity.compact,
-              onPressed: onTodayButtonTap,
-            ),
-          if (clearButtonVisible && showCalendar)
-            IconButton(
-              icon: const Icon(Icons.clear_outlined),
-              //visualDensity: VisualDensity.compact,
-              onPressed: onClearButtonTap,
-            ),
-          // PopupMenuButton<String>(
-          //   icon: const Icon(Icons.settings_outlined),
-          //   itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-          //     PopupMenuItem<String>(
-          //       value: showCalendar ? 'hide calendar' : 'show calendar',
-          //       child: Text(
-          //         showCalendar
-          //             ? localizations!.hideCalendar
-          //             : localizations!.showCalendar,
-          //       ),
-          //     ),
-          //     PopupMenuItem<String>(
-          //       value: 'multi',
-          //       child: Text(
-          //         localizations!.selectMultipleDays,
-          //         style: TextStyle(
-          //           color: rangeSelectionMode == RangeSelectionMode.toggledOff
-          //               ? Colors.blue
-          //               : null,
-          //         ),
-          //       ),
-          //     ),
-          //     PopupMenuItem<String>(
-          //       value: 'range',
-          //       child: Text(
-          //         localizations.selectDateRange,
-          //         style: TextStyle(
-          //           color: rangeSelectionMode == RangeSelectionMode.toggledOn
-          //               ? Colors.blue
-          //               : null,
-          //         ),
-          //       ),
-          //     ),
-          //   ],
-          //   onSelected: onSelectionModeChanged,
-          // ),
-          const Spacer(),
-          if (showCalendar && Platform.isWindows)
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: onLeftArrowTap,
-            ),
-          if (showCalendar && Platform.isWindows)
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: onRightArrowTap,
-            ),
-        ],
-      ),
-    );
+  String _timeLabel(BuildContext context) {
+    final ti = timeInterval;
+    final start = ti.startTime;
+    final end = ti.endTime;
+    if (start == null && end == null) {
+      return 'Cả ngày';
+    }
+    String fmt(TimeOfDay? t) => t == null ? '--:--' : t.format(context);
+    if (start != null && end != null) {
+      return '${fmt(start)}\n${fmt(end)}';
+    }
+    return fmt(start ?? end);
   }
-}
-
-class StickyHeaderList extends StatefulWidget {
-  const StickyHeaderList({
-    Key? key,
-    required this.index,
-    required this.date,
-    required this.timeIntervals,
-    required this.deleteTimeInterval,
-    required this.onTimeIntervalToggleCompleted,
-    required this.onSubtasksChanged,
-    required this.onHasBeenDoneUpdate,
-  }) : super(key: key);
-
-  final int index;
-  final DateTime date;
-  final List<TimeInterval> timeIntervals;
-  final Function(TimeInterval) deleteTimeInterval;
-  final Function(TimeInterval) onTimeIntervalToggleCompleted;
-  final Function(TimeInterval) onSubtasksChanged;
-  final Function(TimeInterval) onHasBeenDoneUpdate;
-
-  @override
-  _StickyHeaderListState createState() => _StickyHeaderListState();
-}
-
-class _StickyHeaderListState extends State<StickyHeaderList> {
-  final DatabaseManager _databaseManager = DatabaseManager();
 
   @override
   Widget build(BuildContext context) {
-    return SliverStickyHeader(
-      overlapsContent: true,
-      header: _SideHeader(
-        index: widget.index,
-        date: widget.date,
-      ),
-      sliver: SliverPadding(
-        padding: const EdgeInsets.only(left: 60),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, i) {
-              final event = widget.timeIntervals[i];
-              return TimeIntervalCard(
-                timeInterval: event,
-                onHasBeenDoneUpdate: widget.onHasBeenDoneUpdate,
-                onSubtasksChanged: widget.onSubtasksChanged,
-                onTimeIntervalDelete: widget.deleteTimeInterval,
-                onTimeIntervalEdit: (TimeInterval timeInterval) async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => AddOrEditTimeIntervalPage(
-                        timeInterval: timeInterval,
+    final theme = Theme.of(context);
+    final done = timeInterval.isCompleted;
+    final titleStyle = theme.textTheme.bodyLarge?.copyWith(
+      decoration: done ? TextDecoration.lineThrough : null,
+      color: done ? theme.disabledColor : null,
+    );
+
+    return InkWell(
+      onTap: onTap,
+      onLongPress: () => _showActions(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Cột giờ (căn bằng chiều rộng với số ngày ở header).
+            SizedBox(
+              width: 52,
+              child: Text(
+                _timeLabel(context),
+                textAlign: TextAlign.right,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: done ? theme.disabledColor : theme.hintColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Thanh màu của sự kiện.
+            Container(
+              width: 4,
+              height: 34,
+              decoration: BoxDecoration(
+                color: done
+                    ? theme.disabledColor
+                    : timeInterval.color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Tiêu đề + địa điểm.
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      if (timeInterval.isImportant && !done)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Icon(Icons.star,
+                              size: 14, color: theme.colorScheme.error),
+                        ),
+                      Expanded(
+                        child: Text(
+                          timeInterval.title.isEmpty
+                              ? '(Không tiêu đề)'
+                              : timeInterval.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: titleStyle,
+                        ),
                       ),
-                      fullscreenDialog: false,
+                    ],
+                  ),
+                  if (timeInterval.location.isNotEmpty)
+                    Text(
+                      timeInterval.location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: theme.hintColor),
                     ),
-                  );
-                  final updatedTimeInterval =
-                      await _databaseManager.timeInterval(timeInterval.id);
-                  setState(() {
-                    widget.timeIntervals[i] = updatedTimeInterval;
-                  });
-                },
-                onTimeIntervalToggleComplete:
-                    widget.onTimeIntervalToggleCompleted,
-              );
-            },
-            childCount: widget.timeIntervals.length,
-          ),
+                ],
+              ),
+            ),
+            // Menu tùy chọn (khôi phục lại menu options đầy đủ thay cho nút
+            // đánh dấu hoàn thành nhanh trước đây).
+            _buildOptionsMenu(context),
+          ],
         ),
       ),
     );
   }
-}
 
-class _SideHeader extends StatelessWidget {
-  const _SideHeader({
-    Key? key,
-    this.index,
-    required this.date,
-  }) : super(key: key);
+  /// Menu ba chấm với đầy đủ tùy chọn cho một time interval, tương tự thẻ time
+  /// interval ở màn Overview: đánh dấu hoàn thành, đến task gốc, sửa, xóa.
+  Widget _buildOptionsMenu(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final done = timeInterval.isCompleted;
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert_outlined,
+          size: 20, color: Theme.of(context).hintColor),
+      onSelected: (String result) {
+        switch (result) {
+          case 'toggle_complete':
+            onToggleComplete();
+            break;
+          case 'go_to_main_task':
+            onGoToMainTask();
+            break;
+          case 'edit':
+            onTap();
+            break;
+          case 'delete':
+            onDelete();
+            break;
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          value: 'toggle_complete',
+          child: Row(
+            children: [
+              Icon(done ? Icons.check_box : Icons.check_box_outline_blank),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(done
+                    ? localizations.markAsIncompletedInThisTimeInterval
+                    : localizations.markAsCompletedInThisTimeInterval),
+              ),
+            ],
+          ),
+        ),
+        if (timeInterval.taskId != null)
+          PopupMenuItem<String>(
+            value: 'go_to_main_task',
+            child: Row(
+              children: [
+                const Icon(Icons.read_more_outlined),
+                const SizedBox(width: 8),
+                Expanded(child: Text(localizations.goToMainTask)),
+              ],
+            ),
+          ),
+        PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              const Icon(Icons.edit_outlined),
+              const SizedBox(width: 8),
+              Expanded(child: Text(localizations.editThisTimeInterval)),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outlined),
+              const SizedBox(width: 8),
+              Expanded(child: Text(localizations.deleteThisTimeInterval)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-  final int? index;
-  final DateTime date;
-
-  @override
-  Widget build(BuildContext context) {
-    final String todayString = DateFormat('dd/MM/yyyy').format(DateTime.now());
-    final String dateString = DateFormat('dd/MM/yyyy').format(date);
-    final bool isToday = todayString == dateString;
-    final List<String> dateParts = dateString.split('/');
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: Align(
-        alignment: Alignment.centerLeft,
+  void _showActions(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final done = timeInterval.isCompleted;
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(dateParts.last,
-                style: TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold)),
-            if (!isToday) ...{
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                        text: dateParts[0], style: TextStyle(fontSize: 13.0)),
-                    TextSpan(text: '-', style: TextStyle(fontSize: 13.0)),
-                    TextSpan(
-                        text: dateParts[1], style: TextStyle(fontSize: 13.0)),
-                  ],
-                ),
+            ListTile(
+              leading:
+                  Icon(done ? Icons.check_box : Icons.check_box_outline_blank),
+              title: Text(done
+                  ? localizations.markAsIncompletedInThisTimeInterval
+                  : localizations.markAsCompletedInThisTimeInterval),
+              onTap: () {
+                Navigator.pop(ctx);
+                onToggleComplete();
+              },
+            ),
+            if (timeInterval.taskId != null)
+              ListTile(
+                leading: const Icon(Icons.read_more_outlined),
+                title: Text(localizations.goToMainTask),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onGoToMainTask();
+                },
               ),
-            } else ...{
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: dateParts[0],
-                      style: TextStyle(
-                        fontSize: 13.0,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    TextSpan(
-                        text: '-',
-                        style: TextStyle(
-                          fontSize: 13.0,
-                          color: Colors.blue,
-                        )),
-                    TextSpan(
-                        text: dateParts[1],
-                        style: TextStyle(
-                          fontSize: 13.0,
-                          color: Colors.blue,
-                        )),
-                  ],
-                ),
-              ),
-            },
-            // if (isToday) ...{
-            //   Text(
-            //     'Today',
-            //     style: TextStyle(
-            //       fontSize: 12.0,
-            //       color: Colors.blue,
-            //     ),
-            //   ),
-            // },
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: Text(localizations.editThisTimeInterval),
+              onTap: () {
+                Navigator.pop(ctx);
+                onTap();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: Text(localizations.deleteThisTimeInterval),
+              onTap: () {
+                Navigator.pop(ctx);
+                onDelete();
+              },
+            ),
           ],
         ),
       ),
@@ -815,58 +803,21 @@ class _SideHeader extends StatelessWidget {
   }
 }
 
-class AppScaffold extends StatelessWidget {
-  const AppScaffold({
-    Key? key,
-    required this.title,
-    required this.slivers,
-    this.reverse = false,
-  }) : super(key: key);
-
-  final String title;
-  final List<Widget> slivers;
-  final bool reverse;
+class _EmptyAgenda extends StatelessWidget {
+  const _EmptyAgenda();
 
   @override
   Widget build(BuildContext context) {
-    return DefaultStickyHeaderController(
-      child: Scaffold(
-        body: CustomScrollView(
-          slivers: slivers,
-          reverse: reverse,
-        ),
-      ),
-    );
-  }
-}
-
-class Header extends StatelessWidget {
-  const Header({
-    Key? key,
-    this.index,
-    this.title,
-    this.color = Colors.lightBlue,
-  }) : super(key: key);
-
-  final String? title;
-  final int? index;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        print('hit $index');
-      },
-      child: Container(
-        height: 60,
-        color: color,
-        padding: EdgeInsets.symmetric(horizontal: 16.0),
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title ?? 'Header #$index',
-          style: const TextStyle(color: Colors.white),
-        ),
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.event_available_outlined,
+              size: 64, color: theme.disabledColor),
+          const SizedBox(height: 12),
+          const Text('Chưa có sự kiện nào được lên lịch'),
+        ],
       ),
     );
   }

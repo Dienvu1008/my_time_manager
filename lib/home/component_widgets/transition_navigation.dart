@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../app/app.dart';
 import '../../screen_material_design/page_component.dart';
 import 'transition_bar.dart';
 import 'transition_rail.dart';
@@ -57,9 +59,15 @@ class _NavigationTransitionState extends State<NavigationTransition> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    // Khi bottom bar ở chế độ trong suốt, cho body trải xuống DƯỚI thanh điều
+    // hướng (extendBody) để nội dung thực sự nhìn thấy phía sau thanh, thay vì
+    // bị thanh chiếm chỗ trong layout.
+    final transparentBar =
+        context.select((AppBloc b) => b.state.transparentBottomBar);
 
     return Scaffold(
       key: widget.scaffoldKey,
+      extendBody: transparentBar,
       appBar: widget.appBar,
       body: Row(
         children: <Widget>[
@@ -73,7 +81,7 @@ class _NavigationTransitionState extends State<NavigationTransition> {
       ),
       bottomNavigationBar: BarTransition(
         animation: barAnimation,
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Colors.transparent, //colorScheme.surface,
         child: widget.navigationBar,
       ),
       drawer: Drawer(

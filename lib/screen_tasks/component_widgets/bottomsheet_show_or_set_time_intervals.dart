@@ -3,15 +3,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
-import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/home/data_controller_provider.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_alarm.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_repeat.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/repeat_rule.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_set_time_intervals_block.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_timezone.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
@@ -25,8 +25,7 @@ class ShowOrSetTimeIntervalsBottomSheet extends StatefulWidget {
   const ShowOrSetTimeIntervalsBottomSheet(
       {super.key,
       this.taskId,
-      this.measurableTaskId,
-      this.taskWithSubtasksId,
+      this.subtaskId,
       required this.isSetTimeIntervalPage,
       required this.title,
       required this.color,
@@ -36,11 +35,12 @@ class ShowOrSetTimeIntervalsBottomSheet extends StatefulWidget {
       required this.targetAtLeast,
       required this.targetAtMost,
       required this.subtasks,
-      required this.unit});
+      required this.unit,
+      this.initialStart,
+      this.initialEnd});
 
   final String? taskId;
-  final String? measurableTaskId;
-  final String? taskWithSubtasksId;
+  final String? subtaskId;
   final bool isSetTimeIntervalPage;
   final String title;
   final Color color;
@@ -51,6 +51,13 @@ class ShowOrSetTimeIntervalsBottomSheet extends StatefulWidget {
   final double targetAtMost;
   final String unit;
   final List<Subtask> subtasks;
+
+  /// Ngày/giờ bắt đầu điền sẵn khi mở trực tiếp vào trang tạo mới (ví dụ khi
+  /// người dùng nhấn vào một ô trống trên lịch).
+  final DateTime? initialStart;
+
+  /// Ngày/giờ kết thúc điền sẵn. Nếu null, mặc định là [initialStart] + 1 giờ.
+  final DateTime? initialEnd;
 
   @override
   _ShowOrSetTimeIntervalsBottomSheetState createState() =>
@@ -116,11 +123,11 @@ class _ShowOrSetTimeIntervalsBottomSheetState
                         Container(
                           color: widget.color,
                           child: GestureDetector(
-                            child: Center(
-                              child: Text(
+                            child: ListTile(
+                              title: Center(child: Text(
                                 widget.title,
                                 style: TextStyle(color: titleTextColor),
-                              ),
+                              ),),
                             ),
                             onTap: () {
                               showDialog(
@@ -162,7 +169,7 @@ class _ShowOrSetTimeIntervalsBottomSheetState
                                                     color: titleTextColor),
                                               ),
                                             ),
-                                          if (widget.measurableTaskId != null)
+                                          if (widget.unit.isNotEmpty)
                                             ListTile(
                                               dense: true,
                                               title: Column(
@@ -194,12 +201,12 @@ class _ShowOrSetTimeIntervalsBottomSheetState
                                                 ],
                                               ),
                                             ),
-                                          if (widget.taskWithSubtasksId != null)
+                                          if (widget.subtasks.isNotEmpty)
                                             ...widget.subtasks.map(
                                               (subtask) => ListTile(
                                                   dense: true,
                                                   leading: Icon(
-                                                      subtask.isSubtaskCompleted
+                                                      subtask.isCompleted
                                                           ? Icons.check_box
                                                           : Icons
                                                               .check_box_outline_blank,
@@ -233,23 +240,20 @@ class _ShowOrSetTimeIntervalsBottomSheetState
                               ? SetTimeIntervalPage(
                                   key: key,
                                   taskId: widget.taskId,
-                                  measurableTaskId: widget.measurableTaskId,
-                                  taskWithSubtasksId: widget.taskWithSubtasksId,
+                                  subtaskId: widget.subtaskId,
+                                  initialStart: widget.initialStart,
+                                  initialEnd: widget.initialEnd,
                                 )
                               : FutureBuilder(
-                                  future: widget.taskId != null
+                                  future: widget.subtaskId != null
                                       ? _databaseManager
-                                          .timeIntervalsOfTask(widget.taskId!)
-                                      : widget.measurableTaskId != null
+                                          .timeIntervalsOfSubtask(
+                                              widget.subtaskId!)
+                                      : widget.taskId != null
                                           ? _databaseManager
-                                              .timeIntervalsOfMeasureableTask(
-                                                  widget.measurableTaskId!)
-                                          : widget.taskWithSubtasksId != null
-                                              ? _databaseManager
-                                                  .timeIntervalsOfTaskWithSubtasks(
-                                                      widget
-                                                          .taskWithSubtasksId!)
-                                              : null,
+                                              .timeIntervalsOfTask(
+                                                  widget.taskId!)
+                                          : null,
                                   builder: (context, snapshot) {
                                     if (snapshot.connectionState ==
                                         ConnectionState.waiting) {
@@ -261,10 +265,7 @@ class _ShowOrSetTimeIntervalsBottomSheetState
                                           snapshot.data ?? [];
                                       return TimeIntervalOfTaskOrEventPageNew(
                                         taskId: widget.taskId,
-                                        measurableTaskId:
-                                            widget.measurableTaskId,
-                                        taskWithSubtasksId:
-                                            widget.taskWithSubtasksId,
+                                        subtaskId: widget.subtaskId,
                                         showCalendar: _showCalendar,
                                         timeIntervalsOfThisTask: timeIntervals,
                                       );
@@ -342,13 +343,19 @@ class SetTimeIntervalPage extends StatefulWidget {
   const SetTimeIntervalPage({
     super.key,
     this.taskId,
-    this.measurableTaskId,
-    this.taskWithSubtasksId,
+    this.subtaskId,
+    this.initialStart,
+    this.initialEnd,
   });
 
   final String? taskId;
-  final String? measurableTaskId;
-  final String? taskWithSubtasksId;
+  final String? subtaskId;
+
+  /// Ngày/giờ bắt đầu điền sẵn (dùng khi mở từ việc nhấn ô trống trên lịch).
+  final DateTime? initialStart;
+
+  /// Ngày/giờ kết thúc điền sẵn. Nếu null sẽ mặc định là [initialStart] + 1 giờ.
+  final DateTime? initialEnd;
 
   @override
   _SetTimeIntervalPageState createState() => _SetTimeIntervalPageState();
@@ -361,6 +368,10 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
   TextEditingController _endDateController = TextEditingController();
   TextEditingController _startTimeController = TextEditingController();
   TextEditingController _endTimeController = TextEditingController();
+  // Quy tắc lặp hiện tại (mặc định không lặp), cập nhật qua RepeatListTile.
+  RepeatRule _repeatRule = RepeatRule.none;
+  // Các mốc nhắc (số phút trước), cập nhật qua AlarmListTile.
+  List<int> _reminderMinutes = [];
   bool _isStartDateUndefined = false;
   bool _isEndDateUndefined = false;
   bool _isStartTimeUndefined = false;
@@ -384,39 +395,53 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
   String? _unit = '';
 
   Future<void> _init() async {
-    if (widget.taskId != null) {
-      final Task task = await _databaseManager.task(widget.taskId!);
+    if (widget.taskId == null) return;
+    final Task task = await _databaseManager.task(widget.taskId!);
+    if (widget.subtaskId != null) {
+      // Lập kế hoạch cho MỘT công việc con: tiêu đề/mục tiêu lấy từ subtask,
+      // còn mô tả/vị trí/màu/quan trọng lấy từ task cha.
+      final Subtask st = task.subtasks.firstWhere(
+        (s) => s.id == widget.subtaskId,
+        orElse: () => Subtask(title: task.title),
+      );
+      _title = st.title;
+      _color = task.color;
+      _isImportant = task.isImportant;
+      _description = task.description;
+      _location = task.location;
+      if (st.isMeasurable) {
+        _targetType = st.targetType;
+        _targetAtLeast = st.targetAtLeast;
+        _targetAtMost = st.targetAtMost;
+        _unit = st.unit;
+      }
+      // Một subtask không có sub-subtask.
+      _subtasks = [];
+    } else {
+      // Lập kế hoạch cho chính task.
       _title = task.title;
       _color = task.color;
       _isImportant = task.isImportant;
       _description = task.description;
       _location = task.location;
-    } else if (widget.taskWithSubtasksId != null) {
-      final TaskWithSubtasks taskWithSubtasks =
-          await _databaseManager.taskWithSubtasks(widget.taskWithSubtasksId!);
-      _title = taskWithSubtasks.title;
-      _color = taskWithSubtasks.color;
-      _isImportant = taskWithSubtasks.isImportant;
-      _description = taskWithSubtasks.description;
-      _location = taskWithSubtasks.location;
-      _subtasks = taskWithSubtasks.subtasks
+      if (task.isMeasurable) {
+        _targetType = task.targetType;
+        _targetAtLeast = task.targetAtLeast;
+        _targetAtMost = task.targetAtMost;
+        _unit = task.unit;
+      }
+      _subtasks = task.subtasks
           .map((subtask) => Subtask(
-                isSubtaskCompleted: false,
                 title: subtask.title,
+                isCompleted: false,
+                isMeasurable: subtask.isMeasurable,
+                targetType: subtask.targetType,
+                targetAtLeast: subtask.targetAtLeast,
+                targetAtMost: subtask.targetAtMost,
+                unit: subtask.unit,
+                howMuchHasBeenDone: subtask.howMuchHasBeenDone,
               ))
           .toList();
-    } else if (widget.measurableTaskId != null) {
-      final MeasurableTask measurableTask =
-          await _databaseManager.measurableTask(widget.measurableTaskId!);
-      _title = measurableTask.title;
-      _color = measurableTask.color;
-      _isImportant = measurableTask.isImportant;
-      _description = measurableTask.description;
-      _location = measurableTask.location;
-      _targetType = measurableTask.targetType;
-      _targetAtLeast = measurableTask.targetAtLeast;
-      _targetAtMost = measurableTask.targetAtMost;
-      _unit = measurableTask.unit;
     }
   }
 
@@ -622,8 +647,7 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
 
         final timeInterval = TimeInterval(
           taskId: widget.taskId,
-          measurableTaskId: widget.measurableTaskId,
-          taskWithSubtasksId: widget.taskWithSubtasksId,
+          subtaskId: widget.subtaskId,
           color: _color,
           title: _title,
           isCompleted: _isCompleted,
@@ -644,6 +668,7 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
           isEndDateUndefined: _isEndDateUndefined,
           isStartTimeUndefined: _isStartTimeUndefined,
           isEndTimeUndefined: _isEndTimeUndefined,
+          reminderMinutesBefore: _reminderMinutes,
         );
         if ((timeInterval.startTimestamp != null &&
                 timeInterval.endTimestamp != null &&
@@ -681,12 +706,46 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
           );
         } else {
           //DataControllerProvider.of(context).controller.add(timeInterval);
-          await _databaseManager.insertTimeInterval(timeInterval);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('has been scheduled'),
-            ),
+          // Sinh (và lưu) các time interval theo quy tắc lặp. Nếu không lặp
+          // hoặc không có ngày bắt đầu, chỉ lưu đúng một interval.
+          // Ước lượng tổng số interval sẽ tạo (để quyết định hiển thị progress).
+          final plannedCount =
+              (_repeatRule.isRepeating && timeInterval.startDate != null)
+                  ? _repeatRule.generateStartDates(timeInterval.startDate!).length
+                  : 1;
+
+          // Với nhiều interval: hiện hộp thoại tiến trình trong lúc lưu.
+          final progress = ValueNotifier<int>(0);
+          final showProgress = plannedCount > 1;
+          if (showProgress) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => _SaveProgressDialog(
+                total: plannedCount,
+                progress: progress,
+              ),
+            );
+          }
+
+          final createdCount = await _saveWithRepeat(
+            timeInterval,
+            _repeatRule,
+            onProgress: (done, _) => progress.value = done,
           );
+
+          // Việc lưu là bất đồng bộ; widget có thể đã bị unmount trong lúc chờ.
+          if (!mounted) {
+            progress.dispose();
+            return;
+          }
+
+          // Đóng hộp thoại tiến trình (nếu có).
+          if (showProgress) {
+            Navigator.of(context, rootNavigator: true).pop();
+          }
+          progress.dispose();
+
           setState(() {
             _startDateController.clear();
             _startTimeController.clear();
@@ -697,9 +756,90 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
             _isStartTimeUndefined = false;
             _isEndTimeUndefined = false;
           });
+
+          // Thông báo thành công rõ ràng.
+          if (!mounted) return;
+          await showDialog(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              icon: const Icon(Icons.check_circle_outline,
+                  color: Colors.green, size: 40),
+              title: const Text('Đã lưu'),
+              content: Text(createdCount > 1
+                  ? 'Đã lên lịch thành công $createdCount khoảng thời gian lặp lại.'
+                  : 'Đã lên lịch thành công khoảng thời gian.'),
+              actions: [
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
         }
       }
     }
+  }
+
+  /// Lưu [base] cùng tất cả các bản lặp theo [rule]. Trả về số interval đã tạo.
+  ///
+  /// Mỗi occurrence là một TimeInterval độc lập (id riêng), chỉ khác ở ngày:
+  /// startDate được dịch tới ngày lặp, còn endDate giữ nguyên khoảng cách so với
+  /// startDate gốc (để độ dài mỗi lần lặp không đổi). Giờ (startTime/endTime)
+  /// được giữ nguyên.
+  /// [onProgress] được gọi sau mỗi lần lưu với (số đã lưu, tổng số) để cập nhật
+  /// thanh tiến trình.
+  Future<int> _saveWithRepeat(
+    TimeInterval base,
+    RepeatRule rule, {
+    void Function(int done, int total)? onProgress,
+  }) async {
+    // Không lặp, hoặc không có ngày bắt đầu để làm mốc -> lưu đúng 1 interval.
+    if (!rule.isRepeating || base.startDate == null) {
+      await _databaseManager.insertTimeInterval(base);
+      onProgress?.call(1, 1);
+      return 1;
+    }
+
+    final startDates = rule.generateStartDates(base.startDate!);
+    final total = startDates.length;
+
+    // Khoảng cách ngày giữa endDate và startDate gốc (giữ nguyên cho mỗi bản).
+    Duration? endOffset;
+    if (base.endDate != null) {
+      final s = DateTime(base.startDate!.year, base.startDate!.month,
+          base.startDate!.day);
+      final e =
+          DateTime(base.endDate!.year, base.endDate!.month, base.endDate!.day);
+      endOffset = e.difference(s);
+    }
+
+    var count = 0;
+    for (final date in startDates) {
+      // Ghép ngày lặp với giờ bắt đầu gốc.
+      final newStart = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        base.startTime?.hour ?? 0,
+        base.startTime?.minute ?? 0,
+      );
+      final newEnd = endOffset != null
+          ? DateTime(date.year, date.month, date.day).add(endOffset)
+          : base.endDate;
+
+      final occurrence = base.copyWith(
+        startDate: DateTime(newStart.year, newStart.month, newStart.day),
+        endDate: newEnd,
+      );
+      // Cấp id mới cho mỗi bản để không ghi đè lẫn nhau (id là field non-final).
+      occurrence.id = const Uuid().v4();
+
+      await _databaseManager.insertTimeInterval(occurrence);
+      count++;
+      onProgress?.call(count, total);
+    }
+    return count;
   }
 
   @override
@@ -711,23 +851,28 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
   @override
   Widget build(BuildContext context) {
     String languageCode = Localizations.localeOf(context).languageCode;
-    final now = DateTime.now();
-    final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
+    // Ngày/giờ bắt đầu: ưu tiên giá trị điền sẵn (khi mở từ ô trống trên lịch),
+    // nếu không thì mặc định là thời điểm hiện tại.
+    final start = widget.initialStart ?? DateTime.now();
+    // Ngày/giờ kết thúc: ưu tiên initialEnd, nếu không thì lấy +1 giờ so với start.
+    final end = widget.initialEnd ??
+        DateTime(start.year, start.month, start.day, start.hour + 1,
+            start.minute);
     _startDateController = TextEditingController(
       text: DateFormat(
               'EEE, dd MMM, yyyy', Localizations.localeOf(context).languageCode)
-          .format(now),
+          .format(start),
     );
     _endDateController = TextEditingController(
       text: DateFormat(
               'EEE, dd MMM, yyyy', Localizations.localeOf(context).languageCode)
-          .format(now),
+          .format(end),
     );
     _startTimeController = TextEditingController(
-      text: TimeOfDay.fromDateTime(now).format(context),
+      text: TimeOfDay.fromDateTime(start).format(context),
     );
     _endTimeController = TextEditingController(
-      text: TimeOfDay.fromDateTime(nextHour).format(context),
+      text: TimeOfDay.fromDateTime(end).format(context),
     );
 
     return Scaffold(
@@ -745,8 +890,13 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
                 isEndTimeUndefined: _isEndTimeUndefined,
                 languageCode: languageCode,
                 formKey: _formKey),
-            RepeatListTile(),
-            AlarmListTile(),
+            RepeatListTile(
+              onChanged: (rule) => _repeatRule = rule,
+            ),
+            AlarmListTile(
+              initial: _reminderMinutes,
+              onChanged: (minutes) => _reminderMinutes = minutes,
+            ),
             TimezoneListTile(),
           ],
         ),
@@ -759,13 +909,11 @@ class TimeIntervalOfTaskOrEventPage extends StatefulWidget {
   const TimeIntervalOfTaskOrEventPage(
       {super.key,
       this.taskId,
-      this.measurableTaskId,
-      this.taskWithSubtasksId,
+      this.subtaskId,
       required this.selectedTimeIntervals});
 
   final String? taskId;
-  final String? measurableTaskId;
-  final String? taskWithSubtasksId;
+  final String? subtaskId;
   final String selectedTimeIntervals;
 
   @override
@@ -784,8 +932,7 @@ class _TimeIntervalOfTaskOrEventPageState
   List<TimeInterval> _timeIntervalsNextMonth = [];
   List<TimeInterval> _timeIntervalsAll = [];
   Task? _task;
-  MeasurableTask? _measurableTask;
-  TaskWithSubtasks? _taskWithSubtasks;
+  Subtask? _subtask;
   //bool _isExpanded = false;
   final Map<String, bool> _isExpanded = {};
 
@@ -806,44 +953,38 @@ class _TimeIntervalOfTaskOrEventPageState
     super.didChangeDependencies();
     // Check if the data has changed.
     for (var timeInterval in _timeIntervals) {
-      if (_task != null) {
-        if (timeInterval.description != _task!.description) {
-          timeInterval.isDescriptionChanged = true;
-        }
-        if (timeInterval.location != _task!.location) {
-          timeInterval.isLocationChanged = true;
-        }
-      } else if (_measurableTask != null) {
-        if (timeInterval.description != _measurableTask!.description) {
-          timeInterval.isDescriptionChanged = true;
-        }
-        if (timeInterval.location != _measurableTask!.location) {
-          timeInterval.isLocationChanged = true;
-        }
-        if ((timeInterval.targetType != _measurableTask!.targetType) ||
-            (timeInterval.targetAtLeast != _measurableTask!.targetAtLeast) ||
-            (timeInterval.targetAtMost != _measurableTask!.targetAtMost)) {
+      if (_task == null) continue;
+      // Mô tả/vị trí luôn lấy từ task cha.
+      if (timeInterval.description != _task!.description) {
+        timeInterval.isDescriptionChanged = true;
+      }
+      if (timeInterval.location != _task!.location) {
+        timeInterval.isLocationChanged = true;
+      }
+      if (_subtask != null) {
+        // So sánh mục tiêu với subtask.
+        if ((timeInterval.targetType != _subtask!.targetType) ||
+            (timeInterval.targetAtLeast != _subtask!.targetAtLeast) ||
+            (timeInterval.targetAtMost != _subtask!.targetAtMost)) {
           timeInterval.isTargetChanged = true;
         }
-      } else if (_taskWithSubtasks != null) {
-        if (timeInterval.description != _taskWithSubtasks!.description) {
-          timeInterval.isDescriptionChanged = true;
+      } else {
+        // So sánh mục tiêu với task.
+        if ((timeInterval.targetType != _task!.targetType) ||
+            (timeInterval.targetAtLeast != _task!.targetAtLeast) ||
+            (timeInterval.targetAtMost != _task!.targetAtMost)) {
+          timeInterval.isTargetChanged = true;
         }
-        if (timeInterval.location != _taskWithSubtasks!.location) {
-          timeInterval.isLocationChanged = true;
-        }
+        // So sánh danh sách công việc con.
         List<String> timeIntervalSubtasksTitles =
             timeInterval.subtasks.map((subtask) => subtask.title).toList();
         timeIntervalSubtasksTitles.sort();
 
-        List<String> taskWithSubtasksSubtasksTitles = _taskWithSubtasks!
-            .subtasks
-            .map((subtask) => subtask.title)
-            .toList();
-        taskWithSubtasksSubtasksTitles.sort();
+        List<String> taskSubtasksTitles =
+            _task!.subtasks.map((subtask) => subtask.title).toList();
+        taskSubtasksTitles.sort();
 
-        if (!listEquals(
-            timeIntervalSubtasksTitles, taskWithSubtasksSubtasksTitles)) {
+        if (!listEquals(timeIntervalSubtasksTitles, taskSubtasksTitles)) {
           timeInterval.isSubtasksChanged = true;
         }
       }
@@ -851,173 +992,96 @@ class _TimeIntervalOfTaskOrEventPageState
   }
 
   Future<void> _init() async {
-    if (widget.taskId != null) {
-      final task = await _databaseManager.task(widget.taskId!);
-      _task = task;
-      final timeIntervals =
-          await _databaseManager.timeIntervalsOfTask(widget.taskId!);
-      for (var timeInterval in timeIntervals) {
-        if (timeInterval.description != task.description) {
-          timeInterval.isDescriptionChanged = true;
-        }
-        if (timeInterval.location != task.location) {
-          timeInterval.isLocationChanged = true;
+    if (widget.taskId == null) return;
+    final task = await _databaseManager.task(widget.taskId!);
+    _task = task;
+
+    // Nếu là subtask, tìm subtask trong task cha để so sánh mục tiêu.
+    Subtask? subtask;
+    if (widget.subtaskId != null) {
+      for (final s in task.subtasks) {
+        if (s.id == widget.subtaskId) {
+          subtask = s;
+          break;
         }
       }
-      for (var timeInterval in timeIntervals) {
-        _isExpanded[timeInterval.id] = false;
+      _subtask = subtask;
+    }
+
+    final timeIntervals = widget.subtaskId != null
+        ? await _databaseManager.timeIntervalsOfSubtask(widget.subtaskId!)
+        : await _databaseManager.timeIntervalsOfTask(widget.taskId!);
+
+    for (var timeInterval in timeIntervals) {
+      // Mô tả/vị trí luôn lấy từ task cha.
+      if (timeInterval.description != task.description) {
+        timeInterval.isDescriptionChanged = true;
       }
-
-      timeIntervals.sort((a, b) {
-        final aTimestamp = a.startTimestamp ?? a.endTimestamp;
-        final bTimestamp = b.startTimestamp ?? b.endTimestamp;
-
-        if (aTimestamp != null && bTimestamp != null) {
-          return aTimestamp.compareTo(bTimestamp);
-        } else if (aTimestamp != null) {
-          return -1;
-        } else if (bTimestamp != null) {
-          return 1;
-        } else {
-          return 0;
-        }
-      });
-      setState(() {
-        _timeIntervalsAll = timeIntervals;
-        _timeIntervalsToday = timeIntervals
-            .where((timeInterval) => timeInterval.isToday ?? false)
-            .toList();
-        _timeIntervalsGone = timeIntervals
-            .where((timeInterval) => timeInterval.isGone ?? false)
-            .toList();
-        _timeIntervalsThisWeek = timeIntervals
-            .where((timeInterval) => timeInterval.isThisWeek ?? false)
-            .toList();
-        _timeIntervalsThisMonth = timeIntervals
-            .where((timeInterval) => timeInterval.isThisMonth ?? false)
-            .toList();
-        _timeIntervalsNextMonth = timeIntervals
-            .where((timeInterval) => timeInterval.isNextMonth ?? false)
-            .toList();
-      });
-    } else if (widget.measurableTaskId != null) {
-      final measurableTask =
-          await _databaseManager.measurableTask(widget.measurableTaskId!);
-      _measurableTask = measurableTask;
-      final timeIntervals = await _databaseManager
-          .timeIntervalsOfMeasureableTask(widget.measurableTaskId!);
-      for (var timeInterval in timeIntervals) {
-        if (timeInterval.description != measurableTask.description) {
-          timeInterval.isDescriptionChanged = true;
-        }
-        if (timeInterval.location != measurableTask.location) {
-          timeInterval.isLocationChanged = true;
-        }
-        if ((timeInterval.targetType != measurableTask.targetType) ||
-            (timeInterval.targetAtLeast != measurableTask.targetAtLeast) ||
-            (timeInterval.targetAtMost != measurableTask.targetAtMost)) {
+      if (timeInterval.location != task.location) {
+        timeInterval.isLocationChanged = true;
+      }
+      if (subtask != null) {
+        if ((timeInterval.targetType != subtask.targetType) ||
+            (timeInterval.targetAtLeast != subtask.targetAtLeast) ||
+            (timeInterval.targetAtMost != subtask.targetAtMost)) {
           timeInterval.isTargetChanged = true;
         }
-      }
-      for (var timeInterval in timeIntervals) {
-        _isExpanded[timeInterval.id] = false;
-      }
-      timeIntervals.sort((a, b) {
-        final aTimestamp = a.startTimestamp ?? a.endTimestamp;
-        final bTimestamp = b.startTimestamp ?? b.endTimestamp;
-
-        if (aTimestamp != null && bTimestamp != null) {
-          return aTimestamp.compareTo(bTimestamp);
-        } else if (aTimestamp != null) {
-          return -1;
-        } else if (bTimestamp != null) {
-          return 1;
-        } else {
-          return 0;
-        }
-      });
-      setState(() {
-        _timeIntervalsAll = timeIntervals;
-        _timeIntervalsToday = timeIntervals
-            .where((timeInterval) => timeInterval.isToday ?? false)
-            .toList();
-        _timeIntervalsGone = timeIntervals
-            .where((timeInterval) => timeInterval.isGone ?? false)
-            .toList();
-        _timeIntervalsThisWeek = timeIntervals
-            .where((timeInterval) => timeInterval.isThisWeek ?? false)
-            .toList();
-        _timeIntervalsThisMonth = timeIntervals
-            .where((timeInterval) => timeInterval.isThisMonth ?? false)
-            .toList();
-        _timeIntervalsNextMonth = timeIntervals
-            .where((timeInterval) => timeInterval.isNextMonth ?? false)
-            .toList();
-      });
-    } else if (widget.taskWithSubtasksId != null) {
-      final taskWithSubtasks =
-          await _databaseManager.taskWithSubtasks(widget.taskWithSubtasksId!);
-      _taskWithSubtasks = taskWithSubtasks;
-      final timeIntervals = await _databaseManager
-          .timeIntervalsOfTaskWithSubtasks(widget.taskWithSubtasksId!);
-      for (var timeInterval in timeIntervals) {
-        if (timeInterval.description != taskWithSubtasks.description) {
-          timeInterval.isDescriptionChanged = true;
-        }
-        if (timeInterval.location != taskWithSubtasks.location) {
-          timeInterval.isLocationChanged = true;
+      } else {
+        if ((timeInterval.targetType != task.targetType) ||
+            (timeInterval.targetAtLeast != task.targetAtLeast) ||
+            (timeInterval.targetAtMost != task.targetAtMost)) {
+          timeInterval.isTargetChanged = true;
         }
         List<String> timeIntervalSubtasksTitles =
-            timeInterval.subtasks.map((subtask) => subtask.title).toList();
+            timeInterval.subtasks.map((s) => s.title).toList();
         timeIntervalSubtasksTitles.sort();
 
-        List<String> taskWithSubtasksSubtasksTitles =
-            taskWithSubtasks.subtasks.map((subtask) => subtask.title).toList();
-        taskWithSubtasksSubtasksTitles.sort();
+        List<String> taskSubtasksTitles =
+            task.subtasks.map((s) => s.title).toList();
+        taskSubtasksTitles.sort();
 
-        if (!listEquals(
-            timeIntervalSubtasksTitles, taskWithSubtasksSubtasksTitles)) {
+        if (!listEquals(timeIntervalSubtasksTitles, taskSubtasksTitles)) {
           timeInterval.isSubtasksChanged = true;
         }
       }
-      for (var timeInterval in timeIntervals) {
-        _isExpanded[timeInterval.id] = false;
-      }
-
-      timeIntervals.sort((a, b) {
-        final aTimestamp = a.startTimestamp ?? a.endTimestamp;
-        final bTimestamp = b.startTimestamp ?? b.endTimestamp;
-
-        if (aTimestamp != null && bTimestamp != null) {
-          return aTimestamp.compareTo(bTimestamp);
-        } else if (aTimestamp != null) {
-          return -1;
-        } else if (bTimestamp != null) {
-          return 1;
-        } else {
-          return 0;
-        }
-      });
-
-      setState(() {
-        _timeIntervalsAll = timeIntervals;
-        _timeIntervalsToday = timeIntervals
-            .where((timeInterval) => timeInterval.isToday ?? false)
-            .toList();
-        _timeIntervalsGone = timeIntervals
-            .where((timeInterval) => timeInterval.isGone ?? false)
-            .toList();
-        _timeIntervalsThisWeek = timeIntervals
-            .where((timeInterval) => timeInterval.isThisWeek ?? false)
-            .toList();
-        _timeIntervalsThisMonth = timeIntervals
-            .where((timeInterval) => timeInterval.isThisMonth ?? false)
-            .toList();
-        _timeIntervalsNextMonth = timeIntervals
-            .where((timeInterval) => timeInterval.isNextMonth ?? false)
-            .toList();
-      });
     }
+
+    for (var timeInterval in timeIntervals) {
+      _isExpanded[timeInterval.id] = false;
+    }
+
+    timeIntervals.sort((a, b) {
+      final aTimestamp = a.startTimestamp ?? a.endTimestamp;
+      final bTimestamp = b.startTimestamp ?? b.endTimestamp;
+
+      if (aTimestamp != null && bTimestamp != null) {
+        return aTimestamp.compareTo(bTimestamp);
+      } else if (aTimestamp != null) {
+        return -1;
+      } else if (bTimestamp != null) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+    setState(() {
+      _timeIntervalsAll = timeIntervals;
+      _timeIntervalsToday = timeIntervals
+          .where((timeInterval) => timeInterval.isToday ?? false)
+          .toList();
+      _timeIntervalsGone = timeIntervals
+          .where((timeInterval) => timeInterval.isGone ?? false)
+          .toList();
+      _timeIntervalsThisWeek = timeIntervals
+          .where((timeInterval) => timeInterval.isThisWeek ?? false)
+          .toList();
+      _timeIntervalsThisMonth = timeIntervals
+          .where((timeInterval) => timeInterval.isThisMonth ?? false)
+          .toList();
+      _timeIntervalsNextMonth = timeIntervals
+          .where((timeInterval) => timeInterval.isNextMonth ?? false)
+          .toList();
+    });
   }
 
   Future<void> _onTimeIntervalToggleCompleted(TimeInterval timeInterval) async {
@@ -1395,7 +1459,7 @@ class _TimeIntervalOfTaskOrEventPageState
                           dense: true,
                           leading: Icon(Icons.location_on_outlined),
                           title: Text(timeInterval.location)),
-                    if (timeInterval.measurableTaskId != null &&
+                    if (timeInterval.unit.isNotEmpty &&
                         _isExpanded[timeInterval.id]!)
                       ListTile(
                         dense: true,
@@ -1419,7 +1483,7 @@ class _TimeIntervalOfTaskOrEventPageState
                           ],
                         ),
                       ),
-                    if (timeInterval.measurableTaskId != null &&
+                    if (timeInterval.unit.isNotEmpty &&
                         _isExpanded[timeInterval.id]!)
                       ListTile(
                         dense: true,
@@ -1430,7 +1494,7 @@ class _TimeIntervalOfTaskOrEventPageState
                             onPressed: () =>
                                 _onHasBeenDoneUpdate(timeInterval)),
                       ),
-                    if (timeInterval.taskWithSubtasksId != null &&
+                    if (timeInterval.subtasks.isNotEmpty &&
                             _isExpanded[timeInterval.id]!
                         //timeInterval.isSubtasksChanged
                         )
@@ -1451,15 +1515,15 @@ class _TimeIntervalOfTaskOrEventPageState
                                   ? Colors.white
                                   : Colors.black,
                           controlAffinity: ListTileControlAffinity.leading,
-                          value: subtask.isSubtaskCompleted,
+                          value: subtask.isCompleted,
                           onChanged: (value) {
-                            subtask.isSubtaskCompleted = value ?? false;
+                            subtask.isCompleted = value ?? false;
                             _onSubtasksChanged(timeInterval);
                           },
                           title: Text(
                             subtask.title,
                             style: TextStyle(
-                              decoration: subtask.isSubtaskCompleted
+                              decoration: subtask.isCompleted
                                   ? TextDecoration.lineThrough
                                   : TextDecoration.none,
                               //color: labelColor,
@@ -1509,5 +1573,49 @@ class _TimeIntervalOfTaskOrEventPageState
               },
             )
           ]));
+  }
+}
+
+
+/// Hộp thoại hiển thị tiến trình khi lưu nhiều time interval lặp lại cùng lúc.
+///
+/// Lắng nghe [progress] (số interval đã lưu) và cập nhật thanh tiến trình cùng
+/// nhãn "X/total". Không cho đóng bằng cách chạm ra ngoài (barrierDismissible
+/// được đặt false ở nơi gọi).
+class _SaveProgressDialog extends StatelessWidget {
+  const _SaveProgressDialog({
+    required this.total,
+    required this.progress,
+  });
+
+  final int total;
+  final ValueListenable<int> progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Đang lưu...'),
+      content: ValueListenableBuilder<int>(
+        valueListenable: progress,
+        builder: (context, done, _) {
+          final fraction = total == 0 ? 0.0 : done / total;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Đang lưu $done/$total khoảng thời gian'),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: fraction.clamp(0.0, 1.0),
+                  minHeight: 8,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

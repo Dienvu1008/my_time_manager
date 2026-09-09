@@ -26,11 +26,20 @@ class MyAppDrawer extends StatelessWidget {
             child: Text('My Time Manager'),
           ),
           ListTile(
-            leading: const Icon(Icons.checklist_outlined),
-            title: Text(localizations!.tasksAndEvents),
-            selected:
-                _selectedDrawerItemIndex == ScreenSelected.tasksScreen.value,
-            onTap: () => _onDrawerItemTapped(ScreenSelected.tasksScreen.value),
+            leading: const Icon(Icons.home_outlined),
+            title: Text(localizations!.overview),
+            selected: _selectedDrawerItemIndex ==
+                ScreenSelected.tasksOverviewScreen.value,
+            onTap: () =>
+                _onDrawerItemTapped(ScreenSelected.tasksOverviewScreen.value),
+          ),
+          ListTile(
+            leading: const Icon(Icons.timeline_outlined),
+            title: Text(localizations.timeline),
+            selected: _selectedDrawerItemIndex ==
+                ScreenSelected.tasksTimelineScreen.value,
+            onTap: () =>
+                _onDrawerItemTapped(ScreenSelected.tasksTimelineScreen.value),
           ),
           ListTile(
             leading: const Icon(Icons.calendar_month_outlined),
@@ -53,9 +62,8 @@ class MyAppDrawer extends StatelessWidget {
               title: Text(localizations.notes),
               selected:
                   _selectedDrawerItemIndex == ScreenSelected.notesScreen.value,
-              onTap: () => isProVersion
-                  ? showComingSoonDialog(context)
-                  : showWillBeAvaiableOnProVersionDialog(context)),
+              onTap: () =>
+                  _onDrawerItemTapped(ScreenSelected.notesScreen.value)),
           // ListTile(
           //   leading: const Icon(Icons.contacts_outlined),
           //   title: Text(localizations.myContacts),
@@ -79,6 +87,21 @@ class MyAppDrawer extends StatelessWidget {
           //   onTap: () =>
           //       _onDrawerItemTapped(ScreenSelected.materialDesignScreen.value),
           // ),
+          ListTile(
+            leading: const Icon(Icons.archive_outlined),
+            title: Text(localizations.archive),
+            selected:
+                _selectedDrawerItemIndex == ScreenSelected.archiveScreen.value,
+            onTap: () =>
+                _onDrawerItemTapped(ScreenSelected.archiveScreen.value),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline),
+            title: const Text('Thùng rác'),
+            selected:
+                _selectedDrawerItemIndex == ScreenSelected.trashScreen.value,
+            onTap: () => _onDrawerItemTapped(ScreenSelected.trashScreen.value),
+          ),
           ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: Text(localizations!.settings),

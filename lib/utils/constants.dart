@@ -16,6 +16,15 @@ enum ColorSelectionMethod {
   image,
 }
 
+/// Kiểu hiển thị thẻ task ở màn Overview.
+///  - [filled]: toàn bộ nền thẻ mang màu của task (mặc định, như trước đây).
+///  - [leadingColorBar]: nền trung tính, chỉ có một dải màu dọc ở cạnh trái
+///    (giống thẻ time interval ở màn Timeline).
+enum TaskCardStyle {
+  filled,
+  leadingColorBar,
+}
+
 enum ColorImageProvider {
   leaves('Leaves',
       'https://flutter.github.io/assets-for-api-docs/assets/material/content_based_color_scheme_1.png'),
@@ -76,6 +85,14 @@ enum ScreenSelected {
   contactsScreen(6),
   statsScreen(7),
   notesScreen(8),
+  trashScreen(9),
+  // Overview và Timeline nay là hai mục drawer ĐỘC LẬP (trước đây là hai trang
+  // con của Tasks chuyển qua bottom bar). Value không liên tục cũng an toàn vì
+  // mọi nơi so sánh bằng `.value`.
+  tasksOverviewScreen(10),
+  tasksTimelineScreen(11),
+  // Màn Lưu trữ (archive) — mục drawer độc lập, single-page.
+  archiveScreen(12),
   ;
 
   const ScreenSelected(this.value);

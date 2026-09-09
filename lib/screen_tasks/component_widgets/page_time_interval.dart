@@ -1,26 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
-import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
 
 class TimeIntervalPage extends StatefulWidget {
   const TimeIntervalPage(
       {super.key, 
       this.task, 
-      this.measurableTask, 
-      this.taskWithSubtasks, 
-      this.taskId, 
-      this.measurableTaskId, 
-      this.taskWithSubtasksId});
+      this.taskId});
   final Task? task;
-  final MeasurableTask? measurableTask;
-  final TaskWithSubtasks? taskWithSubtasks;
   final String? taskId;
-  final String? measurableTaskId;
-  final String? taskWithSubtasksId;
 
   @override
   _TimeIntervalPageState createState() => _TimeIntervalPageState();
@@ -297,24 +287,14 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                               ? TimeOfDay.fromDateTime(DateFormat('HH:mm')
                                   .parse(_endTimeController.text))
                               : null;
+                          final task = widget.task;
+                          final bool measurable = task?.isMeasurable ?? false;
                           final timeInterval = TimeInterval(
-                            taskId: widget.task?.id,
-                            measurableTaskId: widget.measurableTask?.id,
-                            taskWithSubtasksId: widget.taskWithSubtasks?.id,
-                            color: widget.task != null
-                                ? widget.task!.color
-                                : widget.measurableTask != null
-                                    ? widget.measurableTask!.color
-                                    : widget.taskWithSubtasks != null
-                                        ? widget.taskWithSubtasks!.color
-                                        : const Color(0xff000000),
-                            title: widget.task != null
-                                ? widget.task!.title
-                                : widget.measurableTask != null
-                                    ? widget.measurableTask!.title
-                                    : widget.taskWithSubtasks != null
-                                        ? widget.taskWithSubtasks!.title
-                                        : '',
+                            taskId: task?.id ?? widget.taskId,
+                            color: task != null
+                                ? task.color
+                                : const Color(0xff000000),
+                            title: task != null ? task.title : '',
                             startDate: startDate,
                             endDate: endDate,
                             startTime: startTime,
@@ -327,28 +307,21 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                                 startTime == null || _isStartTimeUndefined,
                             isEndTimeUndefined:
                                 endTime == null || _isEndTimeUndefined,
-                            subtasks: widget.taskWithSubtasks != null
-                                ? widget.taskWithSubtasks!.subtasks
+                            subtasks: (task != null && task.subtasks.isNotEmpty)
+                                ? task.subtasks
                                     .map((subtask) => Subtask(
-                                          isSubtaskCompleted: false,
+                                          isCompleted: false,
                                           title: subtask.title,
                                         ))
                                     .toList()
                                 : null,
-                            targetType: widget.measurableTask != null
-                                ? widget.measurableTask!.targetType
-                                : null,
-                            targetAtLeast: widget.measurableTask != null
-                                ? widget.measurableTask!.targetAtLeast
-                                : null,
-                            targetAtMost: widget.measurableTask != null
-                                ? widget.measurableTask!.targetAtMost
-                                : null,
-                            unit: widget.measurableTask != null
-                                ? widget.measurableTask!.unit
-                                : null,
-                            howMuchHasBeenDone:
-                                widget.measurableTask != null ? 0.0 : null,
+                            targetType: measurable ? task!.targetType : null,
+                            targetAtLeast:
+                                measurable ? task!.targetAtLeast : null,
+                            targetAtMost:
+                                measurable ? task!.targetAtMost : null,
+                            unit: measurable ? task!.unit : null,
+                            howMuchHasBeenDone: measurable ? 0.0 : null,
                           );
                           if (timeInterval.startTimestamp != null &&
                               timeInterval.endTimestamp != null &&

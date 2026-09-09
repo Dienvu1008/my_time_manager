@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/screen_focus_timer/bloc/pomodoro_config.dart';
+import 'package:my_time_manager/screen_focus_timer/data/model_focus_session.dart';
+import 'package:my_time_manager/screen_focus_timer/view/pomodoro_screen.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/attached_notes_view.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
 import 'package:my_time_manager/utils/utils.dart';
 
 class MeasurableTaskCard extends StatefulWidget {
-  final MeasurableTask measurableTask;
-  final Function(MeasurableTask) onMeasurableTaskEdit;
-  final Function(MeasurableTask) onMeasurableTaskDelete;
-  final Function(MeasurableTask) onMeasurableTaskToggleComplete;
-  final Function(MeasurableTask) onHasBeenDoneUpdate;
-  final bool Function(MeasurableTask) isMeasurableTaskCardExpanded;
-  final Function(MeasurableTask) onMeasurableTaskCardExpanded;
+  final Task measurableTask;
+  final Function(Task) onMeasurableTaskEdit;
+  final Function(Task) onMeasurableTaskDelete;
+  final Function(Task) onMeasurableTaskToggleComplete;
+  final Function(Task) onHasBeenDoneUpdate;
+  final bool Function(Task) isMeasurableTaskCardExpanded;
+  final Function(Task) onMeasurableTaskCardExpanded;
   final bool isProVersion;
 
   const MeasurableTaskCard({
@@ -78,6 +82,13 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                                 : textTheme.labelLarge!
                                     .copyWith(color: labelColor),
                           ),
+                          if (widget.measurableTask.noteIds.isNotEmpty)
+                            AttachedNotesView(
+                              noteIds: widget.measurableTask.noteIds,
+                              color: labelColor,
+                              textStyle: textTheme.labelMedium!
+                                  .copyWith(color: labelColor),
+                            ),
                         ]),
                     trailing: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert, color: labelColor),
@@ -107,7 +118,7 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                               targetType: widget.measurableTask.targetType,
                               unit: widget.measurableTask.unit,
                               subtasks: [],
-                              measurableTaskId: widget.measurableTask.id,
+                              taskId: widget.measurableTask.id,
                               isSetTimeIntervalPage: true,
                             ),
                           );
@@ -133,16 +144,24 @@ class _MeasurableTaskCardState extends State<MeasurableTaskCard> {
                               targetType: widget.measurableTask.targetType,
                               unit: widget.measurableTask.unit,
                               subtasks: [],
-                              measurableTaskId: widget.measurableTask.id,
+                              taskId: widget.measurableTask.id,
                               isSetTimeIntervalPage: false,
                             ),
                           );
                         } else if (result == 'focus_timer') {
-                          if (widget.isProVersion) {
-                            showComingSoonDialog(context);
-                          } else {
-                            showWillBeAvaiableOnProVersionDialog(context);
-                          }
+                          // Mở đồng hồ Pomodoro với task đo lường này chọn sẵn.
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => PomodoroPage(
+                                initialTask: SelectedTask(
+                                  type: FocusTaskType.task,
+                                  id: widget.measurableTask.id,
+                                  title: widget.measurableTask.title,
+                                  isMeasurable: true,
+                                ),
+                              ),
+                            ),
+                          );
                         }
                       },
                       itemBuilder: (BuildContext context) =>

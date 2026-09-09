@@ -4,6 +4,9 @@ import 'package:calendar_widgets/src_table_calendar/customization/calendar_build
 import 'package:calendar_widgets/src_table_calendar/shared/utils.dart';
 import 'package:calendar_widgets/src_table_calendar/table_calendar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_time_manager/auth/bloc/auth_bloc.dart';
+import 'package:my_time_manager/auth/view/account_screen.dart';
 import 'package:my_time_manager/home/data_controller_provider.dart';
 import 'package:my_time_manager/screen_calendar/view_daily.dart';
 import 'package:my_time_manager/screen_calendar/view_monthly.dart';
@@ -17,9 +20,14 @@ import '../data/models/model_list.dart';
 import '../data/models/model_time_interval.dart';
 import '../screen_about_us/page_about_us.dart';
 import '../screen_calendar/view_weekly.dart';
-import '../screen_focus_timer/page_focus_timer.dart';
+import '../screen_focus_timer/view/pomodoro_overlay_controller.dart';
+import '../screen_focus_timer/view/pomodoro_screen.dart';
+import '../screen_trash/trash_screen.dart';
+import '../screen_archive/archive_screen.dart';
 import '../screen_material_design/page_color_palettes.dart';
 import '../screen_material_design/page_component.dart';
+import '../screen_notes/page_notes_list.dart';
+import '../screen_settings/page_settings_sync_and_backup.dart';
 import '../screen_settings/page_settings_user_interface.dart';
 import '../screen_tasks/page_tasks_overview.dart';
 import '../screen_tasks/page_tasks_timeline.dart';
@@ -38,6 +46,7 @@ import 'component_widgets/button_language.dart';
 import 'component_widgets/button_material3.dart';
 import 'component_widgets/destinations_about_us_screen.dart';
 import 'component_widgets/destinations_focus_timer_screen.dart';
+import 'component_widgets/destinations_trash_screen.dart';
 import 'component_widgets/destinations_material_design_screen.dart';
 import 'component_widgets/destinations_nav_rail_tasks_screen.dart';
 import 'component_widgets/destinations_settings_screen.dart';
@@ -115,8 +124,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   bool showMediumSizeLayout = false;
   bool showLargeSizeLayout = false;
 
-  int _selectedDrawerItemIndex = ScreenSelected.tasksScreen.value;
+  int _selectedDrawerItemIndex = ScreenSelected.tasksOverviewScreen.value;
   int _selectedNavBarItemIndex = 0;
+
+  bool hasShownDialog = false;
 
   final DatabaseManager _databaseManager = DatabaseManager();
   late SharedPreferences _prefs;
@@ -212,6 +223,20 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     });
   }
 
+  /// Chuyển sang màn hình Pomodoro (gọi từ cửa sổ nổi PiP). Nếu đang có route
+  /// nào đó được push (ví dụ PomodoroPage mở từ menu task), pop về trước để
+  /// Home hiện ra rồi chọn tab Focus Timer.
+  void _openPomodoroFromOverlay() {
+    final navigator = Navigator.of(context);
+    while (navigator.canPop()) {
+      navigator.pop();
+    }
+    setState(() {
+      _selectedDrawerItemIndex = ScreenSelected.focusTimerScreen.value;
+      _selectedNavBarItemIndex = 0;
+    });
+  }
+
   @override
   initState() {
     super.initState();
@@ -224,12 +249,17 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       parent: controller,
       curve: const Interval(0.5, 1.0),
     );
+    // Đăng ký để cửa sổ nổi Pomodoro có thể yêu cầu mở màn Focus Timer.
+    PomodoroOverlayController.instance
+        .registerOpenHandler(_openPomodoroFromOverlay);
     //_init();
     //_loadData();
   }
 
   @override
   void dispose() {
+    PomodoroOverlayController.instance
+        .unregisterOpenHandler(_openPomodoroFromOverlay);
     controller.dispose();
     super.dispose();
   }
@@ -379,6 +409,17 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   //   return _calendarScreen.elementAt(_selectedNavBarItemIndex);
   // }
 
+  /// Kiểm tra xem AuthBloc có được cung cấp phía trên cây widget hay không.
+  /// Trả về false nếu Firebase chưa cấu hình (App không dựng AuthBloc).
+  bool _isAuthAvailable(BuildContext context) {
+    try {
+      context.read<AuthBloc>();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Widget createPageForSettingsScreen(
     PageOfSettingsScreen screenSelected,
   ) {
@@ -415,14 +456,30 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           useMaterial3: widget.useMaterial3,
         );
       case PageOfSettingsScreen.page_account:
-        return ComingSoonWidget();
+        // Hiển thị màn hình tài khoản (thông tin user + đăng xuất) nếu lớp auth
+        // đã sẵn sàng (AuthBloc được cung cấp ở tầng App). Nếu Firebase chưa
+        // được cấu hình thì AuthBloc không tồn tại -> hiển thị ComingSoon.
+        return _isAuthAvailable(context)
+            ? const AccountScreen()
+            : ComingSoonWidget();
       case PageOfSettingsScreen.page_data_and_sync:
-        return ComingSoonWidget();
+        // Sao lưu (export) và khôi phục (import) dữ liệu.
+        return const SyncAndBackupPage();
     }
   }
 
   Widget getContentPage() {
-    if (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value) {
+    if (_selectedDrawerItemIndex ==
+        ScreenSelected.tasksOverviewScreen.value) {
+      // Overview là màn drawer độc lập (không còn qua bottom bar).
+      return createPageForTasksScreen(
+          PageOfTasksScreenSelected.tasksOverviewPage);
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.tasksTimelineScreen.value) {
+      // Timeline là màn drawer độc lập.
+      return createPageForTasksScreen(
+          PageOfTasksScreenSelected.tasksTimelinePage);
+    } else if (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value) {
       return createPageForTasksScreen(
           PageOfTasksScreenSelected.values[_selectedNavBarItemIndex]);
     } else if (_selectedDrawerItemIndex ==
@@ -439,7 +496,16 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       return createPageForCalendarScreen(PageOfCalendarScreenSelected.values[_selectedNavBarItemIndex]);
     } else if (_selectedDrawerItemIndex ==
         ScreenSelected.focusTimerScreen.value) {
-      return const TimerPage();
+      return const PomodoroScreen();
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.trashScreen.value) {
+      return const TrashScreen();
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.archiveScreen.value) {
+      return const ArchiveScreen();
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.notesScreen.value) {
+      return const NotesListPage();
     } else {
       return createPageForMaterialDesignScreen(
         PageOfMaterialDesignScreenSelected.values[_selectedNavBarItemIndex],
@@ -449,7 +515,15 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 
   List<NavigationRailDestination> getDestinations() {
-    if (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value) {
+    if (_selectedDrawerItemIndex ==
+            ScreenSelected.tasksOverviewScreen.value ||
+        _selectedDrawerItemIndex ==
+            ScreenSelected.tasksTimelineScreen.value) {
+      // Hai màn single-page (không có trang con). NavigationRail yêu cầu tối
+      // thiểu 2 destination + selectedIndex hợp lệ, nên dùng danh sách "rỗng"
+      // 2 mục giống Trash/Focus Timer (nav rail không hiện gì đáng kể).
+      return navRailTrashScreenDestinations;
+    } else if (_selectedDrawerItemIndex == ScreenSelected.tasksScreen.value) {
       return navRailTasksScreenDestinations;
     } else if (_selectedDrawerItemIndex ==
         ScreenSelected.settingsScreen.value) {
@@ -462,6 +536,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     } else if (_selectedDrawerItemIndex ==
         ScreenSelected.focusTimerScreen.value) {
       return navRailFocusTimerScreenDestinations;
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.trashScreen.value) {
+      return navRailTrashScreenDestinations;
+    } else if (_selectedDrawerItemIndex ==
+        ScreenSelected.archiveScreen.value) {
+      // Archive là màn single-page (giống Trash) -> danh sách "rỗng" 2 mục.
+      return navRailTrashScreenDestinations;
     } else {
       return navRailMaterialDesignScreenDestinations;
     }
@@ -509,6 +590,30 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
+    if (!widget.isProVersion && widget.launchCount > 50 && !hasShownDialog) {
+      hasShownDialog = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          builder: (context) {
+            final localizations = AppLocalizations.of(context);
+            return AlertDialog(
+              title: Text(localizations!.supportUs),
+              content: Text(localizations.supportUsMessage),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      });
+    }
+
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
@@ -516,7 +621,16 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           scaffoldKey: scaffoldKey,
           animationController: controller,
           railAnimation: railAnimation,
-          appBar: _selectedDrawerItemIndex != ScreenSelected.tasksScreen.value //&& _selectedDrawerItemIndex != ScreenSelected.calendarScreen.value
+          appBar: _selectedDrawerItemIndex != ScreenSelected.tasksScreen.value &&
+                  _selectedDrawerItemIndex !=
+                      ScreenSelected.tasksOverviewScreen.value &&
+                  _selectedDrawerItemIndex !=
+                      ScreenSelected.tasksTimelineScreen.value &&
+                  _selectedDrawerItemIndex !=
+                      ScreenSelected.calendarScreen.value &&
+                  _selectedDrawerItemIndex !=
+                      ScreenSelected.archiveScreen.value &&
+                  _selectedDrawerItemIndex != ScreenSelected.trashScreen.value
               ? CustomAppBar(
                   selectedDrawerItemIndex: _selectedDrawerItemIndex,
                   selectedNavBarItemIndex: _selectedNavBarItemIndex,
@@ -594,9 +708,24 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
             ),
           ),
           navigationBar: Visibility(
-            //bottom navigation bar sẽ không hiện ở màn hình about us
+            // Ẩn bottom bar ở các màn chỉ có một trang (destinations rỗng nên
+            // thanh điều hướng dưới không có tác dụng): About Us, Focus Timer,
+            // Thùng rác.
             visible: widget.useBottomBar &&
-                _selectedDrawerItemIndex != ScreenSelected.aboutUsScreen.value,
+                _selectedDrawerItemIndex !=
+                    ScreenSelected.aboutUsScreen.value &&
+                _selectedDrawerItemIndex !=
+                    ScreenSelected.focusTimerScreen.value &&
+                _selectedDrawerItemIndex != ScreenSelected.trashScreen.value &&
+                _selectedDrawerItemIndex != ScreenSelected.notesScreen.value &&
+                _selectedDrawerItemIndex !=
+                    ScreenSelected.archiveScreen.value &&
+                // Overview & Timeline giờ là màn single-page qua drawer -> ẩn
+                // bottom bar (giống Notes/Trash).
+                _selectedDrawerItemIndex !=
+                    ScreenSelected.tasksOverviewScreen.value &&
+                _selectedDrawerItemIndex !=
+                    ScreenSelected.tasksTimelineScreen.value,
             child: AppNavigationBars(
               onSelectItem: (index) {
                 setState(() {

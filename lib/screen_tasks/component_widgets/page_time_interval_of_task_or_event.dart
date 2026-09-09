@@ -9,17 +9,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_measurable_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task_with_subtasks.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 
 import '../../app/app_localizations.dart';
 import '../../data/database/database_manager.dart';
 import '../../data/models/model_list.dart';
-import '../../data/models/model_measurable_task.dart';
 import '../../data/models/model_task.dart';
-import '../../data/models/model_task_with_subtasks.dart';
 import '../../data/models/model_time_interval.dart';
 import '../../home/component_widgets/button_select_calendar_mode.dart';
 import '../../home/component_widgets/button_show_timeline_calendar.dart';
@@ -29,14 +25,12 @@ class TimeIntervalOfTaskOrEventPageNew extends StatefulWidget {
   const TimeIntervalOfTaskOrEventPageNew(
       {super.key,
       this.taskId,
-      this.measurableTaskId,
-      this.taskWithSubtasksId,
+      this.subtaskId,
       required this.showCalendar,
       required this.timeIntervalsOfThisTask});
 
   final String? taskId;
-  final String? measurableTaskId;
-  final String? taskWithSubtasksId;
+  final String? subtaskId;
   final List<TimeInterval> timeIntervalsOfThisTask;
   final bool showCalendar;
 
@@ -127,112 +121,48 @@ class _TimeIntervalOfTaskOrEventPageNewState
   }
 
   Future<void> _loadData() async {
-    if (widget.taskId != null) {
-      final timeIntervals =
+    final List<TimeInterval> timeIntervals;
+    if (widget.subtaskId != null) {
+      timeIntervals =
+          await _databaseManager.timeIntervalsOfSubtask(widget.subtaskId!);
+    } else if (widget.taskId != null) {
+      timeIntervals =
           await _databaseManager.timeIntervalsOfTask(widget.taskId!);
-      final kTimeIntervalSource = <DateTime, List<TimeInterval>>{};
-      for (final interval in timeIntervals) {
-        final date = (interval.startDate != null)
-            ? DateTime(interval.startDate!.year, interval.startDate!.month,
-                interval.startDate!.day)
-            : DateTime(interval.endDate!.year, interval.endDate!.month,
-                interval.endDate!.day);
+    } else {
+      return;
+    }
 
-        if (kTimeIntervalSource.containsKey(date)) {
-          kTimeIntervalSource[date]!.add(interval);
+    final kTimeIntervalSource = <DateTime, List<TimeInterval>>{};
+    for (final interval in timeIntervals) {
+      final date = (interval.startDate != null)
+          ? DateTime(interval.startDate!.year, interval.startDate!.month,
+              interval.startDate!.day)
+          : DateTime(interval.endDate!.year, interval.endDate!.month,
+              interval.endDate!.day);
 
-          // Sắp xếp các TimeInterval theo startTime
-          kTimeIntervalSource[date]!.sort((a, b) {
-            if (a.startTime == null) return -1;
-            if (b.startTime == null) return 1;
-            if (a.startTime != null && b.startTime != null) {
-              final aMinutes = a.startTime!.hour * 60 + a.startTime!.minute;
-              final bMinutes = b.startTime!.hour * 60 + b.startTime!.minute;
-              return aMinutes.compareTo(bMinutes);
-            }
-            return 0;
-          });
-        } else {
-          kTimeIntervalSource[date] = [interval];
-        }
+      if (kTimeIntervalSource.containsKey(date)) {
+        kTimeIntervalSource[date]!.add(interval);
 
-        _kTimeIntervals = LinkedHashMap<DateTime, List<TimeInterval>>(
-          equals: isSameDay,
-          hashCode: getHashCode,
-        )..addAll(kTimeIntervalSource);
-        _timeIntervals = timeIntervals;
+        // Sắp xếp các TimeInterval theo startTime
+        kTimeIntervalSource[date]!.sort((a, b) {
+          if (a.startTime == null) return -1;
+          if (b.startTime == null) return 1;
+          if (a.startTime != null && b.startTime != null) {
+            final aMinutes = a.startTime!.hour * 60 + a.startTime!.minute;
+            final bMinutes = b.startTime!.hour * 60 + b.startTime!.minute;
+            return aMinutes.compareTo(bMinutes);
+          }
+          return 0;
+        });
+      } else {
+        kTimeIntervalSource[date] = [interval];
       }
-    } else if (widget.measurableTaskId != null) {
-      final timeIntervals = await _databaseManager
-          .timeIntervalsOfMeasureableTask(widget.measurableTaskId!);
-      final kTimeIntervalSource = <DateTime, List<TimeInterval>>{};
-      for (final interval in timeIntervals) {
-        final date = (interval.startDate != null)
-            ? DateTime(interval.startDate!.year, interval.startDate!.month,
-                interval.startDate!.day)
-            : DateTime(interval.endDate!.year, interval.endDate!.month,
-                interval.endDate!.day);
 
-        if (kTimeIntervalSource.containsKey(date)) {
-          kTimeIntervalSource[date]!.add(interval);
-
-          // Sắp xếp các TimeInterval theo startTime
-          kTimeIntervalSource[date]!.sort((a, b) {
-            if (a.startTime == null) return -1;
-            if (b.startTime == null) return 1;
-            if (a.startTime != null && b.startTime != null) {
-              final aMinutes = a.startTime!.hour * 60 + a.startTime!.minute;
-              final bMinutes = b.startTime!.hour * 60 + b.startTime!.minute;
-              return aMinutes.compareTo(bMinutes);
-            }
-            return 0;
-          });
-        } else {
-          kTimeIntervalSource[date] = [interval];
-        }
-
-        _kTimeIntervals = LinkedHashMap<DateTime, List<TimeInterval>>(
-          equals: isSameDay,
-          hashCode: getHashCode,
-        )..addAll(kTimeIntervalSource);
-
-        _timeIntervals = timeIntervals;
-      }
-    } else if (widget.taskWithSubtasksId != null) {
-      final timeIntervals = await _databaseManager
-          .timeIntervalsOfTaskWithSubtasks(widget.taskWithSubtasksId!);
-      final kTimeIntervalSource = <DateTime, List<TimeInterval>>{};
-      for (final interval in timeIntervals) {
-        final date = (interval.startDate != null)
-            ? DateTime(interval.startDate!.year, interval.startDate!.month,
-                interval.startDate!.day)
-            : DateTime(interval.endDate!.year, interval.endDate!.month,
-                interval.endDate!.day);
-
-        if (kTimeIntervalSource.containsKey(date)) {
-          kTimeIntervalSource[date]!.add(interval);
-
-          // Sắp xếp các TimeInterval theo startTime
-          kTimeIntervalSource[date]!.sort((a, b) {
-            if (a.startTime == null) return -1;
-            if (b.startTime == null) return 1;
-            if (a.startTime != null && b.startTime != null) {
-              final aMinutes = a.startTime!.hour * 60 + a.startTime!.minute;
-              final bMinutes = b.startTime!.hour * 60 + b.startTime!.minute;
-              return aMinutes.compareTo(bMinutes);
-            }
-            return 0;
-          });
-        } else {
-          kTimeIntervalSource[date] = [interval];
-        }
-
-        _kTimeIntervals = LinkedHashMap<DateTime, List<TimeInterval>>(
-          equals: isSameDay,
-          hashCode: getHashCode,
-        )..addAll(kTimeIntervalSource);
-        _timeIntervals = timeIntervals;
-      }
+      _kTimeIntervals = LinkedHashMap<DateTime, List<TimeInterval>>(
+        equals: isSameDay,
+        hashCode: getHashCode,
+      )..addAll(kTimeIntervalSource);
+      _timeIntervals = timeIntervals;
     }
   }
 
@@ -1085,45 +1015,13 @@ class _TimeIntervalCardNewState extends State<TimeIntervalCardNew> {
                         } else if (result == 'go_to_main_task') {
                           final DatabaseManager databaseManager =
                               DatabaseManager();
-                          if (widget.timeInterval.taskWithSubtasksId != null) {
-                            final id = widget.timeInterval.taskWithSubtasksId;
-                            final TaskWithSubtasks taskWithSubtasks =
-                                await databaseManager.taskWithSubtasks(id!);
-                            final TaskList taskList = await databaseManager
-                                .taskList(taskWithSubtasks.taskListId);
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AddOrEditTaskWithSubtasksPage(
-                                  taskList: taskList,
-                                  taskWithSubtasks: taskWithSubtasks,
-                                ),
-                              ),
-                            );
-                          } else if (widget.timeInterval.measurableTaskId !=
-                              null) {
-                            final id = widget.timeInterval.measurableTaskId;
-                            final MeasurableTask measurableTask =
-                                await databaseManager.measurableTask(id!);
-                            final TaskList taskList = await databaseManager
-                                .taskList(measurableTask.taskListId);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AddOrEditMeasurableTaskPage(
-                                  taskList: taskList,
-                                  measurableTask: measurableTask,
-                                ),
-                              ),
-                            );
-                          } else if (widget.timeInterval.taskId != null) {
+                          if (widget.timeInterval.taskId != null) {
                             final id = widget.timeInterval.taskId;
                             final Task task = await databaseManager.task(id!);
-                            final TaskList taskList =
-                                await databaseManager.taskList(task.taskListId);
+                            final TaskList? taskList = task.taskListId == null
+                                ? null
+                                : await databaseManager
+                                    .taskList(task.taskListId!);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -1146,7 +1044,7 @@ class _TimeIntervalCardNewState extends State<TimeIntervalCardNew> {
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
-                        if (widget.timeInterval.taskWithSubtasksId != null)
+                        if (widget.timeInterval.subtasks.isNotEmpty)
                           PopupMenuItem<String>(
                             value: 'option5',
                             child: Row(
@@ -1161,7 +1059,7 @@ class _TimeIntervalCardNewState extends State<TimeIntervalCardNew> {
                               ],
                             ),
                           ),
-                        if (widget.timeInterval.measurableTaskId != null)
+                        if (widget.timeInterval.unit.isNotEmpty)
                           PopupMenuItem<String>(
                             value: 'option6',
                             child: Row(
@@ -1249,7 +1147,7 @@ class _TimeIntervalCardNewState extends State<TimeIntervalCardNew> {
                     ),
                   ),
                   if (_isExpanded &&
-                      (widget.timeInterval.measurableTaskId != null ||
+                      (widget.timeInterval.unit.isNotEmpty ||
                           widget.timeInterval.description.isNotEmpty ||
                           widget.timeInterval.location.isNotEmpty))
                     ListTile(
@@ -1277,23 +1175,23 @@ class _TimeIntervalCardNewState extends State<TimeIntervalCardNew> {
                               ),
                             ],
                           ),
-                        if (widget.timeInterval.measurableTaskId != null &&
+                        if (widget.timeInterval.unit.isNotEmpty &&
                             widget.timeInterval.targetType == TargetType.about)
                           Text(
                               '${localizations.targetAbout} ${widget.timeInterval.targetAtLeast} ${localizations.to} ${widget.timeInterval.targetAtMost} ${widget.timeInterval.unit}',
                               style: textTheme.labelMedium!),
-                        if (widget.timeInterval.measurableTaskId != null &&
+                        if (widget.timeInterval.unit.isNotEmpty &&
                             widget.timeInterval.targetType ==
                                 TargetType.atLeast)
                           Text(
                               '${localizations.targetAtLeast} ${widget.timeInterval.targetAtLeast} ${widget.timeInterval.unit}',
                               style: textTheme.labelMedium!),
-                        if (widget.timeInterval.measurableTaskId != null &&
+                        if (widget.timeInterval.unit.isNotEmpty &&
                             widget.timeInterval.targetType == TargetType.atMost)
                           Text(
                               '${localizations.targetAtMost} ${widget.timeInterval.targetAtMost} ${widget.timeInterval.unit}',
                               style: textTheme.labelMedium!),
-                        if (widget.timeInterval.measurableTaskId != null)
+                        if (widget.timeInterval.unit.isNotEmpty)
                           Center(
                             child: ActionChip(
                               label: Text(
@@ -1310,7 +1208,7 @@ class _TimeIntervalCardNewState extends State<TimeIntervalCardNew> {
                       ],
                     )),
                   if (_isExpanded &&
-                      widget.timeInterval.taskWithSubtasksId != null)
+                      widget.timeInterval.subtasks.isNotEmpty)
                     SingleChildScrollView(
                       physics: const NeverScrollableScrollPhysics(),
                       child: Column(
@@ -1320,15 +1218,15 @@ class _TimeIntervalCardNewState extends State<TimeIntervalCardNew> {
                               contentPadding: const EdgeInsets.only(right:0, left: 8),
                               dense: true,
                               controlAffinity: ListTileControlAffinity.leading,
-                              value: subtask.isSubtaskCompleted,
+                              value: subtask.isCompleted,
                               onChanged: (value) {
                                 setState(() {
-                                  subtask.isSubtaskCompleted = value ?? false;
+                                  subtask.isCompleted = value ?? false;
                                   widget.onSubtasksChanged(widget.timeInterval);
                                 });
                               },
                               title: Text(subtask.title,
-                                  style: subtask.isSubtaskCompleted
+                                  style: subtask.isCompleted
                                       ? textTheme.labelMedium!.copyWith(
                                           decoration:
                                               TextDecoration.lineThrough)

@@ -1,21 +1,27 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+//import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
 import 'package:uuid/uuid.dart';
 
-import 'model_measurable_task.dart';
+import 'model_task.dart';
 
 @JsonSerializable()
 class TimeInterval {
   String id;
+
+  /// Task cha mà interval này thuộc về (null nếu interval độc lập).
   final String? taskId;
-  final String? measurableTaskId;
-  final String? taskWithSubtasksId;
+
+  /// Nếu interval này lập kế hoạch cho một công việc con cụ thể của task cha,
+  /// đây là id của subtask đó (null nếu interval là của chính task cha).
+  final String? subtaskId;
   final String location;
   final String description;
+
+  /// JSON document appflowy_editor cho mô tả có định dạng (rỗng = chưa có).
+  final String descriptionDoc;
   bool isCompleted;
   bool isImportant;
   DateTime? startDate;
@@ -54,20 +60,27 @@ class TimeInterval {
   //just used for task with sub tasks
   List<Subtask> subtasks;
   final List<String> dataFiles;
+
+  /// Danh sách id các ghi chú (Note) được đính kèm vào time interval này.
+  final List<String> noteIds;
   final DateTime updateTimeStamp;
   String? timeZone;
   Color color;
   String title;
 
+  /// Danh sách các mốc nhắc, tính bằng SỐ PHÚT TRƯỚC thời điểm bắt đầu.
+  /// Ví dụ: [15, 1440] = nhắc trước 15 phút và trước 1 ngày.
+  List<int> reminderMinutesBefore;
+
   TimeInterval({
     String? id,
     this.taskId,
-    this.measurableTaskId,
-    this.taskWithSubtasksId,
+    this.subtaskId,
     bool? isCompleted,
     bool? isImportant,
     String? location,
     String? description,
+    String? descriptionDoc,
     this.startDate,
     this.endDate,
     this.startTime,
@@ -85,10 +98,12 @@ class TimeInterval {
     List<Subtask>? subtasks,
     double? howMuchHasBeenDone,
     List<String>? dataFiles,
+    List<String>? noteIds,
     DateTime? updateTimeStamp,
     String? timeZone,
     Color? color,
     String? title,
+    List<int>? reminderMinutesBefore,
     this.isDetailsAdded = false,
     this.isDescriptionChanged = false,
     this.isLocationChanged = false,
@@ -110,6 +125,7 @@ class TimeInterval {
         title = title ?? '',
         location = location ?? '',
         description = description ?? '',
+        descriptionDoc = descriptionDoc ?? '',
         targetAtLeast = targetAtLeast ?? double.negativeInfinity,
         targetAtMost = targetAtMost ?? double.infinity,
         unit = unit ?? '',
@@ -122,11 +138,13 @@ class TimeInterval {
         // isEndTimeUndefined = isEndTimeUndefined ?? false,
         howMuchHasBeenDone = howMuchHasBeenDone ?? 0.0,
         dataFiles = dataFiles ?? [],
+        noteIds = noteIds ?? [],
+        reminderMinutesBefore = reminderMinutesBefore ?? [],
         timeZone = timeZone ?? '', //FlutterNativeTimezone.getLocalTimezone(),
         updateTimeStamp = updateTimeStamp ?? DateTime.now() {
-    Future<void> getTimeZone() async {
-      timeZone = timeZone ?? await FlutterNativeTimezone.getLocalTimezone();
-    }
+    // Future<void> getTimeZone() async {
+    //   timeZone = timeZone ?? await FlutterNativeTimezone.getLocalTimezone();
+    // }
 
 
     // isStartDateUndefined == true
@@ -313,8 +331,7 @@ class TimeInterval {
       'isCompleted': isCompleted ? 1 : 0,
       'isImportant': isImportant ? 1 : 0,
       'taskId': taskId,
-      'measurableTaskId': measurableTaskId,
-      'taskWithSubtasksId': taskWithSubtasksId,
+      'subtaskId': subtaskId,
 
       'startDate': startDate?.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
@@ -336,12 +353,15 @@ class TimeInterval {
           jsonEncode(subtasks.map((subtask) => subtask.toMap()).toList()),
 
       'dataFiles': jsonEncode(dataFiles),
+      'noteIds': jsonEncode(noteIds),
       'updateTimeStamp': updateTimeStamp.toIso8601String(),
       'timeZone': timeZone,
       'color': color.value,
       'title': title,
       'location': location,
       'description': description,
+      'descriptionDoc': descriptionDoc,
+      'reminders': jsonEncode(reminderMinutesBefore),
     };
   }
 
@@ -351,8 +371,7 @@ class TimeInterval {
         isCompleted: map['isCompleted'] == 1,
         isImportant: map['isImportant'] == 1,
         taskId: map['taskId'],
-        measurableTaskId: map['measurableTaskId'],
-        taskWithSubtasksId: map['taskWithSubtasksId'],
+        subtaskId: map['subtaskId'],
         startDate:
             map['startDate'] != null ? DateTime.parse(map['startDate']) : null,
         endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
@@ -385,23 +404,30 @@ class TimeInterval {
         subtasks: List<Subtask>.from(jsonDecode(map['subtasks'])
             .map((subtaskMap) => Subtask.fromMap(subtaskMap))),
         dataFiles: List<String>.from(jsonDecode(map['dataFiles'])),
+        noteIds: map['noteIds'] != null
+            ? List<String>.from(jsonDecode(map['noteIds']))
+            : <String>[],
         updateTimeStamp: DateTime.parse(map['updateTimeStamp']),
         color: Color(map['color']),
         title: map['title'],
         location: map['location'],
         description: map['description'],
+        descriptionDoc: map['descriptionDoc'] as String?,
+        reminderMinutesBefore: map['reminders'] != null
+            ? List<int>.from(jsonDecode(map['reminders']))
+            : <int>[],
         timeZone: map['timeZone']);
   }
 
   TimeInterval copyWith(
       {String? id,
       String? taskId,
-      String? measurableTaskId,
-      String? taskWithSubtasksId,
+      String? subtaskId,
       bool? isCompleted,
       bool? isImportant,
       String? location,
       String? description,
+      String? descriptionDoc,
       DateTime? startDate,
       DateTime? endDate,
       TimeOfDay? startTime,
@@ -417,19 +443,21 @@ class TimeInterval {
       List<Subtask>? subtasks,
       double? howMuchHasBeenDone,
       List<String>? dataFiles,
+      List<String>? noteIds,
       DateTime? updateTimeStamp,
       String? timeZone,
       Color? color,
-      String? title}) {
+      String? title,
+      List<int>? reminderMinutesBefore}) {
     return TimeInterval(
         id: id ?? this.id,
         taskId: taskId ?? this.taskId,
-        measurableTaskId: measurableTaskId ?? this.measurableTaskId,
-        taskWithSubtasksId: taskWithSubtasksId ?? this.taskWithSubtasksId,
+        subtaskId: subtaskId ?? this.subtaskId,
         isCompleted: isCompleted ?? this.isCompleted,
         isImportant: isImportant ?? this.isImportant,
         location: location ?? this.location,
         description: description ?? this.description,
+        descriptionDoc: descriptionDoc ?? this.descriptionDoc,
         startDate: startDate ?? this.startDate,
         endDate: endDate ?? this.endDate,
         startTime: startTime ?? this.startTime,
@@ -445,10 +473,13 @@ class TimeInterval {
         subtasks: subtasks ?? this.subtasks,
         howMuchHasBeenDone: howMuchHasBeenDone ?? this.howMuchHasBeenDone,
         dataFiles: dataFiles ?? this.dataFiles,
+        noteIds: noteIds ?? this.noteIds,
         updateTimeStamp: updateTimeStamp ?? this.updateTimeStamp,
         timeZone: timeZone ?? this.timeZone,
         color: color ?? this.color,
-        title: title ?? this.title);
+        title: title ?? this.title,
+        reminderMinutesBefore:
+            reminderMinutesBefore ?? this.reminderMinutesBefore);
   }
 
   bool get isFullDayEvent {

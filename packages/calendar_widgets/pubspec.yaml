@@ -1,0 +1,23 @@
+name: calendar_widgets
+description: "A new Flutter project."
+version: 0.0.1
+
+
+environment:
+  sdk: '>=3.2.6 <4.0.0'
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  intl: any
+  simple_gesture_detector: ^0.2.0
+  value_layout_builder: ^0.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+
+

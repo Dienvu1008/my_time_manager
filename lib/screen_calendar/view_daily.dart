@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_time_manager/app/app.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/screen_calendar/calendar_zoom_wrapper.dart';
 import 'package:my_time_manager/screen_calendar/mapping.dart';
 import 'package:calendar_widgets/calendar_widgets.dart';
+import '../data/device_calendar/device_calendar_service.dart';
 import '../screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 import '../utils/constants.dart';
 import 'day_view.dart';
+import 'page_edit_device_event.dart';
 
 class TasksDayView extends StatefulWidget {
   //final GlobalKey<WeekViewState>? state;
@@ -60,7 +65,15 @@ class TasksDayView extends StatefulWidget {
 
 class _TasksDayViewState extends State<TasksDayView> {
   final DatabaseManager _databaseManager = DatabaseManager();
-  List<TimeInterval> _timeIntervals = [];
+
+  // QUAN TRỌNG: controller được tạo MỘT LẦN và giữ ở đây, KHÔNG tạo trong build.
+  // Trước đây build() tạo controller mới mỗi lần -> DayView thấy controller đổi
+  // identity ở didUpdateWidget -> re-listen/setState -> InheritedWidget đổi ->
+  // rebuild -> tạo controller mới -> vòng lặp vô hạn -> đơ khi chuyển ngày.
+  final TimeIntervalController _controller = TimeIntervalController();
+  // Chỉ dựng view lịch SAU KHI đã nạp dữ liệu vào controller, để đảm bảo các
+  // time interval hiển thị (view đọc event từ controller khi được tạo).
+  bool _loaded = false;
 
   @override
   void initState() {
@@ -69,66 +82,94 @@ class _TasksDayViewState extends State<TasksDayView> {
   }
 
   Future<void> _init() async {
-    final timeIntervals = await _databaseManager.timeIntervals();
-    for (final timeInterval in timeIntervals) {
-      if (timeInterval.taskId != null) {
-        final task = await _databaseManager.task(timeInterval.taskId!);
-        timeInterval.color = task.color;
-        timeInterval.title = task.title;
-        await _databaseManager.updateTimeInterval(timeInterval);
-      } else if (timeInterval.measurableTaskId != null) {
-        final measurableTask = await _databaseManager
-            .measurableTask(timeInterval.measurableTaskId!);
-        timeInterval.color = measurableTask.color;
-        timeInterval.title = measurableTask.title;
-        await _databaseManager.updateTimeInterval(timeInterval);
-      } else if (timeInterval.taskWithSubtasksId != null) {
-        final taskWithSubtasks = await _databaseManager
-            .taskWithSubtasks(timeInterval.taskWithSubtasksId!);
-        timeInterval.color = taskWithSubtasks.color;
-        timeInterval.title = taskWithSubtasks.title;
-        await _databaseManager.updateTimeInterval(timeInterval);
-      }
-      //await timeInterval.init();
+    try {
+      await enrichTimeIntervals(_databaseManager, _controller);
+    } catch (e) {
+      debugPrint('TasksDayView._init lỗi: $e');
+    } finally {
+      if (mounted) setState(() => _loaded = true);
     }
-    setState(() => _timeIntervals = timeIntervals);
   }
 
   @override
   Widget build(BuildContext context) {
-    List<CalendarTimeIntervalData> _calendarTimeIntervals =
-        _timeIntervals.toCalendarData();
-    ;
-
+    if (!_loaded) {
+      return const Expanded(child: Center(child: CircularProgressIndicator()));
+    }
     final width = MediaQuery.of(context).size.width;
+    // Đọc cài đặt hiện nút zoom từ AppBloc.
+    final showZoomButtons =
+        context.select((AppBloc b) => b.state.showCalendarZoomButtons);
+
     return CalendarControllerProvider(
-      controller: TimeIntervalController()..addAll(_calendarTimeIntervals),
+      controller: _controller,
       child: Expanded(
-        child: DayViewWidget(
-          handleBrightnessChange: widget.handleBrightnessChange,
-          handleMaterialVersionChange: widget.handleMaterialVersionChange,
-          handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
-          useBottomBar: widget.useBottomBar,
-          handleColorSelect: widget.handleColorSelect,
-          colorSelected: widget.colorSelected,
-          colorSelectionMethod: widget.colorSelectionMethod,
-          handleImageSelect: widget.handleImageSelect,
-          imageSelected: widget.imageSelected,
-          handleLanguageSelect: widget.handleLanguageSelect,
-          languageSelected: widget.languageSelected,
-          showBrightnessButtonInAppBar:
-          widget.showBrightnessButtonInAppBar,
-          showColorImageButtonInAppBar:
-          widget.showColorImageButtonInAppBar,
-          showColorSeedButtonInAppBar: widget.showColorSeedButtonInAppBar,
-          showLanguagesButtonInAppBar: widget.showLanguagesButtonInAppBar,
-          showMaterialDesignButtonInAppBar:
-          widget.showMaterialDesignButtonInAppBar,
-          //key: widget.state,
-          width: width,
+        child: CalendarZoomWrapper(
+          showButtons: showZoomButtons,
+          builder: (context, zoom, availableHeight) => DayViewWidget(
+            onEmptySlotTap: _openCreateTimeInterval,
+            onDeviceEventTap: _openEditDeviceEvent,
+            handleBrightnessChange: widget.handleBrightnessChange,
+            handleMaterialVersionChange: widget.handleMaterialVersionChange,
+            handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
+            useBottomBar: widget.useBottomBar,
+            handleColorSelect: widget.handleColorSelect,
+            colorSelected: widget.colorSelected,
+            colorSelectionMethod: widget.colorSelectionMethod,
+            handleImageSelect: widget.handleImageSelect,
+            imageSelected: widget.imageSelected,
+            handleLanguageSelect: widget.handleLanguageSelect,
+            languageSelected: widget.languageSelected,
+            showBrightnessButtonInAppBar: widget.showBrightnessButtonInAppBar,
+            showColorImageButtonInAppBar: widget.showColorImageButtonInAppBar,
+            showColorSeedButtonInAppBar: widget.showColorSeedButtonInAppBar,
+            showLanguagesButtonInAppBar: widget.showLanguagesButtonInAppBar,
+            showMaterialDesignButtonInAppBar:
+                widget.showMaterialDesignButtonInAppBar,
+            //key: widget.state,
+            width: width,
+            // zoom = 1.0 -> toàn bộ 24 giờ vừa khít chiều cao khả dụng (mức
+            // nhỏ nhất). Phóng to sẽ nhân lên. Trừ một khoảng nhỏ cho phần
+            // header/khoảng đệm để tránh tràn ở mức nhỏ nhất.
+            heightPerMinute: _fitHeightPerMinute(availableHeight) * zoom,
+          ),
         ),
       ),
     );
+  }
+
+  /// Chiều cao mỗi phút để 24 giờ vừa khít [availableHeight].
+  double _fitHeightPerMinute(double availableHeight) {
+    const totalMinutes = 24 * 60;
+    // Trừ ~24px cho khoảng đệm/đường kẻ để không tràn ở mức fit.
+    final usable = (availableHeight - 24).clamp(60.0, double.infinity);
+    final value = usable / totalMinutes;
+    // Đảm bảo > 0 (yêu cầu của DayView).
+    return value <= 0 ? 0.1 : value;
+  }
+
+  /// Nhấn ô trống -> chọn task (giống focus timer) rồi tạo interval mới với
+  /// ngày/giờ điền sẵn. Sau khi đóng, nạp lại lịch.
+  Future<void> _openCreateTimeInterval(DateTime start) {
+    return openCreateOnEmptySlot(
+      context: context,
+      databaseManager: _databaseManager,
+      controller: _controller,
+      start: start,
+    );
+  }
+
+  /// Nhấn vào event lịch thiết bị -> mở trang xem/sửa; nếu có thay đổi thì nạp
+  /// lại lịch để cập nhật.
+  Future<void> _openEditDeviceEvent(DeviceEvent event) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => EditDeviceEventPage(existing: event),
+      ),
+    );
+    if (changed == true && mounted) {
+      await reloadTimeIntervals(_databaseManager, _controller);
+    }
   }
 }
 
@@ -155,11 +196,23 @@ class DayViewWidget extends StatelessWidget {
   final bool showLanguagesButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
 
+  /// Chiều cao mỗi phút — điều khiển mức zoom dọc của day view.
+  final double heightPerMinute;
+
+  /// Gọi khi người dùng nhấn vào một ô giờ TRỐNG. Tham số là mốc bắt đầu của
+  /// ô đã nhấn (đủ cả ngày và giờ). Dùng để mở giao diện tạo interval mới.
+  final void Function(DateTime)? onEmptySlotTap;
+
+  /// Gọi khi người dùng nhấn vào một event của lịch thiết bị (để xem/sửa).
+  final void Function(DeviceEvent)? onDeviceEventTap;
 
   DayViewWidget({
     super.key,
     this.state,
     this.width,
+    this.heightPerMinute = 3,
+    this.onEmptySlotTap,
+    this.onDeviceEventTap,
     required this.handleBrightnessChange,
     required this.handleMaterialVersionChange,
     required this.handleUsingBottomBarChange,
@@ -180,45 +233,52 @@ class DayViewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DayView(
-      // handleBrightnessChange: handleBrightnessChange,
-      // handleMaterialVersionChange: handleMaterialVersionChange,
-      // handleUsingBottomBarChange: handleUsingBottomBarChange,
-      // useBottomBar: useBottomBar,
-      // handleColorSelect: handleColorSelect,
-      // colorSelected: colorSelected,
-      // colorSelectionMethod: colorSelectionMethod,
-      // handleImageSelect: handleImageSelect,
-      // imageSelected: imageSelected,
-      // handleLanguageSelect: handleLanguageSelect,
-      // languageSelected: languageSelected,
-      // showBrightnessButtonInAppBar:
-      // showBrightnessButtonInAppBar,
-      // showColorImageButtonInAppBar:
-      // showColorImageButtonInAppBar,
-      // showColorSeedButtonInAppBar: showColorSeedButtonInAppBar,
-      // showLanguagesButtonInAppBar: showLanguagesButtonInAppBar,
-      // showMaterialDesignButtonInAppBar:
-      // showMaterialDesignButtonInAppBar,
+    return DayViewNew(
+      handleBrightnessChange: handleBrightnessChange,
+      handleMaterialVersionChange: handleMaterialVersionChange,
+      handleUsingBottomBarChange: handleUsingBottomBarChange,
+      useBottomBar: useBottomBar,
+      handleColorSelect: handleColorSelect,
+      colorSelected: colorSelected,
+      colorSelectionMethod: colorSelectionMethod,
+      handleImageSelect: handleImageSelect,
+      imageSelected: imageSelected,
+      handleLanguageSelect: handleLanguageSelect,
+      languageSelected: languageSelected,
+      showBrightnessButtonInAppBar:
+      showBrightnessButtonInAppBar,
+      showColorImageButtonInAppBar:
+      showColorImageButtonInAppBar,
+      showColorSeedButtonInAppBar: showColorSeedButtonInAppBar,
+      showLanguagesButtonInAppBar: showLanguagesButtonInAppBar,
+      showMaterialDesignButtonInAppBar:
+      showMaterialDesignButtonInAppBar,
       key: state,
       width: width,
       startDuration: Duration(hours: 8),
       showHalfHours: true,
-      heightPerMinute: 3,
+      heightPerMinute: heightPerMinute,
       leftSideHourIndicatorBuilder: _leftSideHourIndicatorBuilder,
       hourIndicatorSettings: HourIndicatorSettings(
         color: Theme.of(context).dividerColor,
       ),
       onEventTap: (events, date) async {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => AddOrEditTimeIntervalPage(
-              timeInterval: events.first.event as TimeInterval,
+        final payload = events.first.event;
+        if (payload is DeviceEvent) {
+          onDeviceEventTap?.call(payload);
+        } else if (payload is TimeInterval) {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AddOrEditTimeIntervalPage(
+                timeInterval: payload,
+              ),
+              fullscreenDialog: false,
             ),
-            fullscreenDialog: false,
-          ),
-        );
+          );
+        }
       },
+      // Nhấn vào ô giờ trống -> mở giao diện tạo interval mới với giờ điền sẵn.
+      onDateTap: onEmptySlotTap,
       // halfHourIndicatorSettings: HourIndicatorSettings(
       //   color: Theme.of(context).dividerColor,
       //   lineStyle: LineStyle.dashed,

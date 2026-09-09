@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_time_manager/app/app.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/utils/constants.dart';
 
+import 'calendar_sync_settings_card.dart';
 import '../home/component_widgets/button_color_image.dart';
 import '../home/component_widgets/button_color_seed.dart';
 import '../home/component_widgets/button_language.dart';
@@ -219,6 +222,191 @@ class _SettingsPageState extends State<SettingsPage> {
                   ],
                 ),
               ),
+              // --- Cài đặt thẻ công việc (Overview) ---
+              Card(
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      title: Text(
+                        localizations.taskCardStyle,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    BlocBuilder<AppBloc, AppState>(
+                      buildWhen: (prev, curr) =>
+                          prev.taskCardStyle != curr.taskCardStyle,
+                      builder: (context, state) {
+                        return Column(
+                          children: [
+                            RadioListTile<TaskCardStyle>(
+                              secondary:
+                                  const Icon(Icons.rectangle_rounded),
+                              title: Text(localizations.taskCardStyleFilled),
+                              value: TaskCardStyle.filled,
+                              groupValue: state.taskCardStyle,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  context
+                                      .read<AppBloc>()
+                                      .add(ChangeTaskCardStyle(value));
+                                }
+                              },
+                            ),
+                            RadioListTile<TaskCardStyle>(
+                              secondary:
+                                  const Icon(Icons.view_sidebar_outlined),
+                              title:
+                                  Text(localizations.taskCardStyleLeadingBar),
+                              value: TaskCardStyle.leadingColorBar,
+                              groupValue: state.taskCardStyle,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  context
+                                      .read<AppBloc>()
+                                      .add(ChangeTaskCardStyle(value));
+                                }
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // --- Cài đặt đồng hồ Pomodoro ---
+              Card(
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      title: Text(
+                        'Đồng hồ tập trung',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    // Đọc trực tiếp từ AppBloc (được cung cấp ở tầng App).
+                    BlocBuilder<AppBloc, AppState>(
+                      buildWhen: (prev, curr) =>
+                          prev.keepPomodoroRunningInBackground !=
+                          curr.keepPomodoroRunningInBackground,
+                      builder: (context, state) {
+                        return SwitchListTile(
+                          secondary: const Icon(Icons.timer_outlined),
+                          title: const Text('Tiếp tục chạy khi rời màn hình'),
+                          subtitle: const Text(
+                              'Khi bật, đồng hồ vẫn chạy lúc bạn chuyển sang '
+                              'màn hình khác và hiện một cửa sổ nổi cho biết '
+                              'thời gian còn lại.'),
+                          value: state.keepPomodoroRunningInBackground,
+                          onChanged: (value) => context
+                              .read<AppBloc>()
+                              .add(ToggleKeepPomodoroRunning(value)),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // --- Cài đặt thanh điều hướng ---
+              Card(
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      title: Text(
+                        'Thanh điều hướng',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    BlocBuilder<AppBloc, AppState>(
+                      buildWhen: (prev, curr) =>
+                          prev.transparentBottomBar != curr.transparentBottomBar,
+                      builder: (context, state) {
+                        return SwitchListTile(
+                          secondary: const Icon(Icons.blur_on_outlined),
+                          title: const Text('Thanh dưới trong suốt'),
+                          subtitle: const Text(
+                              'Hiển thị thanh điều hướng dưới với nền trong '
+                              'suốt, không đổ bóng — gọn và nhẹ hơn.'),
+                          value: state.transparentBottomBar,
+                          onChanged: (value) => context
+                              .read<AppBloc>()
+                              .add(ToggleTransparentBottomBar(value)),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // --- Cài đặt lịch ---
+              Card(
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      title: Text(
+                        'Lịch',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    BlocBuilder<AppBloc, AppState>(
+                      buildWhen: (prev, curr) =>
+                          prev.showCalendarZoomButtons !=
+                          curr.showCalendarZoomButtons,
+                      builder: (context, state) {
+                        return SwitchListTile(
+                          secondary: const Icon(Icons.zoom_in),
+                          title: const Text('Hiện nút phóng to/thu nhỏ'),
+                          subtitle: const Text(
+                              'Hiển thị nút +/- trên lịch. Dù tắt, bạn vẫn có '
+                              'thể phóng to/thu nhỏ bằng cách chụm hai ngón tay '
+                              'hoặc giữ Ctrl và cuộn chuột.'),
+                          value: state.showCalendarZoomButtons,
+                          onChanged: (value) => context
+                              .read<AppBloc>()
+                              .add(ToggleShowCalendarZoomButtons(value)),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // --- Cài đặt nhắc (thông báo) ---
+              Card(
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      title: Text(
+                        'Nhắc',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    BlocBuilder<AppBloc, AppState>(
+                      buildWhen: (prev, curr) =>
+                          prev.remindersEnabled != curr.remindersEnabled,
+                      builder: (context, state) {
+                        return SwitchListTile(
+                          secondary:
+                              const Icon(Icons.notifications_active_outlined),
+                          title: const Text('Bật nhắc bằng thông báo'),
+                          subtitle: const Text(
+                              'Gửi thông báo trước khi công việc bắt đầu theo '
+                              'các mốc bạn đặt. Tắt để hủy toàn bộ nhắc.'),
+                          value: state.remindersEnabled,
+                          onChanged: (value) => context
+                              .read<AppBloc>()
+                              .add(ToggleRemindersEnabled(value)),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // --- Đồng bộ Google Calendar ---
+              const CalendarSyncSettingsCard(),
             ],
           ),
         ),

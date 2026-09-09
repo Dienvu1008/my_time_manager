@@ -1,41 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
-import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
 
+/// Ô "Lập kế hoạch" cho một task (hoặc một công việc con của task).
+///
+/// Truyền [task]; nếu lập kế hoạch cho một công việc con cụ thể thì truyền
+/// thêm [subtask]. Tiêu đề/màu/mục tiêu... được lấy từ subtask nếu có, ngược
+/// lại từ task cha.
 class ScheduleListTile extends StatelessWidget {
-  final String? taskId;
-  final String? measurableTaskId;
-  final String? taskWithSubtasksId;
-  final String title;
-  final Color color;
+  final Task task;
+  final Subtask? subtask;
 
-  final String description;
-  final String location;
-  final TargetType targetType;
-  final double targetAtLeast;
-  final double targetAtMost;
-  final String unit;
-  final List<Subtask> subtasks;
-
-  ScheduleListTile(
-      {this.taskId,
-      this.measurableTaskId,
-      this.taskWithSubtasksId,
-      required this.title,
-      required this.color,
-      required this.description,
-      required this.location,
-      required this.targetType,
-      required this.targetAtLeast,
-      required this.targetAtMost,
-      required this.subtasks,
-      required this.unit});
+  const ScheduleListTile({super.key, required this.task, this.subtask});
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+
+    final title = subtask?.title ?? task.title;
+    final bool measurable = subtask?.isMeasurable ?? task.isMeasurable;
+    final TargetType targetType = subtask?.isMeasurable == true
+        ? subtask!.targetType
+        : task.targetType;
+    final double targetAtLeast = subtask?.isMeasurable == true
+        ? subtask!.targetAtLeast
+        : task.targetAtLeast;
+    final double targetAtMost = subtask?.isMeasurable == true
+        ? subtask!.targetAtMost
+        : task.targetAtMost;
+    final String unit =
+        subtask?.isMeasurable == true ? subtask!.unit : task.unit;
+
+    ShowOrSetTimeIntervalsBottomSheet buildSheet(bool isSetPage) {
+      return ShowOrSetTimeIntervalsBottomSheet(
+        title: title,
+        color: task.color,
+        description: task.description,
+        location: task.location,
+        targetType: measurable ? targetType : TargetType.about,
+        targetAtLeast: measurable ? targetAtLeast : double.negativeInfinity,
+        targetAtMost: measurable ? targetAtMost : double.infinity,
+        unit: measurable ? unit : '',
+        subtasks: subtask == null ? task.subtasks : const [],
+        taskId: task.id,
+        subtaskId: subtask?.id,
+        isSetTimeIntervalPage: isSetPage,
+      );
+    }
+
     return Column(
       children: [
         ListTile(
@@ -50,22 +63,8 @@ class ScheduleListTile extends StatelessWidget {
               isScrollControlled: true,
               showDragHandle: true,
               builder: (BuildContext context) =>
-                  SafeArea(child: ShowOrSetTimeIntervalsBottomSheet(
-                title: title,
-                color: color,
-                description: description,
-                location: location,
-                targetType: targetType,
-                targetAtLeast: targetAtLeast,
-                targetAtMost: targetAtMost,
-                unit: unit,
-                subtasks: subtasks,
-                taskId: taskId,
-                measurableTaskId: measurableTaskId,
-                taskWithSubtasksId: taskWithSubtasksId,
-                isSetTimeIntervalPage: false,
-              ),
-            ));
+                  SafeArea(child: buildSheet(false)),
+            );
           },
           trailing: TextButton(
             child: Text(localizations.schedule),
@@ -75,22 +74,8 @@ class ScheduleListTile extends StatelessWidget {
                 isScrollControlled: true,
                 showDragHandle: true,
                 builder: (BuildContext context) =>
-                    SafeArea(child : ShowOrSetTimeIntervalsBottomSheet(
-                  title: title,
-                  color: color,
-                  description: description,
-                  location: location,
-                  targetType: targetType,
-                  targetAtLeast: targetAtLeast,
-                  targetAtMost: targetAtMost,
-                  unit: unit,
-                  subtasks: subtasks,
-                  taskId: taskId,
-                  measurableTaskId: measurableTaskId,
-                  taskWithSubtasksId: taskWithSubtasksId,
-                  isSetTimeIntervalPage: true,
-                ),
-              ),)
+                    SafeArea(child: buildSheet(true)),
+              )
             },
           ),
         ),

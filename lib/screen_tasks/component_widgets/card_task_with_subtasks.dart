@@ -1,19 +1,22 @@
 import 'package:calendar_widgets/calendar_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/models/model_measurable_task.dart';
-import 'package:my_time_manager/data/models/model_task_with_subtasks.dart';
+import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/screen_focus_timer/bloc/pomodoro_config.dart';
+import 'package:my_time_manager/screen_focus_timer/data/model_focus_session.dart';
+import 'package:my_time_manager/screen_focus_timer/view/pomodoro_screen.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/attached_notes_view.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
 import 'package:my_time_manager/utils/utils.dart';
 
 class TaskWithSubtasksCard extends StatefulWidget {
-  final TaskWithSubtasks taskWithSubtasks;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksEdit;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksDelete;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksToggleComplete;
-  final Function(TaskWithSubtasks) onSubtasksChanged;
-  final bool Function(TaskWithSubtasks) isTaskWithSubtasksCardExpanded;
-  final Function(TaskWithSubtasks) onTaskWithSubtasksCardExpanded;
+  final Task taskWithSubtasks;
+  final Function(Task) onTaskWithSubtasksEdit;
+  final Function(Task) onTaskWithSubtasksDelete;
+  final Function(Task) onTaskWithSubtasksToggleComplete;
+  final Function(Task) onSubtasksChanged;
+  final bool Function(Task) isTaskWithSubtasksCardExpanded;
+  final Function(Task) onTaskWithSubtasksCardExpanded;
   final bool isProVersion;
   const TaskWithSubtasksCard({
     Key? key,
@@ -114,6 +117,13 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                                 : textTheme.labelLarge!
                                     .copyWith(color: labelColor),
                           ),
+                          if (widget.taskWithSubtasks.noteIds.isNotEmpty)
+                            AttachedNotesView(
+                              noteIds: widget.taskWithSubtasks.noteIds,
+                              color: labelColor,
+                              textStyle: textTheme.labelMedium!
+                                  .copyWith(color: labelColor),
+                            ),
                         ]),
                     trailing: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert_outlined, color: labelColor),
@@ -148,8 +158,7 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                                     targetAtMost: double.infinity,
                                     unit: '',
                                     subtasks: widget.taskWithSubtasks.subtasks,
-                                    taskWithSubtasksId:
-                                        widget.taskWithSubtasks.id,
+                                    taskId: widget.taskWithSubtasks.id,
                                     isSetTimeIntervalPage: true,
                                   ),
                                 );
@@ -179,16 +188,25 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                                     targetAtMost: double.infinity,
                                     unit: '',
                                     subtasks: widget.taskWithSubtasks.subtasks,
-                                    taskWithSubtasksId:
-                                        widget.taskWithSubtasks.id,
+                                    taskId: widget.taskWithSubtasks.id,
                                     isSetTimeIntervalPage: false,
                                   ),
                                 );
                               });
                         } else if (result == 'focus_timer') {
-
-                          if(widget.isProVersion){
-                            showComingSoonDialog(context);} else {showWillBeAvaiableOnProVersionDialog(context);}
+                          // Mở đồng hồ Pomodoro với task (có công việc con) chọn sẵn.
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => PomodoroPage(
+                                initialTask: SelectedTask(
+                                  type: FocusTaskType.task,
+                                  id: widget.taskWithSubtasks.id,
+                                  title: widget.taskWithSubtasks.title,
+                                  hasSubtasks: true,
+                                ),
+                              ),
+                            ),
+                          );
                         }
                       },
                       itemBuilder: (BuildContext context) =>
@@ -309,18 +327,18 @@ class _TaskWithSubtasksCardState extends State<TaskWithSubtasksCard> {
                         side: BorderSide(
                           color: labelColor,
                         ),
-                        activeColor: labelColor,
+                        //activeColor: labelColor,
                         controlAffinity: ListTileControlAffinity.leading,
-                        value: subtask.isSubtaskCompleted,
+                        value: subtask.isCompleted,
                         onChanged: (value) {
                           //_isLoading = false;
-                          subtask.isSubtaskCompleted = value ?? false;
+                          subtask.isCompleted = value ?? false;
                           widget.onSubtasksChanged(widget.taskWithSubtasks);
                         },
                         title: Text(
                           subtask.title,
                           style: TextStyle(
-                            decoration: subtask.isSubtaskCompleted
+                            decoration: subtask.isCompleted
                                 ? TextDecoration.lineThrough
                                 : TextDecoration.none,
                             color: labelColor,
