@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:my_time_manager/shared/appflowy_description.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_completion.dart';
@@ -41,7 +42,8 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
   final TextEditingController _targetAtLeastController =
       TextEditingController();
   final TextEditingController _targetAtMostController = TextEditingController();
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
   TargetType _targetType = TargetType.about;
   List<Subtask> _subtasks = [];
   final TextEditingController _startDateController = TextEditingController();
@@ -442,8 +444,8 @@ class _AddOrEditTimeIntervalPageState extends State<AddOrEditTimeIntervalPage> {
           );
         } else {
           widget.timeInterval == null
-              ? await _databaseManager.insertTimeInterval(timeInterval)
-              : await _databaseManager.updateTimeInterval(timeInterval);
+              ? await _timeIntervalRepository.createTimeInterval(timeInterval)
+              : await _timeIntervalRepository.updateTimeInterval(timeInterval);
 
           Navigator.pop(context, timeInterval);
           setState(() {});

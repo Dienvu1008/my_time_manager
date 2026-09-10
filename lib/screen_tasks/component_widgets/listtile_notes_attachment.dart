@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/database/database_manager.dart';
 import '../../data/models/model_note.dart';
+import '../../domain/repositories/note_repository.dart';
 import '../../screen_notes/page_note_editor.dart';
 import '../../screen_notes/page_note_picker.dart';
 
@@ -27,7 +28,7 @@ class NotesAttachmentListTile extends StatefulWidget {
 }
 
 class _NotesAttachmentListTileState extends State<NotesAttachmentListTile> {
-  final DatabaseManager _db = DatabaseManager();
+  late final NoteRepository _noteRepository = context.read<NoteRepository>();
 
   /// Cache tiêu đề ghi chú theo id để hiển thị nhanh (nạp lại khi noteIds đổi).
   Map<String, Note> _notesById = {};
@@ -55,7 +56,7 @@ class _NotesAttachmentListTileState extends State<NotesAttachmentListTile> {
     setState(() => _loading = true);
     final map = <String, Note>{};
     for (final id in widget.noteIds) {
-      final note = await _db.note(id);
+      final note = await _noteRepository.getNote(id);
       if (note != null) map[id] = note;
     }
     if (!mounted) return;
@@ -84,7 +85,7 @@ class _NotesAttachmentListTileState extends State<NotesAttachmentListTile> {
 
   /// Mở ghi chú để xem/sửa; nạp lại tiêu đề nếu có thay đổi.
   Future<void> _openNote(String id) async {
-    final note = _notesById[id] ?? await _db.note(id);
+    final note = _notesById[id] ?? await _noteRepository.getNote(id);
     if (note == null) {
       // Ghi chú đã bị xóa ở nơi khác -> gỡ khỏi danh sách đính kèm.
       _removeNote(id);

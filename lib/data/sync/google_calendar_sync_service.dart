@@ -3,8 +3,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-import '../database/database_manager.dart';
 import '../models/model_calendar_event.dart';
+import '../repositories/sqlite_calendar_repository.dart';
+import '../../domain/repositories/calendar_repository.dart';
 
 /// ---------------------------------------------------------------------------
 /// ĐỒNG BỘ VỚI GOOGLE CALENDAR (REST API v3)
@@ -51,13 +52,13 @@ class CalendarPullResult {
 class GoogleCalendarSyncService {
   GoogleCalendarSyncService({
     required this.accessTokenProvider,
-    DatabaseManager? databaseManager,
+    CalendarRepository? calendarRepository,
     http.Client? client,
-  })  : _db = databaseManager ?? DatabaseManager(),
+  })  : _calendars = calendarRepository ?? SqliteCalendarRepository(),
         _client = client ?? http.Client();
 
   final AccessTokenProvider accessTokenProvider;
-  final DatabaseManager _db;
+  final CalendarRepository _calendars;
   final http.Client _client;
 
   static const String _base = 'https://www.googleapis.com/calendar/v3';
@@ -88,7 +89,7 @@ class GoogleCalendarSyncService {
   /// Đẩy tất cả event đang chờ đồng bộ (localOnly/pendingUpdate/pendingDelete)
   /// lên [calendarId]. Trả về số event đã xử lý thành công.
   Future<int> pushPending(String calendarId) async {
-    final pending = await _db.calendarEventsPendingSync();
+    final pending = await _calendars.getEventsPendingSync();
     var success = 0;
     for (final event in pending) {
       try {
@@ -127,7 +128,7 @@ class GoogleCalendarSyncService {
     );
     _ensureOk(res, 'tạo event');
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    await _db.markCalendarEventSynced(
+    await _calendars.markSynced(
       event.id,
       googleEventId: body['id'] as String?,
       etag: body['etag'] as String?,
@@ -147,7 +148,7 @@ class GoogleCalendarSyncService {
     );
     _ensureOk(res, 'cập nhật event');
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    await _db.markCalendarEventSynced(
+    await _calendars.markSynced(
       event.id,
       googleEventId: body['id'] as String?,
       etag: body['etag'] as String?,
@@ -158,7 +159,7 @@ class GoogleCalendarSyncService {
   Future<void> _deleteRemote(String calendarId, CalendarEvent event) async {
     if (event.googleEventId == null) {
       // Chưa từng lên server -> chỉ cần xóa cục bộ.
-      await _db.deleteCalendarEvent(event.id);
+      await _calendars.deleteCalendarEvent(event.id);
       return;
     }
     final headers = await _authHeaders();
@@ -168,7 +169,7 @@ class GoogleCalendarSyncService {
     );
     // 410 Gone = đã bị xóa từ trước -> coi như thành công.
     if (res.statusCode == 410 || (res.statusCode >= 200 && res.statusCode < 300)) {
-      await _db.deleteCalendarEvent(event.id);
+      await _calendars.deleteCalendarEvent(event.id);
       return;
     }
     _ensureOk(res, 'xóa event');
@@ -218,12 +219,12 @@ class GoogleCalendarSyncService {
         final googleId = json['id'] as String?;
         if (googleId == null) continue;
 
-        final existing = await _db.calendarEventByGoogleId(googleId);
+        final existing = await _calendars.getEventByGoogleId(googleId);
 
         if (json['status'] == 'cancelled') {
           // Event đã bị xóa phía server -> xóa cục bộ nếu có.
           if (existing != null) {
-            await _db.deleteCalendarEvent(existing.id);
+            await _calendars.deleteCalendarEvent(existing.id);
             deleted++;
           }
           continue;
@@ -238,9 +239,9 @@ class GoogleCalendarSyncService {
           syncStatus: EventSyncStatus.synced,
         );
         if (existing == null) {
-          await _db.insertCalendarEvent(merged);
+          await _calendars.createCalendarEvent(merged);
         } else {
-          await _db.updateCalendarEvent(merged);
+          await _calendars.updateCalendarEvent(merged);
         }
         upserted++;
       }

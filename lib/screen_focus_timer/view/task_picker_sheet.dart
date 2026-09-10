@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/database/database_manager.dart';
+import '../../domain/repositories/task_repository.dart';
 import '../bloc/pomodoro_config.dart';
 import '../data/model_focus_session.dart';
 
@@ -28,7 +29,7 @@ class TaskPickerSheet extends StatefulWidget {
 }
 
 class _TaskPickerSheetState extends State<TaskPickerSheet> {
-  final DatabaseManager _db = DatabaseManager();
+  late final TaskRepository _taskRepository = context.read<TaskRepository>();
   late Future<List<SelectedTask>> _tasksFuture;
 
   @override
@@ -39,7 +40,7 @@ class _TaskPickerSheetState extends State<TaskPickerSheet> {
 
   /// Nạp danh sách task chưa hoàn thành (đã hợp nhất về một loại Task).
   Future<List<SelectedTask>> _loadAllTasks() async {
-    final tasks = await _db.tasks();
+    final tasks = await _taskRepository.getTasks();
     return [
       for (final t in tasks.where((e) => !e.isCompleted))
         SelectedTask(

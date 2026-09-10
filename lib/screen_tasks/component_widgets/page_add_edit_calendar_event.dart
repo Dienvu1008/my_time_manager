@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_calendar_event.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
+import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_location.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_title.dart';
 import 'package:my_time_manager/utils/constants.dart';
@@ -85,7 +87,10 @@ enum _RecurrencePreset {
 
 class _AddOrEditCalendarEventPageState
     extends State<AddOrEditCalendarEventPage> {
-  final DatabaseManager _db = DatabaseManager();
+  late final CalendarRepository _calendarRepository =
+      context.read<CalendarRepository>();
+  late final TaskListRepository _taskListRepository =
+      context.read<TaskListRepository>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -107,7 +112,7 @@ class _AddOrEditCalendarEventPageState
   bool get _isEditing => widget.event != null;
 
   Future<void> _loadLists() async {
-    final lists = await _db.taskLists();
+    final lists = await _taskListRepository.getTaskLists();
     if (mounted) setState(() => _availableLists = lists);
   }
 
@@ -306,8 +311,8 @@ class _AddOrEditCalendarEventPageState
     );
 
     _isEditing
-        ? await _db.updateCalendarEvent(event)
-        : await _db.insertCalendarEvent(event);
+        ? await _calendarRepository.updateCalendarEvent(event)
+        : await _calendarRepository.createCalendarEvent(event);
 
     if (!mounted) return;
     Navigator.pop(context, event);

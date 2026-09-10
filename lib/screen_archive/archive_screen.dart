@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../data/database/database_manager.dart';
+import '../domain/repositories/archive_repository.dart';
 import 'model_archived_item.dart';
 
 /// Màn hình Lưu trữ: hiển thị các mục đã được lưu trữ (TaskList và Task),
@@ -17,7 +18,8 @@ class ArchiveScreen extends StatefulWidget {
 }
 
 class _ArchiveScreenState extends State<ArchiveScreen> {
-  final DatabaseManager _db = DatabaseManager();
+  late final ArchiveRepository _archiveRepository =
+      context.read<ArchiveRepository>();
   late Future<List<ArchivedItem>> _itemsFuture;
 
   @override
@@ -27,7 +29,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   }
 
   void _reload() {
-    _itemsFuture = _db.archivedItems();
+    _itemsFuture = _archiveRepository.getArchivedItems();
   }
 
   Future<void> _refresh() async {
@@ -47,17 +49,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   }
 
   Future<void> _unarchive(ArchivedItem item) async {
-    switch (item.type) {
-      case ArchivedItemType.taskList:
-        await _db.unarchiveTaskList(item.id);
-        break;
-      case ArchivedItemType.task:
-        await _db.unarchiveTask(item.id);
-        break;
-      case ArchivedItemType.calendarEvent:
-        await _db.unarchiveCalendarEvent(item.id);
-        break;
-    }
+    await _archiveRepository.unarchive(item);
     if (mounted) {
       _showSnack('Đã bỏ lưu trữ "${item.title}".');
       await _refresh();
@@ -73,20 +65,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     );
     if (confirmed != true) return;
 
-    switch (item.type) {
-      case ArchivedItemType.taskList:
-        await _db.unarchiveTaskList(item.id);
-        await _db.softDeleteTaskList(item.id);
-        break;
-      case ArchivedItemType.task:
-        await _db.unarchiveTask(item.id);
-        await _db.softDeleteTask(item.id);
-        break;
-      case ArchivedItemType.calendarEvent:
-        await _db.unarchiveCalendarEvent(item.id);
-        await _db.softDeleteCalendarEvent(item.id);
-        break;
-    }
+    await _archiveRepository.moveToTrash(item);
     if (mounted) {
       _showSnack('Đã chuyển "${item.title}" vào thùng rác.');
       await _refresh();

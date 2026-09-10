@@ -11,8 +11,13 @@ import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_tas
 import 'package:my_time_manager/screen_tasks/component_widgets/card_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../app/app_localizations.dart';
-import '../data/database/database_manager.dart';
 import '../data/models/models.dart';
+import '../data/repositories/sqlite_task_list_repository.dart';
+import '../domain/repositories/task_repository.dart';
+import '../domain/repositories/task_list_repository.dart';
+import '../domain/repositories/calendar_repository.dart';
+import '../domain/repositories/event_repository.dart';
+import '../domain/services/task_completion_service.dart';
 import '../home/component_widgets/app_drawer.dart';
 import '../home/component_widgets/button_brightness.dart';
 import '../home/component_widgets/button_color_image.dart';
@@ -83,7 +88,13 @@ class TasksOverviewPage extends StatefulWidget {
 }
 
 class _TasksOverviewPageState extends State<TasksOverviewPage> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TaskRepository _taskRepository = context.read<TaskRepository>();
+  late final TaskListRepository _taskListRepository =
+      context.read<TaskListRepository>();
+  late final CalendarRepository _calendarRepository =
+      context.read<CalendarRepository>();
+  late final TaskCompletionService _completionService =
+      context.read<TaskCompletionService>();
   late SharedPreferences _prefs;
   List<TaskList>? _taskLists;
 
@@ -102,14 +113,15 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
 
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
-    final taskLists = await _databaseManager.taskLists();
+    final taskLists = await _taskListRepository.getTaskLists();
     final order = _prefs.getStringList('taskListOrder');
     if (order != null) {
       taskLists
           .sort((a, b) => order.indexOf(a.id).compareTo(order.indexOf(b.id)));
     }
-    final looseTasks = await _databaseManager.tasksWithoutTaskList();
-    final looseEvents = await _databaseManager.calendarEventsWithoutTaskList();
+    final looseTasks = await _taskRepository.getTasksWithoutTaskList();
+    final looseEvents =
+        await _calendarRepository.getCalendarEventsWithoutTaskList();
     //if(mounted)
     setState(() {
       _taskLists = taskLists;
@@ -123,10 +135,10 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
   Future<void> _moveItemToList(dynamic item, String? newListId) async {
     if (item is Task) {
       if (item.taskListId == newListId) return;
-      await _databaseManager.moveTask(item.id, newListId);
+      await _taskRepository.moveTask(item.id, newListId);
     } else if (item is CalendarEvent) {
       if (item.taskListId == newListId) return;
-      await _databaseManager.moveCalendarEvent(item.id, newListId);
+      await _calendarRepository.moveCalendarEvent(item.id, newListId);
     } else {
       return;
     }
@@ -153,7 +165,7 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
 
   Future<void> _onTaskListDelete(TaskList taskList) async {
     // Soft-delete: Ä‘Æ°a danh sÃ¡ch (vÃ  task con) vÃ o thÃ¹ng rÃ¡c.
-    await _databaseManager.softDeleteTaskList(taskList.id);
+    await _taskListRepository.softDeleteTaskList(taskList.id);
     _taskLists!.remove(taskList.id);
     await _saveOrder();
   }
@@ -161,7 +173,7 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
   /// Lưu trữ cả một danh sách (và các task con của nó): ẩn khỏi màn chính nhưng
   /// không xóa. Có thể bỏ lưu trữ lại từ màn Lưu trữ.
   Future<void> _onTaskListArchive(TaskList taskList) async {
-    await _databaseManager.archiveTaskList(taskList.id);
+    await _taskListRepository.archiveTaskList(taskList.id);
     _taskLists!.remove(taskList.id);
     await _saveOrder();
     if (mounted) {
@@ -170,11 +182,6 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
         ..showSnackBar(
             SnackBar(content: Text('Đã lưu trữ "${taskList.title}".')));
     }
-  }
-
-  Future<void> _deleteDatabase() async {
-    await _databaseManager.deleteDatabase();
-    setState(() {});
   }
 
   Future<void> _addTaskList(TaskList taskList) async {
@@ -308,7 +315,7 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
                         ),
                       );
                       final updatedTaskLists =
-                          await _databaseManager.taskLists();
+                          await _taskListRepository.getTaskLists();
                       final order = _prefs.getStringList('taskListOrder');
                       if (order != null) {
                         updatedTaskLists.sort((a, b) =>
@@ -406,7 +413,7 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
         onTaskEdit: (t) async {
           final tl = t.taskListId == null
               ? null
-              : await _databaseManager.taskList(t.taskListId!);
+              : await _taskListRepository.getTaskList(t.taskListId!);
           if (!mounted) return;
           await Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => AddOrEditTaskPage(task: t, taskList: tl),
@@ -414,16 +421,15 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
           await _init();
         },
         onTaskDelete: (t) async {
-          await _databaseManager.softDeleteTask(t.id);
+          await _taskRepository.softDeleteTask(t.id);
           await _init();
         },
         onTaskArchive: (t) async {
-          await _databaseManager.archiveTask(t.id);
+          await _taskRepository.archiveTask(t.id);
           await _init();
         },
         onTaskToggleComplete: (t) async {
-          await _databaseManager.updateTask(
-              t.copyWith(isCompleted: !t.isCompleted));
+          await _completionService.toggleCompleted(t);
           await _init();
         },
         isProVersion: widget.isProVersion,
@@ -439,11 +445,11 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
           await _init();
         },
         onDelete: (e) async {
-          await _databaseManager.softDeleteCalendarEvent(e.id);
+          await _calendarRepository.softDeleteCalendarEvent(e.id);
           await _init();
         },
         onArchive: (e) async {
-          await _databaseManager.archiveCalendarEvent(e.id);
+          await _calendarRepository.archiveCalendarEvent(e.id);
           await _init();
         },
       );
@@ -666,7 +672,12 @@ class TaskListCard extends StatefulWidget {
 }
 
 class _TaskListCardState extends State<TaskListCard> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TaskRepository _taskRepository = context.read<TaskRepository>();
+  late final CalendarRepository _calendarRepository =
+      context.read<CalendarRepository>();
+  late final EventRepository _eventRepository = context.read<EventRepository>();
+  late final TaskCompletionService _completionService =
+      context.read<TaskCompletionService>();
   late SharedPreferences _prefs;
   bool _isExpanded = false;
   // Khá»Ÿi táº¡o rá»—ng Ä‘á»ƒ build Ä‘áº§u tiÃªn (trÆ°á»›c khi _init náº¡p xong báº¥t Ä‘á»“ng bá»™)
@@ -681,10 +692,10 @@ class _TaskListCardState extends State<TaskListCard> {
 
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
-    final tasks = await _databaseManager.tasksOfTaskList(widget.taskList.id);
-    final events = await _databaseManager.eventsOfTaskList(widget.taskList.id);
+    final tasks = await _taskRepository.getTasksOfTaskList(widget.taskList.id);
+    final events = await _eventRepository.getEventsOfTaskList(widget.taskList.id);
     final calendarEvents =
-        await _databaseManager.calendarEventsOfTaskList(widget.taskList.id);
+        await _calendarRepository.getCalendarEventsOfTaskList(widget.taskList.id);
     final List<dynamic> items = [
       ...tasks,
       ...events,
@@ -716,7 +727,7 @@ class _TaskListCardState extends State<TaskListCard> {
   }
 
   Future<void> _onTaskToggleCompleted(Task task) async {
-    Task _task = task.copyWith(
+    final Task _task = task.copyWith(
       isCompleted: !task.isCompleted,
     );
     final index = _items.indexWhere((item) => item.id == _task.id);
@@ -726,7 +737,8 @@ class _TaskListCardState extends State<TaskListCard> {
       });
     }
 
-    await _databaseManager.updateTask(_task);
+    // Business rule (toggle completion + persist) lives in the domain service.
+    await _completionService.toggleCompleted(task);
   }
 
   Future<void> _onHasBeenDoneUpdate(Task task) async {
@@ -750,9 +762,9 @@ class _TaskListCardState extends State<TaskListCard> {
           ),
           TextButton(
             onPressed: () async {
-              Task _task = task.copyWith(
-                  howMuchHasBeenDone:
-                      double.parse(_hasBeenDoneController.text));
+              final double amount = double.parse(_hasBeenDoneController.text);
+              final Task _task =
+                  task.copyWith(howMuchHasBeenDone: amount);
               final index =
                   _items.indexWhere((item) => item.id == _task.id);
               if (index != -1) {
@@ -760,7 +772,8 @@ class _TaskListCardState extends State<TaskListCard> {
                   _items[index] = _task;
                 });
               }
-              await _databaseManager.updateTask(_task);
+              // Business rule (measurable progress + persist) in domain service.
+              await _completionService.updateMeasurableProgress(task, amount);
               Navigator.pop(context);
             },
             child: Text(AppLocalizations.of(context)!.update),
@@ -778,7 +791,7 @@ class _TaskListCardState extends State<TaskListCard> {
       });
     }
 
-    await _databaseManager.updateTask(task);
+    await _taskRepository.updateTask(task);
   }
 
   Future<void> _onTaskDelete(Task task) async {
@@ -808,7 +821,7 @@ class _TaskListCardState extends State<TaskListCard> {
       });
       await _saveOrder();
       // Soft-delete: Ä‘Æ°a vÃ o thÃ¹ng rÃ¡c thay vÃ¬ xÃ³a vÄ©nh viá»…n.
-      await _databaseManager.softDeleteTask(task.id);
+      await _taskRepository.softDeleteTask(task.id);
     }
   }
 
@@ -819,7 +832,7 @@ class _TaskListCardState extends State<TaskListCard> {
       _items.remove(task);
     });
     await _saveOrder();
-    await _databaseManager.archiveTask(task.id);
+    await _taskRepository.archiveTask(task.id);
     if (mounted) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -838,7 +851,7 @@ class _TaskListCardState extends State<TaskListCard> {
         ),
       ),
     );
-    final updated = await _databaseManager.calendarEvent(event.id);
+    final updated = await _calendarRepository.getCalendarEvent(event.id);
     final index = _items.indexWhere((item) => item.id == event.id);
     if (index != -1 && updated != null && mounted) {
       setState(() => _items[index] = updated);
@@ -847,12 +860,12 @@ class _TaskListCardState extends State<TaskListCard> {
 
   Future<void> _onCalendarEventDelete(CalendarEvent event) async {
     // Soft-delete: đưa vào thùng rác thay vì xóa vĩnh viễn.
-    await _databaseManager.softDeleteCalendarEvent(event.id);
+    await _calendarRepository.softDeleteCalendarEvent(event.id);
     await _saveOrder();
   }
 
   Future<void> _onCalendarEventArchive(CalendarEvent event) async {
-    await _databaseManager.archiveCalendarEvent(event.id);
+    await _calendarRepository.archiveCalendarEvent(event.id);
     await _saveOrder();
     if (mounted) {
       ScaffoldMessenger.of(context)
@@ -990,7 +1003,7 @@ class _TaskListCardState extends State<TaskListCard> {
                     fullscreenDialog: false,
                   ),
                 );
-                final updatedTask = await _databaseManager.task(task.id);
+                final updatedTask = await _taskRepository.getTask(task.id);
                 final index =
                     _items.indexWhere((item) => item.id == updatedTask.id);
                 if (index != -1) {
@@ -1248,7 +1261,9 @@ class BlocTasksOverviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => TaskListsHolderBloc(),
+      create: (context) => TaskListsHolderBloc(
+        taskListRepository: context.read<TaskListRepository>(),
+      ),
       child: BlocBuilder<TaskListsHolderBloc, TaskListsHolderState>(
         builder: (context, state) {
           if (state.isLoading) {
@@ -1351,11 +1366,15 @@ class BlocTasksOverviewPage extends StatelessWidget {
 /// TaskListsHolderBloc
 class TaskListsHolderBloc
     extends Bloc<TaskListsHolderEvent, TaskListsHolderState> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  // Depends on the domain repository, not DatabaseManager. Injected so the app
+  // provides the shared instance and tests can provide a fake.
+  final TaskListRepository _taskListRepository;
   late SharedPreferences _prefs;
 
-  TaskListsHolderBloc()
-      : super(TaskListsHolderState(taskLists: [], isLoading: true)) {
+  TaskListsHolderBloc({TaskListRepository? taskListRepository})
+      : _taskListRepository =
+            taskListRepository ?? SqliteTaskListRepository(),
+        super(TaskListsHolderState(taskLists: [], isLoading: true)) {
     _init();
     on<LoadTaskListsEvent>(_onLoadTaskListsEvent);
     on<ReorderTaskListsEvent>(_onReorderTaskListsEvent);
@@ -1371,7 +1390,7 @@ class TaskListsHolderBloc
   Future<void> _onLoadTaskListsEvent(
       LoadTaskListsEvent event, Emitter<TaskListsHolderState> emit) async {
     emit(state.copyWith(isLoading: true));
-    final taskLists = await _databaseManager.taskLists();
+    final taskLists = await _taskListRepository.getTaskLists();
     final order = _prefs.getStringList('taskListOrder');
     if (order != null) {
       taskLists
@@ -1394,7 +1413,7 @@ class TaskListsHolderBloc
   Future<void> _onDeleteTaskListEvent(
       DeleteTaskListEvent event, Emitter<TaskListsHolderState> emit) async {
     // Soft-delete: Ä‘Æ°a danh sÃ¡ch (vÃ  task con) vÃ o thÃ¹ng rÃ¡c.
-    await _databaseManager.softDeleteTaskList(event.id);
+    await _taskListRepository.softDeleteTaskList(event.id);
     final taskLists = state.taskLists..removeWhere((b) => b.id == event.id);
     await _saveOrder(taskLists);
     emit(state.copyWith(taskLists: taskLists));

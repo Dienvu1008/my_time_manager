@@ -7,7 +7,6 @@ import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/screen_calendar/calendar_zoom_wrapper.dart';
 import 'package:my_time_manager/screen_calendar/mapping.dart';
 import 'package:my_time_manager/screen_calendar/week_view.dart';
-import '../data/database/database_manager.dart';
 import '../data/device_calendar/device_calendar_service.dart';
 import '../screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 import '../utils/constants.dart';
@@ -59,7 +58,6 @@ class TasksWeekView extends StatefulWidget {
 }
 
 class _TasksWeekViewState extends State<TasksWeekView> {
-  final DatabaseManager _databaseManager = DatabaseManager();
   // Controller tạo MỘT LẦN (không tạo trong build) để tránh vòng lặp rebuild
   // vô hạn gây đơ khi chuyển tuần.
   final TimeIntervalController _controller = TimeIntervalController();
@@ -74,7 +72,7 @@ class _TasksWeekViewState extends State<TasksWeekView> {
 
   Future<void> _init() async {
     try {
-      await enrichTimeIntervals(_databaseManager, _controller);
+      await enrichTimeIntervals(_controller);
     } catch (e) {
       debugPrint('TasksWeekView._init lỗi: $e');
     } finally {
@@ -139,7 +137,6 @@ class _TasksWeekViewState extends State<TasksWeekView> {
   Future<void> _openCreateTimeInterval(DateTime start) {
     return openCreateOnEmptySlot(
       context: context,
-      databaseManager: _databaseManager,
       controller: _controller,
       start: start,
     );
@@ -154,7 +151,7 @@ class _TasksWeekViewState extends State<TasksWeekView> {
       ),
     );
     if (changed == true && mounted) {
-      await reloadTimeIntervals(_databaseManager, _controller);
+      await reloadTimeIntervals(_controller);
     }
   }
 }

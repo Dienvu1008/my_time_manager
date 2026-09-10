@@ -7,10 +7,14 @@ import 'package:calendar_widgets/src_table_calendar/table_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/domain/repositories/task_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
+import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
+import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 
@@ -77,7 +81,13 @@ class TableComplexExample extends StatefulWidget {
 }
 
 class _TableComplexExampleState extends State<TableComplexExample> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TaskRepository _taskRepository = context.read<TaskRepository>();
+  late final TaskListRepository _taskListRepository =
+      context.read<TaskListRepository>();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
+  late final TimeIntervalProgressService _progressService =
+      context.read<TimeIntervalProgressService>();
   final ScrollController _scrollController = ScrollController();
 
   /// Tất cả interval, giữ trong state để cập nhật cục bộ khi sửa/xóa.
@@ -218,7 +228,7 @@ class _TableComplexExampleState extends State<TableComplexExample> {
   // ------------------------------------------------------------------
 
   Future<void> _deleteTimeInterval(TimeInterval timeInterval) async {
-    await _databaseManager.deleteTimeInterval(timeInterval.id);
+    await _timeIntervalRepository.deleteTimeInterval(timeInterval.id);
     setState(() {
       _timeIntervals.removeWhere((e) => e.id == timeInterval.id);
       _rebuildIndex();
@@ -226,10 +236,9 @@ class _TableComplexExampleState extends State<TableComplexExample> {
   }
 
   Future<void> _onToggleCompleted(TimeInterval timeInterval) async {
-    final updated =
-        timeInterval.copyWith(isCompleted: !timeInterval.isCompleted);
-    await _databaseManager.updateTimeInterval(updated);
-    _replaceLocal(await _databaseManager.timeInterval(timeInterval.id));
+    await _progressService.toggleCompleted(timeInterval);
+    _replaceLocal(
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id));
   }
 
   Future<void> _editTimeInterval(TimeInterval timeInterval) async {
@@ -240,7 +249,8 @@ class _TableComplexExampleState extends State<TableComplexExample> {
       ),
     );
     if (!mounted) return;
-    _replaceLocal(await _databaseManager.timeInterval(timeInterval.id));
+    _replaceLocal(
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id));
   }
 
   /// Mở task gốc của time interval (nếu có) để xem/sửa. Sau khi quay lại, đồng
@@ -248,10 +258,10 @@ class _TableComplexExampleState extends State<TableComplexExample> {
   Future<void> _goToMainTask(TimeInterval timeInterval) async {
     final taskId = timeInterval.taskId;
     if (taskId == null) return;
-    final Task task = await _databaseManager.task(taskId);
+    final Task task = await _taskRepository.getTask(taskId);
     final TaskList? taskList = task.taskListId == null
         ? null
-        : await _databaseManager.taskList(task.taskListId!);
+        : await _taskListRepository.getTaskList(task.taskListId!);
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -259,7 +269,8 @@ class _TableComplexExampleState extends State<TableComplexExample> {
       ),
     );
     if (!mounted) return;
-    _replaceLocal(await _databaseManager.timeInterval(timeInterval.id));
+    _replaceLocal(
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id));
   }
 
   void _replaceLocal(TimeInterval updated) {

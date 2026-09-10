@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../database/database_manager.dart';
 import '../device_calendar/device_calendar_service.dart';
 import '../models/model_calendar_event.dart';
+import '../repositories/sqlite_calendar_repository.dart';
+import '../../domain/repositories/calendar_repository.dart';
 
 /// ---------------------------------------------------------------------------
 /// ĐỒNG BỘ VỚI LỊCH THIẾT BỊ (Android/iOS)
@@ -21,12 +22,12 @@ import '../models/model_calendar_event.dart';
 /// ---------------------------------------------------------------------------
 class DeviceCalendarSyncService {
   DeviceCalendarSyncService({
-    DatabaseManager? databaseManager,
+    CalendarRepository? calendarRepository,
     DeviceCalendarService? deviceCalendarService,
-  })  : _db = databaseManager ?? DatabaseManager(),
+  })  : _calendars = calendarRepository ?? SqliteCalendarRepository(),
         _device = deviceCalendarService ?? DeviceCalendarService.instance;
 
-  final DatabaseManager _db;
+  final CalendarRepository _calendars;
   final DeviceCalendarService _device;
 
   bool get isSupported => _device.isSupported;
@@ -42,7 +43,7 @@ class DeviceCalendarSyncService {
     if (!isSupported) return 0;
     if (!await _device.ensurePermissions()) return 0;
 
-    final pending = await _db.calendarEventsPendingSync();
+    final pending = await _calendars.getEventsPendingSync();
     var success = 0;
     for (final event in pending) {
       try {
@@ -77,7 +78,7 @@ class DeviceCalendarSyncService {
       allDay: event.isAllDay,
     );
     if (eventId != null) {
-      await _db.markCalendarEventSynced(
+      await _calendars.markSynced(
         event.id,
         googleEventId: eventId,
         calendarId: calendarId,
@@ -89,7 +90,7 @@ class DeviceCalendarSyncService {
     if (event.googleEventId != null) {
       await _device.deleteEvent(calendarId, event.googleEventId!);
     }
-    await _db.deleteCalendarEvent(event.id);
+    await _calendars.deleteCalendarEvent(event.id);
   }
 
   // -------------------------------------------------------------------------
@@ -113,16 +114,16 @@ class DeviceCalendarSyncService {
       final remoteId = de.eventId;
       if (remoteId == null) continue;
 
-      final existing = await _db.calendarEventByGoogleId(remoteId);
+      final existing = await _calendars.getEventByGoogleId(remoteId);
       final event = _fromDeviceEvent(
         de,
         localId: existing?.id,
         taskListId: existing?.taskListId ?? taskListId,
       );
       if (existing == null) {
-        await _db.insertCalendarEvent(event);
+        await _calendars.createCalendarEvent(event);
       } else {
-        await _db.updateCalendarEvent(event);
+        await _calendars.updateCalendarEvent(event);
       }
       upserted++;
     }

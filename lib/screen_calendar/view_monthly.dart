@@ -2,7 +2,6 @@ import 'package:calendar_widgets/calendar_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/screen_calendar/calendar_zoom_wrapper.dart';
 import 'package:my_time_manager/screen_calendar/mapping.dart';
@@ -61,7 +60,6 @@ class TasksMonthView extends StatefulWidget {
 }
 
 class _TasksMonthViewState extends State<TasksMonthView> {
-  final DatabaseManager _databaseManager = DatabaseManager();
   // Controller tạo MỘT LẦN (không tạo trong build) để tránh vòng lặp rebuild
   // vô hạn gây đơ khi chuyển tháng.
   final TimeIntervalController _controller = TimeIntervalController();
@@ -76,7 +74,7 @@ class _TasksMonthViewState extends State<TasksMonthView> {
 
   Future<void> _init() async {
     try {
-      await enrichTimeIntervals(_databaseManager, _controller);
+      await enrichTimeIntervals(_controller);
     } catch (e) {
       debugPrint('TasksMonthView._init lỗi: $e');
     } finally {
@@ -147,7 +145,7 @@ class _TasksMonthViewState extends State<TasksMonthView> {
       ),
     );
     if (changed == true && mounted) {
-      await reloadTimeIntervals(_databaseManager, _controller);
+      await reloadTimeIntervals(_controller);
     }
   }
 }

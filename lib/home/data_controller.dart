@@ -2,7 +2,9 @@ import 'dart:collection';
 
 import 'package:calendar_widgets/src_table_calendar/shared/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
+import 'package:my_time_manager/data/repositories/sqlite_time_interval_repository.dart';
+import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
+import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
 
 import '../data/models/model_list.dart';
 import '../data/models/model_time_interval.dart';
@@ -27,14 +29,21 @@ class DataController extends ChangeNotifier {
     /// [MonthView], [DayView] and [WeekView].
     ///
     TimeIntervalFilter? timeIntervalFilter,
-  }) : _timeIntevalFilter = timeIntervalFilter;
+    TimeIntervalRepository? timeIntervalRepository,
+  })  : _timeIntevalFilter = timeIntervalFilter,
+        _timeIntervalRepository =
+            timeIntervalRepository ?? SqliteTimeIntervalRepository(),
+        _timeIntervalsData = TimeIntervalData(
+          timeIntervalRepository:
+              timeIntervalRepository ?? SqliteTimeIntervalRepository(),
+        );
 
   //#region Private Fields
   TimeIntervalFilter? _timeIntevalFilter;
 
   /// Store all calendar event data
-  final TimeIntervalData _timeIntervalsData = TimeIntervalData();
-  final DatabaseManager _databaseManager = DatabaseManager();
+  final TimeIntervalData _timeIntervalsData;
+  final TimeIntervalRepository _timeIntervalRepository;
 
   //#endregion
 
@@ -84,14 +93,14 @@ class DataController extends ChangeNotifier {
 
   /// Adds a single event in [_events]
   void add(TimeInterval event) {
-    _databaseManager.insertTimeInterval(event);
+    _timeIntervalRepository.createTimeInterval(event);
     _timeIntervalsData.addEvent(event);
     notifyListeners();
   }
 
   /// Removes [event] from this controller.
   void remove(TimeInterval event) {
-    _databaseManager.deleteTimeInterval(event.id);
+    _timeIntervalRepository.deleteTimeInterval(event.id);
     _timeIntervalsData.removeEvent(event);
     notifyListeners();
   }
@@ -102,7 +111,7 @@ class DataController extends ChangeNotifier {
   /// event in the controller.
   ///
   void update(TimeInterval event, TimeInterval updated) {
-    _databaseManager.updateTimeInterval(event);
+    _timeIntervalRepository.updateTimeInterval(event);
     _timeIntervalsData.updateTimeInterval(event, updated);
     notifyListeners();
   }
@@ -110,7 +119,7 @@ class DataController extends ChangeNotifier {
   /// Removes all the [events] from this controller.
   void removeAll(List<TimeInterval> events) {
     for (final event in events) {
-      _databaseManager.deleteTimeInterval(event.id);
+      _timeIntervalRepository.deleteTimeInterval(event.id);
       _timeIntervalsData.removeEvent(event);
     }
     notifyListeners();
@@ -187,15 +196,19 @@ class DataController extends ChangeNotifier {
 ///
 ///
 class TimeIntervalData<T> {
+  TimeIntervalData({TimeIntervalRepository? timeIntervalRepository})
+      : _timeIntervalRepository =
+            timeIntervalRepository ?? SqliteTimeIntervalRepository();
+
   /// Stores all the events in a list(all the items in below 3 list will be
   /// available in this list as global itemList of all events).
   final _timeIntervals = <TimeInterval>[];
-  final DatabaseManager _databaseManager = DatabaseManager();
+  final TimeIntervalRepository _timeIntervalRepository;
 
   UnmodifiableListView<TimeInterval> get timeIntervals =>
       //UnmodifiableListView(_timeIntervals);
       UnmodifiableListView(
-          _databaseManager.timeIntervals() as Iterable<TimeInterval>);
+          _timeIntervalRepository.getTimeIntervals() as Iterable<TimeInterval>);
 
   /// Stores events that occurs only once in a map, Here the key will a day
   /// and along to the day as key we will store all the events of that day as
@@ -341,17 +354,17 @@ class TimeIntervalData<T> {
   }
 
   Future<void> deleteTimeInterval(TimeInterval timeInterval) async {
-    await _databaseManager.deleteTimeInterval(timeInterval.id);
+    await _timeIntervalRepository.deleteTimeInterval(timeInterval.id);
 
     _timeIntervals.remove(timeInterval);
   }
 
   Future<void> onTimeIntervalToggleCompleted(TimeInterval timeInterval) async {
-    TimeInterval _timeInterval =
-        timeInterval.copyWith(isCompleted: !timeInterval.isCompleted);
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    // Business rule (toggle + persist) lives in the domain service.
+    await TimeIntervalProgressService(_timeIntervalRepository)
+        .toggleCompleted(timeInterval);
     final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id);
     final index =
         _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
 
@@ -362,9 +375,9 @@ class TimeIntervalData<T> {
     TimeInterval _timeInterval = timeInterval.copyWith(
       subtasks: timeInterval.subtasks,
     );
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    await _timeIntervalRepository.updateTimeInterval(_timeInterval);
     final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id);
     final index =
         _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
 

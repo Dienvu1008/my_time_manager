@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
 
 class TimeIntervalPage extends StatefulWidget {
   const TimeIntervalPage(
@@ -17,7 +18,8 @@ class TimeIntervalPage extends StatefulWidget {
 }
 
 class _TimeIntervalPageState extends State<TimeIntervalPage> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
@@ -31,7 +33,7 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
   bool _isAscending = true;
 
   Future<void> _onSaveTimeInterval(TimeInterval timeInterval) async {
-    await _databaseManager.insertTimeInterval(timeInterval);
+    await _timeIntervalRepository.createTimeInterval(timeInterval);
   }
 
   @override
@@ -347,8 +349,8 @@ class _TimeIntervalPageState extends State<TimeIntervalPage> {
                             );
                           } else {
                             //_onSaveTimeInterval(timeInterval);
-                            await _databaseManager
-                                .insertTimeInterval(timeInterval);
+                            await _timeIntervalRepository
+                                .createTimeInterval(timeInterval);
                           }
                           setState(() {
                             _timeIntervals.add(timeInterval);

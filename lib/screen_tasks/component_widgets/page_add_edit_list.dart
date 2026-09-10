@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
+import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:my_time_manager/shared/appflowy_description.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description_editor.dart';
@@ -18,7 +19,8 @@ class AddOrEditTaskListPage extends StatefulWidget {
 class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
   final TextEditingController _titleController = TextEditingController();
   late final EditorState _descriptionEditorState;
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TaskListRepository _taskListRepository =
+      context.read<TaskListRepository>();
   String _id = '';
 
   Future<void> _onSave() async {
@@ -47,12 +49,12 @@ class _AddOrEditTaskListPageState extends State<AddOrEditTaskListPage> {
     }
 
     widget.taskList == null
-        ? await _databaseManager.insertTaskList(TaskList(
+        ? await _taskListRepository.createTaskList(TaskList(
             id: id,
             title: title,
             description: description,
             descriptionDoc: descriptionDoc))
-        : await _databaseManager.updateTaskList(
+        : await _taskListRepository.updateTaskList(
             TaskList(
               id: widget.taskList?.id,
               title: title,

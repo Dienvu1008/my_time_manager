@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/database/database_manager.dart';
 import '../../data/models/model_note.dart';
+import '../../domain/repositories/note_repository.dart';
 import '../../screen_notes/page_note_editor.dart';
 
 /// Hiển thị (chỉ đọc) danh sách GHI CHÚ đã đính kèm dưới dạng các dòng có thể
@@ -23,7 +24,7 @@ class AttachedNotesView extends StatefulWidget {
 }
 
 class _AttachedNotesViewState extends State<AttachedNotesView> {
-  final DatabaseManager _db = DatabaseManager();
+  late final NoteRepository _noteRepository = context.read<NoteRepository>();
   Map<String, Note> _notesById = {};
 
   @override
@@ -41,7 +42,7 @@ class _AttachedNotesViewState extends State<AttachedNotesView> {
   Future<void> _load() async {
     final map = <String, Note>{};
     for (final id in widget.noteIds) {
-      final note = await _db.note(id);
+      final note = await _noteRepository.getNote(id);
       if (note != null) map[id] = note;
     }
     if (!mounted) return;

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../data/database/database_manager.dart';
 import '../data/models/model_note.dart';
+import '../domain/repositories/note_repository.dart';
 import 'page_note_editor.dart';
 
 /// Màn danh sách ghi chú: liệt kê, tạo mới, mở để sửa, xóa.
@@ -17,7 +18,7 @@ class NotesListPage extends StatefulWidget {
 }
 
 class _NotesListPageState extends State<NotesListPage> {
-  final DatabaseManager _db = DatabaseManager();
+  late final NoteRepository _noteRepository = context.read<NoteRepository>();
   late Future<List<Note>> _future;
 
   @override
@@ -27,7 +28,7 @@ class _NotesListPageState extends State<NotesListPage> {
   }
 
   void _reload() {
-    _future = _db.notes();
+    _future = _noteRepository.getNotes();
   }
 
   Future<void> _openEditor([Note? note]) async {
@@ -111,7 +112,7 @@ class _NotesListPageState extends State<NotesListPage> {
       ),
     );
     if (confirm != true) return;
-    await _db.deleteNote(note.id);
+    await _noteRepository.deleteNote(note.id);
     if (mounted) setState(_reload);
   }
 }

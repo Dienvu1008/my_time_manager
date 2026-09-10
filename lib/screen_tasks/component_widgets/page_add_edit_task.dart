@@ -1,9 +1,11 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/repositories/task_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_completion.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_description_editor.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_importance.dart';
@@ -47,7 +49,9 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
       TextEditingController(text: '0.0');
   TargetType _targetType = TargetType.about;
 
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TaskRepository _taskRepository = context.read<TaskRepository>();
+  late final TaskListRepository _taskListRepository =
+      context.read<TaskListRepository>();
   String _id = '';
 
   Color _taskColor = ColorSeed.baseColor.color;
@@ -67,7 +71,7 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
   bool get _isEditing => widget.task != null;
 
   Future<void> _loadLists() async {
-    final lists = await _databaseManager.taskLists();
+    final lists = await _taskListRepository.getTaskLists();
     if (mounted) setState(() => _availableLists = lists);
   }
 
@@ -192,8 +196,8 @@ class _AddOrEditTaskPageState extends State<AddOrEditTaskPage> {
     );
 
     _isEditing
-        ? await _databaseManager.updateTask(task)
-        : await _databaseManager.insertTask(task);
+        ? await _taskRepository.updateTask(task)
+        : await _taskRepository.createTask(task);
 
     if (!mounted) return;
     Navigator.pop(context, task);

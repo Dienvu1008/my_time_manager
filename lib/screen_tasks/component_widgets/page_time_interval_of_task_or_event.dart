@@ -7,15 +7,19 @@ import 'package:calendar_widgets/src_table_calendar/shared/utils.dart';
 import 'package:calendar_widgets/src_table_calendar/table_calendar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 
 import '../../app/app_localizations.dart';
-import '../../data/database/database_manager.dart';
 import '../../data/models/model_list.dart';
 import '../../data/models/model_task.dart';
+import '../../domain/repositories/task_repository.dart';
+import '../../domain/repositories/task_list_repository.dart';
+import '../../domain/repositories/time_interval_repository.dart';
+import '../../domain/services/time_interval_progress_service.dart';
 import '../../data/models/model_time_interval.dart';
 import '../../home/component_widgets/button_select_calendar_mode.dart';
 import '../../home/component_widgets/button_show_timeline_calendar.dart';
@@ -41,7 +45,10 @@ class TimeIntervalOfTaskOrEventPageNew extends StatefulWidget {
 
 class _TimeIntervalOfTaskOrEventPageNewState
     extends State<TimeIntervalOfTaskOrEventPageNew> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
+  late final TimeIntervalProgressService _progressService =
+      context.read<TimeIntervalProgressService>();
   late final ValueNotifier<List<TimeInterval>> _selectedTimeIntervals;
   final ValueNotifier<DateTime> _focusedDay = ValueNotifier(DateTime.now());
 
@@ -123,11 +130,11 @@ class _TimeIntervalOfTaskOrEventPageNewState
   Future<void> _loadData() async {
     final List<TimeInterval> timeIntervals;
     if (widget.subtaskId != null) {
-      timeIntervals =
-          await _databaseManager.timeIntervalsOfSubtask(widget.subtaskId!);
+      timeIntervals = await _timeIntervalRepository
+          .getTimeIntervalsOfSubtask(widget.subtaskId!);
     } else if (widget.taskId != null) {
       timeIntervals =
-          await _databaseManager.timeIntervalsOfTask(widget.taskId!);
+          await _timeIntervalRepository.getTimeIntervalsOfTask(widget.taskId!);
     } else {
       return;
     }
@@ -228,7 +235,7 @@ class _TimeIntervalOfTaskOrEventPageNewState
   }
 
   Future<void> _deleteTimeInterval(TimeInterval timeInterval) async {
-    await _databaseManager.deleteTimeInterval(timeInterval.id);
+    await _timeIntervalRepository.deleteTimeInterval(timeInterval.id);
     setState(() {
       _timeIntervals.remove(timeInterval);
       _selectedTimeIntervals.value.remove(timeInterval);
@@ -236,11 +243,9 @@ class _TimeIntervalOfTaskOrEventPageNewState
   }
 
   Future<void> _onTimeIntervalToggleCompleted(TimeInterval timeInterval) async {
-    TimeInterval _timeInterval =
-        timeInterval.copyWith(isCompleted: !timeInterval.isCompleted);
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    await _progressService.toggleCompleted(timeInterval);
     final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id);
     final index =
         _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
     final index2 = _selectedTimeIntervals.value
@@ -257,9 +262,9 @@ class _TimeIntervalOfTaskOrEventPageNewState
     TimeInterval _timeInterval = timeInterval.copyWith(
       subtasks: timeInterval.subtasks,
     );
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    await _timeIntervalRepository.updateTimeInterval(_timeInterval);
     final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id);
     final index =
         _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
     final index2 = _selectedTimeIntervals.value
@@ -293,12 +298,10 @@ class _TimeIntervalOfTaskOrEventPageNewState
           ),
           TextButton(
             onPressed: () async {
-              TimeInterval _timeInterval = timeInterval.copyWith(
-                  howMuchHasBeenDone:
-                      double.parse(_hasBeenDoneController.text));
-              await _databaseManager.updateTimeInterval(_timeInterval);
+              await _progressService.updateMeasurableProgress(
+                  timeInterval, double.parse(_hasBeenDoneController.text));
               final updatedTimeInterval =
-                  await _databaseManager.timeInterval(timeInterval.id);
+                  await _timeIntervalRepository.getTimeInterval(timeInterval.id);
               final index = _timeIntervals
                   .indexWhere((item) => item.id == updatedTimeInterval.id);
               final index2 = _selectedTimeIntervals.value
@@ -600,7 +603,8 @@ class StickyHeaderList extends StatefulWidget {
 }
 
 class _StickyHeaderListState extends State<StickyHeaderList> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
 
   @override
   Widget build(BuildContext context) {
@@ -631,7 +635,7 @@ class _StickyHeaderListState extends State<StickyHeaderList> {
                     ),
                   );
                   final updatedTimeInterval =
-                      await _databaseManager.timeInterval(timeInterval.id);
+                      await _timeIntervalRepository.getTimeInterval(timeInterval.id);
                   setState(() {
                     widget.timeIntervals[i] = updatedTimeInterval;
                   });
@@ -1013,15 +1017,17 @@ class _TimeIntervalCardNewState extends State<TimeIntervalCardNew> {
                           widget.onTimeIntervalToggleComplete(
                               widget.timeInterval);
                         } else if (result == 'go_to_main_task') {
-                          final DatabaseManager databaseManager =
-                              DatabaseManager();
+                          final taskRepository = context.read<TaskRepository>();
+                          final taskListRepository =
+                              context.read<TaskListRepository>();
                           if (widget.timeInterval.taskId != null) {
                             final id = widget.timeInterval.taskId;
-                            final Task task = await databaseManager.task(id!);
+                            final Task task =
+                                await taskRepository.getTask(id!);
                             final TaskList? taskList = task.taskListId == null
                                 ? null
-                                : await databaseManager
-                                    .taskList(task.taskListId!);
+                                : await taskListRepository
+                                    .getTaskList(task.taskListId!);
                             Navigator.push(
                               context,
                               MaterialPageRoute(

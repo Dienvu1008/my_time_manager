@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'data/database/database_manager.dart';
+import 'data/repositories/sqlite_trash_repository.dart';
 import 'data/device_id_provider.dart';
 import 'firebase_options.dart';
 import 'screen_focus_timer/data/notification_service.dart';
@@ -42,7 +43,10 @@ Future<void> main() async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final retentionDays = prefs.getInt('trashRetentionDays') ?? 30;
-    await DatabaseManager().purgeExpiredTrash(retentionDays);
+    // Route through the domain repository (startup has no widget context, so we
+    // construct the SQLite implementation directly — same pattern as other
+    // startup services).
+    await SqliteTrashRepository().purgeExpiredTrash(retentionDays);
   } catch (e) {
     debugPrint('Dọn thùng rác khi khởi động lỗi: $e');
   }

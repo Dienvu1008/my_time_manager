@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../data/database/database_manager.dart';
 import '../data/models/model_note.dart';
+import '../domain/repositories/note_repository.dart';
 import 'page_note_editor.dart';
 
 /// Màn CHỌN một ghi chú để đính kèm vào Task/TimeInterval.
@@ -21,7 +22,7 @@ class NotePickerPage extends StatefulWidget {
 }
 
 class _NotePickerPageState extends State<NotePickerPage> {
-  final DatabaseManager _db = DatabaseManager();
+  late final NoteRepository _noteRepository = context.read<NoteRepository>();
   late Future<List<Note>> _future;
 
   @override
@@ -35,7 +36,7 @@ class _NotePickerPageState extends State<NotePickerPage> {
   }
 
   Future<List<Note>> _load() async {
-    final all = await _db.notes();
+    final all = await _noteRepository.getNotes();
     return all.where((n) => !widget.excludeIds.contains(n.id)).toList();
   }
 
@@ -46,7 +47,7 @@ class _NotePickerPageState extends State<NotePickerPage> {
     );
     if (created != true || !mounted) return;
     // Ghi chú mới nằm đầu danh sách (sắp xếp updatedAt DESC) và chưa bị loại trừ.
-    final all = await _db.notes();
+    final all = await _noteRepository.getNotes();
     final candidates =
         all.where((n) => !widget.excludeIds.contains(n.id)).toList();
     if (candidates.isEmpty || !mounted) {

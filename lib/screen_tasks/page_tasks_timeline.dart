@@ -4,11 +4,13 @@ import 'package:calendar_widgets/src_table_calendar/customization/calendar_build
 import 'package:calendar_widgets/src_table_calendar/shared/utils.dart';
 import 'package:calendar_widgets/src_table_calendar/table_calendar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:calendar_widgets/src_sticky_header/widgets/sliver_sticky_header.dart';
 import '../app/app_localizations.dart';
-import '../data/database/database_manager.dart';
 import '../data/models/model_time_interval.dart';
+import '../domain/repositories/time_interval_repository.dart';
+import '../domain/services/time_interval_progress_service.dart';
 import '../home/data_controller.dart';
 import '../home/data_controller_provider.dart';
 import 'component_widgets/card_time_interval.dart';
@@ -69,7 +71,10 @@ class _TasksTimeLinePageState extends State<TasksTimeLinePage> {
   final ValueNotifier<DateTime> _focusedDay = ValueNotifier(DateTime.now());
   late final ValueNotifier<List<TimeInterval>> _selectedTimeIntervals;
 
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
+  late final TimeIntervalProgressService _progressService =
+      context.read<TimeIntervalProgressService>();
   List<TimeInterval> _selectedTimeIntervalsNew = [];
   DateTime _focusedDayNew = DateTime.now();
   // late final CalendarBuilders<TimeInterval> calendarBuilders =
@@ -112,7 +117,7 @@ class _TasksTimeLinePageState extends State<TasksTimeLinePage> {
   }
 
   Future<void> _init() async {
-    //final timeIntervals = await _databaseManager.timeIntervals();
+    //final timeIntervals = await _timeIntervalRepository.getTimeIntervals();
     final kTimeIntervalSource = <DateTime, List<TimeInterval>>{};
     for (final interval in widget.timeIntervals) {
       // final date = DateTime(interval.startDate!.year, interval.startDate!.month,
@@ -203,7 +208,7 @@ class _TasksTimeLinePageState extends State<TasksTimeLinePage> {
   }
 
   Future<void> _deleteTimeInterval(TimeInterval timeInterval) async {
-    await _databaseManager.deleteTimeInterval(timeInterval.id);
+    await _timeIntervalRepository.deleteTimeInterval(timeInterval.id);
     setState(() {
       widget.timeIntervals.remove(timeInterval);
       //_selectedTimeIntervals.value.remove(timeInterval);
@@ -212,11 +217,9 @@ class _TasksTimeLinePageState extends State<TasksTimeLinePage> {
   }
 
   Future<void> _onTimeIntervalToggleCompleted(TimeInterval timeInterval) async {
-    TimeInterval _timeInterval =
-        timeInterval.copyWith(isCompleted: !timeInterval.isCompleted);
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    await _progressService.toggleCompleted(timeInterval);
     final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id);
     final index =
         widget.timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
     // final index2 = _selectedTimeIntervals.value
@@ -241,9 +244,9 @@ class _TasksTimeLinePageState extends State<TasksTimeLinePage> {
     TimeInterval _timeInterval = timeInterval.copyWith(
       subtasks: timeInterval.subtasks,
     );
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    await _timeIntervalRepository.updateTimeInterval(_timeInterval);
     final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id);
     final index =
         widget.timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
     // final index2 = _selectedTimeIntervals.value
@@ -285,12 +288,10 @@ class _TasksTimeLinePageState extends State<TasksTimeLinePage> {
           ),
           TextButton(
             onPressed: () async {
-              TimeInterval _timeInterval = timeInterval.copyWith(
-                  howMuchHasBeenDone:
-                      double.parse(_hasBeenDoneController.text));
-              await _databaseManager.updateTimeInterval(_timeInterval);
+              await _progressService.updateMeasurableProgress(
+                  timeInterval, double.parse(_hasBeenDoneController.text));
               final updatedTimeInterval =
-                  await _databaseManager.timeInterval(timeInterval.id);
+                  await _timeIntervalRepository.getTimeInterval(timeInterval.id);
               final index = widget.timeIntervals
                   .indexWhere((item) => item.id == updatedTimeInterval.id);
               // final index2 = _selectedTimeIntervals.value
@@ -675,11 +676,14 @@ class StickyHeaderList extends StatefulWidget {
 }
 
 class _StickyHeaderListState extends State<StickyHeaderList> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
+  late final TimeIntervalProgressService _progressService =
+      context.read<TimeIntervalProgressService>();
   List<TimeInterval> _timeIntervals = [];
 
   Future<void> _deleteTimeInterval(TimeInterval timeInterval) async {
-    await _databaseManager.deleteTimeInterval(timeInterval.id);
+    await _timeIntervalRepository.deleteTimeInterval(timeInterval.id);
     setState(() {
       _timeIntervals.remove(timeInterval);
       //_selectedTimeIntervals.value.remove(timeInterval);
@@ -687,11 +691,9 @@ class _StickyHeaderListState extends State<StickyHeaderList> {
   }
 
   Future<void> _onTimeIntervalToggleCompleted(TimeInterval timeInterval) async {
-    TimeInterval _timeInterval =
-        timeInterval.copyWith(isCompleted: !timeInterval.isCompleted);
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    await _progressService.toggleCompleted(timeInterval);
     final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id);
     final index =
         _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
     // final index2 = _selectedTimeIntervals.value
@@ -712,9 +714,9 @@ class _StickyHeaderListState extends State<StickyHeaderList> {
     TimeInterval _timeInterval = timeInterval.copyWith(
       subtasks: timeInterval.subtasks,
     );
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    await _timeIntervalRepository.updateTimeInterval(_timeInterval);
     final updatedTimeInterval =
-        await _databaseManager.timeInterval(timeInterval.id);
+        await _timeIntervalRepository.getTimeInterval(timeInterval.id);
     final index =
         _timeIntervals.indexWhere((item) => item.id == updatedTimeInterval.id);
     // final index2 = _selectedTimeIntervals.value
@@ -752,12 +754,10 @@ class _StickyHeaderListState extends State<StickyHeaderList> {
           ),
           TextButton(
             onPressed: () async {
-              TimeInterval _timeInterval = timeInterval.copyWith(
-                  howMuchHasBeenDone:
-                      double.parse(_hasBeenDoneController.text));
-              await _databaseManager.updateTimeInterval(_timeInterval);
+              await _progressService.updateMeasurableProgress(
+                  timeInterval, double.parse(_hasBeenDoneController.text));
               final updatedTimeInterval =
-                  await _databaseManager.timeInterval(timeInterval.id);
+                  await _timeIntervalRepository.getTimeInterval(timeInterval.id);
               final index = _timeIntervals
                   .indexWhere((item) => item.id == updatedTimeInterval.id);
               // final index2 = _selectedTimeIntervals.value
@@ -876,7 +876,7 @@ class _StickyHeaderListState extends State<StickyHeaderList> {
                     ),
                   );
                   final updatedTimeInterval =
-                      await _databaseManager.timeInterval(timeInterval.id);
+                      await _timeIntervalRepository.getTimeInterval(timeInterval.id);
                   final index = _timeIntervals
                       .indexWhere((item) => item.id == updatedTimeInterval.id);
                   // final index2 = _selectedTimeIntervals.value.indexWhere(

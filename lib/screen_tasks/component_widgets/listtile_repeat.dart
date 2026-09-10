@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'repeat_rule.dart';
+import 'package:my_time_manager/domain/services/repeat_rule.dart';
 
 /// ListTile chọn quy tắc lặp cho time interval.
 ///

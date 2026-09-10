@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/domain/repositories/task_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/attached_notes_view.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_task.dart';
 import 'package:my_time_manager/utils/utils.dart';
@@ -208,15 +210,17 @@ class _TimeIntervalCardState extends State<TimeIntervalCard> {
                           widget.onTimeIntervalToggleComplete(
                               widget.timeInterval);
                         } else if (result == 'go_to_main_task') {
-                          final DatabaseManager databaseManager =
-                              DatabaseManager();
+                          final taskRepository = context.read<TaskRepository>();
+                          final taskListRepository =
+                              context.read<TaskListRepository>();
                           if (widget.timeInterval.taskId != null) {
                             final id = widget.timeInterval.taskId;
-                            final Task task = await databaseManager.task(id!);
+                            final Task task =
+                                await taskRepository.getTask(id!);
                             final TaskList? taskList = task.taskListId == null
                                 ? null
-                                : await databaseManager
-                                    .taskList(task.taskListId!);
+                                : await taskListRepository
+                                    .getTaskList(task.taskListId!);
                             if (!context.mounted) return;
                             Navigator.push(
                               context,

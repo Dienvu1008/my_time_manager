@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
+import 'package:my_time_manager/data/repositories/sqlite_time_interval_repository.dart';
+import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
 
 import '../data/models/model_time_interval.dart';
 import 'data_controller.dart';
@@ -25,27 +26,29 @@ class DataControllerProvider extends InheritedWidget {
 }
 
 class NewDataController extends ChangeNotifier {
-  final DatabaseManager _databaseManager = DatabaseManager();
-  List<TimeInterval> _timeIntervals = [];
-
-  NewDataController() {
+  NewDataController({TimeIntervalRepository? timeIntervalRepository})
+      : _timeIntervalRepository =
+            timeIntervalRepository ?? SqliteTimeIntervalRepository() {
     getAllTimeIntervals();
-
   }
+
+  final TimeIntervalRepository _timeIntervalRepository;
+  List<TimeInterval> _timeIntervals = [];
 
   List<TimeInterval> get timeIntervals => _timeIntervals;
 
   Future<List<TimeInterval>> getAllTimeIntervals() async {
     final List<TimeInterval> timeIntervals =
-        await _databaseManager.timeIntervals();
+        await _timeIntervalRepository.getTimeIntervals();
     _timeIntervals = timeIntervals;
     notifyListeners();
     return _timeIntervals;
 
   }
 
+  // ignore: unused_element
   void _deleteTimeInterval(TimeInterval timeInterval) {
-    _databaseManager.deleteTimeInterval(timeInterval.id);
+    _timeIntervalRepository.deleteTimeInterval(timeInterval.id);
     _timeIntervals.remove(timeInterval);
     notifyListeners();
   }

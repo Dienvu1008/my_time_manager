@@ -19,9 +19,12 @@ A cross-platform time-management application built with **Flutter**: manage task
   - [Directory structure](#directory-structure)
   - [Data layer](#data-layer)
   - [Data models](#data-models)
+  - [Domain layer](#domain-layer)
   - [State management](#state-management)
   - [Startup and navigation](#startup-and-navigation)
   - [Local packages](#local-packages)
+  - [Agent-readiness](#agent-readiness)
+  - [Testing](#testing)
 - [Database schema](#database-schema)
 - [Calendar sync flow](#calendar-sync-flow)
 - [Platform notes](#platform-notes)
@@ -138,19 +141,31 @@ dart run build_runner build --delete-conflicting-outputs
 
 ### Layer overview
 
-The app follows a **local-first** model with clear layering:
+The app follows a **local-first** model with a **domain-driven boundary** between the UI and the database:
 
 ```
 UI (screens / component_widgets / view)
-        │  reads/writes through
-State management (BLoC/Cubit + ChangeNotifier)
+        │  depends only on domain abstractions
+State management (BLoC / Cubit / ChangeNotifier)
         │
-Data layer (DatabaseManager, services: backup/import, sync, device_calendar)
+Domain layer  (lib/domain)
+   ├─ Repository interfaces   (TaskRepository, TaskListRepository,
+   │                           TimeIntervalRepository, CalendarRepository,
+   │                           NoteRepository, TrashRepository,
+   │                           ArchiveRepository, EventRepository)
+   └─ Domain services         (TaskCompletionService, TimeIntervalProgressService,
+                               RecurrenceService  — the business rules)
+        │  implemented by
+Data layer  (lib/data/repositories)
+   └─ Sqlite* adapters        (thin, 1:1 delegation to DatabaseManager)
         │
-Persistence (SQLite via sqflite / sqflite_common_ffi)   +   Optional cloud (Firebase Auth / Firestore)
+DatabaseManager  (lib/data/database)  — schema, CRUD, migration, trash/archive,
+        │                                reminders, export/import table list
+Persistence (SQLite via sqflite / sqflite_common_ffi)  +  Optional cloud (Firebase Auth / Firestore)
 ```
 
-- The **UI** does not access the database directly in scattered places; most access goes through the `DatabaseManager` singleton and controllers/blocs.
+- **UI / Bloc / Controller never touch `DatabaseManager` or SQL directly.** They depend on the domain repository interfaces and domain services, which are provided app-wide via `MultiRepositoryProvider` in `app/app.dart`. The only remaining non-data references to `DatabaseManager` are `main.dart` (`setCurrentDeviceId`, a startup config call) and `FocusRepository` (which *is* a repository).
+- **Business rules live in domain services, not in widgets.** Task/interval completion, measurable progress, and recurrence expansion were moved out of the UI so that both the UI and — in the future — an AI agent invoke the exact same rules. See [Agent-readiness](#agent-readiness).
 - **Cloud is optional**: if Firebase is not ready, the sync layers use **NoOp** implementations so the app runs fully offline.
 
 ### Directory structure
@@ -163,8 +178,12 @@ lib/
 │   ├── app.dart               # Root App widget: MaterialApp, theme, locale, AppBloc, global providers
 │   └── app_localizations.dart # Translations (13 languages)
 ├── auth/                       # Authentication (Firebase): bloc/ data/ view/, auth_config.dart
+├── domain/                     # Domain boundary (no Flutter/SQLite imports in interfaces)
+│   ├── repositories/          # Repository interfaces (domain capabilities, not tables)
+│   └── services/              # Business rules: completion, progress, recurrence + repeat_rule
 ├── data/
 │   ├── database/              # database_manager.dart (schema, CRUD, migration), sample_data.dart
+│   ├── repositories/          # Sqlite* adapters implementing the domain interfaces
 │   ├── models/                # Data models (see below)
 │   ├── backup/                # backup_service.dart (export), import_service.dart (import)
 │   ├── sync/                  # calendar_sync_manager + device/google calendar sync services
@@ -191,9 +210,20 @@ packages/
 
 Repeated naming convention across features: `bloc/` (state), `data/` (repository/service), `view/` (UI), and `component_widgets/` (reusable child widgets).
 
+### Domain layer
+
+`lib/domain` is the contract the rest of the app depends on. It contains **no** direct SQLite or `DatabaseManager` references.
+
+- **Repository interfaces** (`lib/domain/repositories/`) model *domain capabilities*, not database tables. Trash and archive, for example, are exposed as capabilities of the entity repositories (`softDeleteTask`, `archiveTask`, …), plus two **cross-entity aggregate** repositories — `TrashRepository` and `ArchiveRepository` — because the "all trashed / all archived items" view genuinely spans tasks, task lists, and calendar events. `EventRepository` is intentionally minimal (only `getEventsOfTaskList`) since that is the sole caller of the legacy `events` table.
+- **Domain services** (`lib/domain/services/`) hold business rules that used to be inline in widgets:
+  - `TaskCompletionService` — toggle/set completion, measurable progress for a `Task`.
+  - `TimeIntervalProgressService` — toggle completion / measurable progress for a `TimeInterval`.
+  - `RecurrenceService` (+ `repeat_rule.dart`) — expands a repeating interval into independent occurrences and persists them.
+
 ### Data layer
 
-- **`DatabaseManager`** (`lib/data/database/database_manager.dart`): a singleton that opens SQLite, defines the schema, provides CRUD for every table, and manages **version-based migration**. It also owns soft-delete/trash, archive, reminders, and the list of tables used for export/import.
+- **`DatabaseManager`** (`lib/data/database/database_manager.dart`): a singleton that opens SQLite, defines the schema, provides CRUD for every table, and manages **version-based migration**. It also owns soft-delete/trash, archive, reminders, and the list of tables used for export/import. Its implementation, schema, migrations, triggers, backup format, and sync semantics were **left unchanged** by the domain refactor.
+- **Sqlite\* repositories** (`lib/data/repositories/`): thin adapters that implement the domain interfaces by delegating **1:1** to `DatabaseManager` (e.g. `SqliteTaskRepository`, `SqliteCalendarRepository`, `SqliteTrashRepository`). Each takes an optional `DatabaseManager?` (defaulting to the singleton) so tests can drive them against an in-memory database. Side effects such as reminder scheduling on `createTimeInterval` are preserved inside these adapters.
 - **Services:**
   - `backup/backup_service.dart` — exports data (JSON/CSV/text). CSV uses `CsvEncoder` from the `csv` 8.x package.
   - `backup/import_service.dart` — imports data from a file.
@@ -225,8 +255,9 @@ A mix of mechanisms, chosen by scope:
   - `AppBloc` (in `app/app.dart`) — app-wide UI configuration (theme, color, language, settings), **persisted through `SharedPreferences`**.
   - `AuthBloc` (`auth/bloc`) — sign-in state.
   - `PomodoroBloc` — provided **globally** (a single instance that lives for the app's whole lifetime) so the timer keeps running across screens.
-- **`ChangeNotifier`:** `home/data_controller.dart` (`DataController`) manages the calendar/time-interval display data.
+- **`ChangeNotifier`:** `home/data_controller.dart` (`DataController`) manages the calendar/time-interval display data; it is constructor-injected with a `TimeIntervalRepository`.
 - **Repository/Service:** `FocusRepository` (local-first) with a Firestore sync layer enabled when Firebase is ready, otherwise a `NoOpFocusSyncService`.
+- **Dependency injection:** domain repositories and services are provided once, app-wide, by a `MultiRepositoryProvider` in `app/app.dart`. Blocs and controllers receive them via constructor injection (e.g. `AppBloc` takes a `TimeIntervalRepository` for reminder rescheduling), and widgets read them with `context.read<...>()`.
 
 ### Startup and navigation
 
@@ -252,6 +283,26 @@ Located in `packages/`, referenced by `path` in `pubspec.yaml` so the project is
 
 - **`time_manager`** — an internal plugin (declares native code for Android/iOS/Windows/…): handles time and recurrence logic (`rrule`, `timezone`).
 - **`calendar_widgets`** — a calendar-widget package (a table-calendar variant) used by the calendar screens.
+
+### Agent-readiness
+
+The domain boundary was designed so a future AI agent can drive the app the same way the UI does — **through domain services and repositories, never by touching `DatabaseManager` or SQL**. The intended call chain is:
+
+```
+AI Tool  ->  Domain Service / Repository  ->  Data Repository (Sqlite* adapter)  ->  DatabaseManager  ->  SQLite
+```
+
+Because business rules (completion, measurable progress, recurrence) live in domain services, an agent that calls those services cannot bypass them to write inconsistent state directly to the database.
+
+This is verified by `test/domain/agent_readiness_proof_test.dart`, which builds a small `_AgentToolbox` from domain abstractions only and runs a full lifecycle (create project → add task → complete → archive → move to trash → restore) against a real in-memory SQLite database. It also confirms that repositories constructed independently still read/write the same store.
+
+> **Known platform coupling:** `TimeInterval` create/update schedules reminders via `NotificationService`, which instantiates plugin channels (audio / local notifications). That path needs a Flutter binding and channel mocks, so an agent running headless must either provide those or route interval scheduling through a UI-bound context. The pure recurrence-expansion rule itself is covered headlessly in `recurrence_service_test.dart`.
+
+### Testing
+
+- Domain-service tests (`test/domain/`) use in-memory fakes of the repository interfaces — fast and DB-free.
+- Repository contract tests (`test/data/`) run the real `Sqlite*` adapters against an in-memory SQLite database via `DatabaseManager.resetForTesting(inMemory: true)` (a `@visibleForTesting` seam that does not change any production path). They cover task, task-list (including the timestamp-matched cascade restore/unarchive of child tasks), calendar, note, and the cross-entity trash/archive aggregates.
+- Because `DatabaseManager` is a process-wide singleton with a shared handle, the full suite is pinned to serial execution in `dart_test.yaml` (`concurrency: 1`). Run the whole suite with `flutter test`; individual DB files also pass in isolation (e.g. `flutter test test/data/sqlite_task_repository_test.dart`).
 
 ---
 

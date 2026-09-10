@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:my_time_manager/shared/appflowy_description.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_completion.dart';
@@ -33,7 +34,7 @@ class _AddOrEditTaskWithSubtasksPageState
   final TextEditingController _titleController = TextEditingController();
   late final EditorState _descriptionEditorState;
   final TextEditingController _locationController = TextEditingController();
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TaskRepository _taskRepository = context.read<TaskRepository>();
   List<Subtask> _subtasks = [];
   String _id = '';
 
@@ -110,8 +111,8 @@ class _AddOrEditTaskWithSubtasksPageState
     );
 
     widget.taskWithSubtasks == null
-        ? await _databaseManager.insertTask(taskWithSubtasks)
-        : await _databaseManager.updateTask(taskWithSubtasks);
+        ? await _taskRepository.createTask(taskWithSubtasks)
+        : await _taskRepository.updateTask(taskWithSubtasks);
     Navigator.pop(context, taskWithSubtasks);
   }
 

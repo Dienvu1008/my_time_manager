@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/screen_calendar/calendar_zoom_wrapper.dart';
 import 'package:my_time_manager/screen_calendar/mapping.dart';
@@ -64,7 +63,6 @@ class TasksDayView extends StatefulWidget {
 }
 
 class _TasksDayViewState extends State<TasksDayView> {
-  final DatabaseManager _databaseManager = DatabaseManager();
 
   // QUAN TRỌNG: controller được tạo MỘT LẦN và giữ ở đây, KHÔNG tạo trong build.
   // Trước đây build() tạo controller mới mỗi lần -> DayView thấy controller đổi
@@ -83,7 +81,7 @@ class _TasksDayViewState extends State<TasksDayView> {
 
   Future<void> _init() async {
     try {
-      await enrichTimeIntervals(_databaseManager, _controller);
+      await enrichTimeIntervals(_controller);
     } catch (e) {
       debugPrint('TasksDayView._init lỗi: $e');
     } finally {
@@ -153,7 +151,6 @@ class _TasksDayViewState extends State<TasksDayView> {
   Future<void> _openCreateTimeInterval(DateTime start) {
     return openCreateOnEmptySlot(
       context: context,
-      databaseManager: _databaseManager,
       controller: _controller,
       start: start,
     );
@@ -168,13 +165,12 @@ class _TasksDayViewState extends State<TasksDayView> {
       ),
     );
     if (changed == true && mounted) {
-      await reloadTimeIntervals(_databaseManager, _controller);
+      await reloadTimeIntervals(_controller);
     }
   }
 }
 
 class DayViewWidget extends StatelessWidget {
-  final DatabaseManager _databaseManager = DatabaseManager();
   final GlobalKey<DayViewState>? state;
   final double? width;
 

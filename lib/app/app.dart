@@ -8,7 +8,25 @@ import 'package:my_time_manager/auth/auth_config.dart';
 import 'package:my_time_manager/auth/bloc/auth_bloc.dart';
 import 'package:my_time_manager/auth/data/auth_repository.dart';
 import 'package:my_time_manager/auth/view/auth_gate.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
+import 'package:my_time_manager/data/repositories/sqlite_task_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_task_list_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_time_interval_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_calendar_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_note_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_trash_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_archive_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_event_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
+import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
+import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
+import 'package:my_time_manager/domain/repositories/note_repository.dart';
+import 'package:my_time_manager/domain/repositories/trash_repository.dart';
+import 'package:my_time_manager/domain/repositories/archive_repository.dart';
+import 'package:my_time_manager/domain/repositories/event_repository.dart';
+import 'package:my_time_manager/domain/services/task_completion_service.dart';
+import 'package:my_time_manager/domain/services/recurrence_service.dart';
+import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
 import 'package:my_time_manager/home/home.dart';
 import 'package:my_time_manager/screen_focus_timer/bloc/pomodoro_bloc.dart';
 import 'package:my_time_manager/screen_focus_timer/view/pomodoro_floating_overlay.dart';
@@ -39,12 +57,58 @@ class App extends StatelessWidget {
     // FocusRepository luôn được cung cấp cho toàn app (local-first). Lớp sync
     // Firestore chỉ bật khi Firebase sẵn sàng; nếu không thì dùng NoOp (chạy
     // local-only). Bọc ngoài cùng để cả 2 nhánh (có/không auth) đều dùng được.
-    return RepositoryProvider<FocusRepository>(
-      create: (_) => FocusRepository(
-        syncService: firebaseReady
-            ? FirestoreFocusSyncService()
-            : const NoOpFocusSyncService(),
-      ),
+    return MultiRepositoryProvider(
+      providers: [
+        // Domain repositories for the task slice. Provided app-wide (like
+        // FocusRepository) so every screen — and, in the future, AI tools —
+        // depends on the domain interface instead of DatabaseManager/SQLite.
+        RepositoryProvider<TaskRepository>(
+          create: (_) => SqliteTaskRepository(),
+        ),
+        RepositoryProvider<TaskListRepository>(
+          create: (_) => SqliteTaskListRepository(),
+        ),
+        RepositoryProvider<TaskCompletionService>(
+          create: (context) =>
+              TaskCompletionService(context.read<TaskRepository>()),
+        ),
+        RepositoryProvider<TimeIntervalRepository>(
+          create: (_) => SqliteTimeIntervalRepository(),
+        ),
+        RepositoryProvider<RecurrenceService>(
+          create: (context) =>
+              RecurrenceService(context.read<TimeIntervalRepository>()),
+        ),
+        RepositoryProvider<TimeIntervalProgressService>(
+          create: (context) => TimeIntervalProgressService(
+              context.read<TimeIntervalRepository>()),
+        ),
+        RepositoryProvider<CalendarRepository>(
+          create: (_) => SqliteCalendarRepository(),
+        ),
+        RepositoryProvider<NoteRepository>(
+          create: (_) => SqliteNoteRepository(),
+        ),
+        RepositoryProvider<TrashRepository>(
+          create: (_) => SqliteTrashRepository(),
+        ),
+        RepositoryProvider<ArchiveRepository>(
+          create: (_) => SqliteArchiveRepository(),
+        ),
+        RepositoryProvider<EventRepository>(
+          create: (_) => SqliteEventRepository(),
+        ),
+        // FocusRepository luôn được cung cấp cho toàn app (local-first). Lớp sync
+        // Firestore chỉ bật khi Firebase sẵn sàng; nếu không thì dùng NoOp (chạy
+        // local-only).
+        RepositoryProvider<FocusRepository>(
+          create: (_) => FocusRepository(
+            syncService: firebaseReady
+                ? FirestoreFocusSyncService()
+                : const NoOpFocusSyncService(),
+          ),
+        ),
+      ],
       // PomodoroBloc provide TOÀN CỤC (1 instance sống suốt vòng đời app) để
       // timer tiếp tục chạy khi người dùng chuyển sang màn hình khác.
       child: BlocProvider<PomodoroBloc>(
@@ -58,7 +122,9 @@ class App extends StatelessWidget {
   /// Firebase chưa cấu hình: chạy app không có lớp auth.
   Widget _buildWithoutAuth() {
     return BlocProvider(
-      create: (context) => AppBloc(),
+      create: (context) => AppBloc(
+        timeIntervalRepository: context.read<TimeIntervalRepository>(),
+      ),
       child: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) => _buildMaterialApp(context, state, null),
       ),
@@ -76,7 +142,9 @@ class App extends StatelessWidget {
           authRepository: context.read<AuthRepository>(),
         ),
         child: BlocProvider(
-          create: (context) => AppBloc(),
+          create: (context) => AppBloc(
+            timeIntervalRepository: context.read<TimeIntervalRepository>(),
+          ),
           child: BlocBuilder<AppBloc, AppState>(
             // Khi bypassAuth bật: truyền null cho _buildMaterialApp để vào thẳng
             // Home (bỏ qua AuthGate), nhưng AuthBloc vẫn được cung cấp phía trên
@@ -274,8 +342,15 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
   late SharedPreferences sharedPreferences;
 
-  AppBloc()
-      : super(AppState(
+  /// Used only for the reminders side effect of [ToggleRemindersEnabled]
+  /// (rescheduling all reminders). Injected so AppBloc does not depend on
+  /// DatabaseManager directly.
+  final TimeIntervalRepository _timeIntervalRepository;
+
+  AppBloc({TimeIntervalRepository? timeIntervalRepository})
+      : _timeIntervalRepository =
+            timeIntervalRepository ?? SqliteTimeIntervalRepository(),
+        super(AppState(
             useMaterial3: true,
             useBottomBar: true,
             showBrightnessButtonInAppBar: true,
@@ -523,7 +598,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       // Đồng bộ với hệ thống thông báo: tắt -> hủy hết; bật -> lên lịch lại
       // toàn bộ interval từ DB. Bọc trong service/DB (an toàn nếu lỗi).
       NotificationService.instance.setEnabled(event.enabled);
-      DatabaseManager().rescheduleAllReminders();
+      _timeIntervalRepository.rescheduleAllReminders();
     });
 
     on<ToggleTransparentBottomBar>((event, emit) {

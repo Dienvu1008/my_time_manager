@@ -2,9 +2,10 @@ import 'dart:convert';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../data/database/database_manager.dart';
 import '../data/models/model_note.dart';
+import '../domain/repositories/note_repository.dart';
 
 /// Màn soạn thảo một ghi chú bằng trình soạn thảo block appflowy_editor.
 ///
@@ -20,7 +21,7 @@ class NoteEditorPage extends StatefulWidget {
 }
 
 class _NoteEditorPageState extends State<NoteEditorPage> {
-  final DatabaseManager _db = DatabaseManager();
+  late final NoteRepository _noteRepository = context.read<NoteRepository>();
   final TextEditingController _titleController = TextEditingController();
   late final EditorState _editorState;
   late Note _note;
@@ -62,9 +63,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       updatedAt: DateTime.now(),
     );
     if (widget.note == null) {
-      await _db.insertNote(updated);
+      await _noteRepository.createNote(updated);
     } else {
-      await _db.updateNote(updated);
+      await _noteRepository.updateNote(updated);
     }
     if (!mounted) return;
     Navigator.pop(context, true);
@@ -93,7 +94,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       ),
     );
     if (confirm != true) return;
-    await _db.deleteNote(_note.id);
+    await _noteRepository.deleteNote(_note.id);
     if (!mounted) return;
     Navigator.pop(context, true);
   }

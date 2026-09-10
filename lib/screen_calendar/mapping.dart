@@ -1,9 +1,12 @@
 import 'package:calendar_widgets/calendar_widgets.dart';
 import 'package:flutter/material.dart';
 
-import '../data/database/database_manager.dart';
 import '../data/device_calendar/device_calendar_service.dart';
 import '../data/models/model_task.dart';
+import '../data/repositories/sqlite_task_repository.dart';
+import '../data/repositories/sqlite_time_interval_repository.dart';
+import '../domain/repositories/task_repository.dart';
+import '../domain/repositories/time_interval_repository.dart';
 import '../data/models/model_time_interval.dart';
 import '../screen_focus_timer/data/model_focus_session.dart';
 import '../screen_focus_timer/view/task_picker_sheet.dart';
@@ -19,13 +22,17 @@ import 'page_edit_device_event.dart';
 /// tra cứu trong RAM. Cũng KHÔNG ghi ngược DB (updateTimeInterval): việc hiển
 /// thị chỉ cần gán màu/tiêu đề vào object trong bộ nhớ.
 Future<void> enrichTimeIntervals(
-  DatabaseManager databaseManager,
-  TimeIntervalController controller,
-) async {
-  final timeIntervals = await databaseManager.timeIntervals();
+  TimeIntervalController controller, {
+  TaskRepository? taskRepository,
+  TimeIntervalRepository? timeIntervalRepository,
+}) async {
+  final taskRepo = taskRepository ?? SqliteTaskRepository();
+  final timeIntervalRepo =
+      timeIntervalRepository ?? SqliteTimeIntervalRepository();
+  final timeIntervals = await timeIntervalRepo.getTimeIntervals();
 
   // Tải toàn bộ task một lần rồi dựng map id -> Task.
-  final tasks = await databaseManager.tasks();
+  final tasks = await taskRepo.getTasks();
   final Map<String, Task> taskById = {for (final t in tasks) t.id: t};
 
   for (final ti in timeIntervals) {
@@ -67,11 +74,11 @@ Future<void> loadDeviceEventsInto(TimeIntervalController controller) async {
 /// enrich lại từ DB. Dùng sau khi thêm/sửa interval để lịch cập nhật mà không
 /// bị nhân đôi (vì [enrichTimeIntervals] chỉ addAll chứ không xóa trước).
 Future<void> reloadTimeIntervals(
-  DatabaseManager databaseManager,
-  TimeIntervalController controller,
-) async {
+  TimeIntervalController controller, {
+  TaskRepository? taskRepository,
+}) async {
   controller.removeAll(controller.allEvents.toList());
-  await enrichTimeIntervals(databaseManager, controller);
+  await enrichTimeIntervals(controller, taskRepository: taskRepository);
 }
 
 /// Luồng tạo time interval mới khi người dùng nhấn vào ô giờ trống trên lịch.
@@ -85,7 +92,6 @@ Future<void> reloadTimeIntervals(
 /// event thiết bị; với Công việc (hoặc desktop) -> luồng tạo time interval.
 Future<void> openCreateOnEmptySlot({
   required BuildContext context,
-  required DatabaseManager databaseManager,
   required TimeIntervalController controller,
   required DateTime start,
 }) async {
@@ -127,7 +133,7 @@ Future<void> openCreateOnEmptySlot({
         ),
       );
       if (changed == true && context.mounted) {
-        await reloadTimeIntervals(databaseManager, controller);
+        await reloadTimeIntervals(controller);
       }
       return;
     }
@@ -136,7 +142,6 @@ Future<void> openCreateOnEmptySlot({
 
   await openCreateTimeIntervalFlow(
     context: context,
-    databaseManager: databaseManager,
     controller: controller,
     start: start,
   );
@@ -144,10 +149,11 @@ Future<void> openCreateOnEmptySlot({
 
 Future<void> openCreateTimeIntervalFlow({
   required BuildContext context,
-  required DatabaseManager databaseManager,
   required TimeIntervalController controller,
   required DateTime start,
+  TaskRepository? taskRepository,
 }) async {
+  final taskRepo = taskRepository ?? SqliteTaskRepository();
   // Bước 1: chọn task (null = không gắn task hoặc người dùng đóng picker).
   final selected = await TaskPickerSheet.show(context);
   if (!context.mounted) return;
@@ -166,7 +172,7 @@ Future<void> openCreateTimeIntervalFlow({
 
   if (selected != null && selected.type == FocusTaskType.task) {
     taskId = selected.id;
-    final t = await databaseManager.task(selected.id);
+    final t = await taskRepo.getTask(selected.id);
     title = t.title;
     color = t.color;
     description = t.description;
@@ -204,7 +210,7 @@ Future<void> openCreateTimeIntervalFlow({
   if (!context.mounted) return;
 
   // Bước 4: nạp lại lịch để hiển thị interval vừa tạo.
-  await reloadTimeIntervals(databaseManager, controller);
+  await reloadTimeIntervals(controller);
 }
 
 extension ListTimeIntervalCalendarData on List<TimeInterval> {

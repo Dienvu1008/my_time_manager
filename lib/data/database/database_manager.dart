@@ -9,6 +9,7 @@ import 'package:my_time_manager/screen_focus_timer/data/model_focus_session.dart
 import 'package:my_time_manager/screen_focus_timer/data/notification_service.dart';
 import 'package:my_time_manager/screen_archive/model_archived_item.dart';
 import 'package:my_time_manager/screen_trash/model_trashed_item.dart';
+import 'package:meta/meta.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -28,6 +29,46 @@ class DatabaseManager {
     return _database!;
   }
 
+  /// TEST-ONLY seam. Closes any open database and (optionally) reopens a fresh
+  /// in-memory database using the SAME schema/migrations/version/config as
+  /// production. This does not affect production code paths in any way — the
+  /// [database] getter still opens the on-disk database via [_initDatabase].
+  ///
+  /// Requires an FFI factory to be configured by the caller (test setup does
+  /// `sqfliteFfiInit(); databaseFactory = databaseFactoryFfi;`).
+  @visibleForTesting
+  Future<void> resetForTesting({bool inMemory = true}) async {
+    final existing = _database;
+    // Null the field first so a concurrent/late [database] getter never hands
+    // back a handle that is mid-close. Then best-effort close the old handle.
+    _database = null;
+    if (existing != null) {
+      try {
+        await existing.close();
+      } catch (_) {
+        // Ignore: closing an already-closed/stale in-memory handle is benign
+        // in tests and must not abort the reset.
+      }
+    }
+    if (inMemory) {
+      // Fresh in-memory database. `singleInstance: false` ensures sqflite does
+      // not hand back a cached/closed handle across tests when the whole suite
+      // runs in one `flutter test` process (all test files share this
+      // singleton's static [_database]).
+      _database = await openDatabase(
+        inMemoryDatabasePath,
+        version: _schemaVersion,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+        onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
+        singleInstance: false,
+      );
+    }
+  }
+
+  /// The current schema version. Kept in one place so the production opener and
+  /// the test seam cannot drift apart.
+  static const int _schemaVersion = 11;
 
   Future<Database> _initDatabase() async {
     final databasePath = await getDatabasesPath();
@@ -66,7 +107,7 @@ class DatabaseManager {
       //     Calendar). Event có thể thuộc một danh sách như task; hỗ trợ
       //     soft-delete, archive và các trường đồng bộ (googleEventId, etag,
       //     syncStatus...). Bảng 'events' cũ (đơn giản) vẫn giữ nguyên.
-      version: 11,
+      version: _schemaVersion,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }

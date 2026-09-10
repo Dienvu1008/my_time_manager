@@ -15,9 +15,9 @@ import 'package:my_time_manager/utils/widget_coming_soon.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../app/app_localizations.dart';
-import '../data/database/database_manager.dart';
 import '../data/models/model_list.dart';
 import '../data/models/model_time_interval.dart';
+import '../domain/repositories/time_interval_repository.dart';
 import '../screen_about_us/page_about_us.dart';
 import '../screen_calendar/view_weekly.dart';
 import '../screen_focus_timer/view/pomodoro_overlay_controller.dart';
@@ -129,7 +129,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   bool hasShownDialog = false;
 
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
   late SharedPreferences _prefs;
   List<TaskList>? _taskLists;
   List<TimeInterval> _timeIntervals = [];
@@ -348,7 +349,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
         );
       case PageOfTasksScreenSelected.tasksTimelinePage:
         return FutureBuilder(
-          future: _databaseManager.timeIntervals(),
+          future: _timeIntervalRepository.getTimeIntervals(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();

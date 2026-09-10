@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../app/app.dart';
-import '../data/database/database_manager.dart';
+import '../domain/repositories/trash_repository.dart';
 import 'model_trashed_item.dart';
 
 /// Màn hình Thùng rác: hiển thị các mục đã xóa (TaskList và 3 loại task),
@@ -19,7 +19,7 @@ class TrashScreen extends StatefulWidget {
 }
 
 class _TrashScreenState extends State<TrashScreen> {
-  final DatabaseManager _db = DatabaseManager();
+  late final TrashRepository _trashRepository = context.read<TrashRepository>();
   late Future<List<TrashedItem>> _itemsFuture;
 
   @override
@@ -29,7 +29,7 @@ class _TrashScreenState extends State<TrashScreen> {
   }
 
   void _reload() {
-    _itemsFuture = _db.trashedItems();
+    _itemsFuture = _trashRepository.getTrashedItems();
   }
 
   Future<void> _refresh() async {
@@ -49,17 +49,7 @@ class _TrashScreenState extends State<TrashScreen> {
   }
 
   Future<void> _restore(TrashedItem item) async {
-    switch (item.type) {
-      case TrashedItemType.taskList:
-        await _db.restoreTaskList(item.id);
-        break;
-      case TrashedItemType.task:
-        await _db.restoreTask(item.id);
-        break;
-      case TrashedItemType.calendarEvent:
-        await _db.restoreCalendarEvent(item.id);
-        break;
-    }
+    await _trashRepository.restore(item);
     if (mounted) {
       _showSnack('Đã khôi phục "${item.title}".');
       await _refresh();
@@ -73,17 +63,7 @@ class _TrashScreenState extends State<TrashScreen> {
     );
     if (confirmed != true) return;
 
-    switch (item.type) {
-      case TrashedItemType.taskList:
-        await _db.permanentlyDeleteTaskList(item.id);
-        break;
-      case TrashedItemType.task:
-        await _db.permanentlyDeleteTask(item.id);
-        break;
-      case TrashedItemType.calendarEvent:
-        await _db.deleteCalendarEvent(item.id);
-        break;
-    }
+    await _trashRepository.permanentlyDelete(item);
     if (mounted) {
       _showSnack('Đã xóa vĩnh viễn "${item.title}".');
       await _refresh();
@@ -97,7 +77,7 @@ class _TrashScreenState extends State<TrashScreen> {
           'Xóa vĩnh viễn tất cả mục trong thùng rác? Hành động này không thể hoàn tác.',
     );
     if (confirmed != true) return;
-    await _db.emptyTrash();
+    await _trashRepository.emptyTrash();
     if (mounted) {
       _showSnack('Đã dọn sạch thùng rác.');
       await _refresh();

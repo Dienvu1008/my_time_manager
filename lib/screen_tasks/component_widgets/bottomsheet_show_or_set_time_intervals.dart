@@ -2,16 +2,19 @@ import 'package:calendar_widgets/src_table_calendar/table_calendar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/repositories/task_repository.dart';
+import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
+import 'package:my_time_manager/domain/services/recurrence_service.dart';
+import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/home/data_controller_provider.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_alarm.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_repeat.dart';
-import 'package:my_time_manager/screen_tasks/component_widgets/repeat_rule.dart';
+import 'package:my_time_manager/domain/services/repeat_rule.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_set_time_intervals_block.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_timezone.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
@@ -74,7 +77,8 @@ class _ShowOrSetTimeIntervalsBottomSheetState
   //     ValueNotifier<String>('all');
 
   final GlobalKey<_SetTimeIntervalPageState> key = GlobalKey();
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
   bool _isExpanded = false;
   bool _showCalendar = true;
 
@@ -246,12 +250,12 @@ class _ShowOrSetTimeIntervalsBottomSheetState
                                 )
                               : FutureBuilder(
                                   future: widget.subtaskId != null
-                                      ? _databaseManager
-                                          .timeIntervalsOfSubtask(
+                                      ? _timeIntervalRepository
+                                          .getTimeIntervalsOfSubtask(
                                               widget.subtaskId!)
                                       : widget.taskId != null
-                                          ? _databaseManager
-                                              .timeIntervalsOfTask(
+                                          ? _timeIntervalRepository
+                                              .getTimeIntervalsOfTask(
                                                   widget.taskId!)
                                           : null,
                                   builder: (context, snapshot) {
@@ -362,7 +366,11 @@ class SetTimeIntervalPage extends StatefulWidget {
 }
 
 class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TaskRepository _taskRepository = context.read<TaskRepository>();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
+  late final RecurrenceService _recurrenceService =
+      context.read<RecurrenceService>();
   final _formKey = GlobalKey<FormState>();
   TextEditingController _startDateController = TextEditingController();
   TextEditingController _endDateController = TextEditingController();
@@ -396,7 +404,7 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
 
   Future<void> _init() async {
     if (widget.taskId == null) return;
-    final Task task = await _databaseManager.task(widget.taskId!);
+    final Task task = await _taskRepository.getTask(widget.taskId!);
     if (widget.subtaskId != null) {
       // Lập kế hoạch cho MỘT công việc con: tiêu đề/mục tiêu lấy từ subtask,
       // còn mô tả/vị trí/màu/quan trọng lấy từ task cha.
@@ -789,57 +797,15 @@ class _SetTimeIntervalPageState extends State<SetTimeIntervalPage> {
   /// được giữ nguyên.
   /// [onProgress] được gọi sau mỗi lần lưu với (số đã lưu, tổng số) để cập nhật
   /// thanh tiến trình.
+  /// Recurrence expansion + persistence now lives in [RecurrenceService]
+  /// (domain layer). This thin wrapper keeps the call site unchanged.
   Future<int> _saveWithRepeat(
     TimeInterval base,
     RepeatRule rule, {
     void Function(int done, int total)? onProgress,
-  }) async {
-    // Không lặp, hoặc không có ngày bắt đầu để làm mốc -> lưu đúng 1 interval.
-    if (!rule.isRepeating || base.startDate == null) {
-      await _databaseManager.insertTimeInterval(base);
-      onProgress?.call(1, 1);
-      return 1;
-    }
-
-    final startDates = rule.generateStartDates(base.startDate!);
-    final total = startDates.length;
-
-    // Khoảng cách ngày giữa endDate và startDate gốc (giữ nguyên cho mỗi bản).
-    Duration? endOffset;
-    if (base.endDate != null) {
-      final s = DateTime(base.startDate!.year, base.startDate!.month,
-          base.startDate!.day);
-      final e =
-          DateTime(base.endDate!.year, base.endDate!.month, base.endDate!.day);
-      endOffset = e.difference(s);
-    }
-
-    var count = 0;
-    for (final date in startDates) {
-      // Ghép ngày lặp với giờ bắt đầu gốc.
-      final newStart = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        base.startTime?.hour ?? 0,
-        base.startTime?.minute ?? 0,
-      );
-      final newEnd = endOffset != null
-          ? DateTime(date.year, date.month, date.day).add(endOffset)
-          : base.endDate;
-
-      final occurrence = base.copyWith(
-        startDate: DateTime(newStart.year, newStart.month, newStart.day),
-        endDate: newEnd,
-      );
-      // Cấp id mới cho mỗi bản để không ghi đè lẫn nhau (id là field non-final).
-      occurrence.id = const Uuid().v4();
-
-      await _databaseManager.insertTimeInterval(occurrence);
-      count++;
-      onProgress?.call(count, total);
-    }
-    return count;
+  }) {
+    return _recurrenceService.saveWithRepeat(base, rule,
+        onProgress: onProgress);
   }
 
   @override
@@ -923,7 +889,11 @@ class TimeIntervalOfTaskOrEventPage extends StatefulWidget {
 
 class _TimeIntervalOfTaskOrEventPageState
     extends State<TimeIntervalOfTaskOrEventPage> {
-  final DatabaseManager _databaseManager = DatabaseManager();
+  late final TaskRepository _taskRepository = context.read<TaskRepository>();
+  late final TimeIntervalRepository _timeIntervalRepository =
+      context.read<TimeIntervalRepository>();
+  late final TimeIntervalProgressService _progressService =
+      context.read<TimeIntervalProgressService>();
   List<TimeInterval> _timeIntervals = [];
   List<TimeInterval> _timeIntervalsGone = [];
   List<TimeInterval> _timeIntervalsToday = [];
@@ -993,7 +963,7 @@ class _TimeIntervalOfTaskOrEventPageState
 
   Future<void> _init() async {
     if (widget.taskId == null) return;
-    final task = await _databaseManager.task(widget.taskId!);
+    final task = await _taskRepository.getTask(widget.taskId!);
     _task = task;
 
     // Nếu là subtask, tìm subtask trong task cha để so sánh mục tiêu.
@@ -1009,8 +979,10 @@ class _TimeIntervalOfTaskOrEventPageState
     }
 
     final timeIntervals = widget.subtaskId != null
-        ? await _databaseManager.timeIntervalsOfSubtask(widget.subtaskId!)
-        : await _databaseManager.timeIntervalsOfTask(widget.taskId!);
+        ? await _timeIntervalRepository
+            .getTimeIntervalsOfSubtask(widget.subtaskId!)
+        : await _timeIntervalRepository
+            .getTimeIntervalsOfTask(widget.taskId!);
 
     for (var timeInterval in timeIntervals) {
       // Mô tả/vị trí luôn lấy từ task cha.
@@ -1085,7 +1057,7 @@ class _TimeIntervalOfTaskOrEventPageState
   }
 
   Future<void> _onTimeIntervalToggleCompleted(TimeInterval timeInterval) async {
-    TimeInterval _timeInterval =
+    final TimeInterval _timeInterval =
         timeInterval.copyWith(isCompleted: !timeInterval.isCompleted);
     final index =
         _timeIntervals.indexWhere((item) => item.id == _timeInterval.id);
@@ -1094,12 +1066,13 @@ class _TimeIntervalOfTaskOrEventPageState
         _timeIntervals[index] = _timeInterval;
       });
     }
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    // Business rule (toggle + persist) lives in the domain service.
+    await _progressService.toggleCompleted(timeInterval);
   }
 
   Future<void> _deleteTimeInterval(TimeInterval timeInterval) async {
     setState(() => _timeIntervals.remove(timeInterval));
-    await _databaseManager.deleteTimeInterval(timeInterval.id);
+    await _timeIntervalRepository.deleteTimeInterval(timeInterval.id);
   }
 
   Future<void> _onSubtasksChanged(TimeInterval timeInterval) async {
@@ -1113,7 +1086,7 @@ class _TimeIntervalOfTaskOrEventPageState
         _timeIntervals[index] = _timeInterval;
       });
     }
-    await _databaseManager.updateTimeInterval(_timeInterval);
+    await _timeIntervalRepository.updateTimeInterval(_timeInterval);
   }
 
   Future<void> _onHasBeenDoneUpdate(TimeInterval timeInterval) async {
@@ -1137,9 +1110,9 @@ class _TimeIntervalOfTaskOrEventPageState
           ),
           TextButton(
             onPressed: () async {
-              TimeInterval _timeInterval = timeInterval.copyWith(
-                  howMuchHasBeenDone:
-                      double.parse(_hasBeenDoneController.text));
+              final double amount = double.parse(_hasBeenDoneController.text);
+              final TimeInterval _timeInterval =
+                  timeInterval.copyWith(howMuchHasBeenDone: amount);
               final index = _timeIntervals
                   .indexWhere((item) => item.id == _timeInterval.id);
               if (index != -1) {
@@ -1147,7 +1120,9 @@ class _TimeIntervalOfTaskOrEventPageState
                   _timeIntervals[index] = _timeInterval;
                 });
               }
-              await _databaseManager.updateTimeInterval(_timeInterval);
+              // Business rule (measurable progress + persist) in domain service.
+              await _progressService.updateMeasurableProgress(
+                  timeInterval, amount);
               Navigator.pop(context);
             },
             child: Text('Update'),
@@ -1353,8 +1328,9 @@ class _TimeIntervalOfTaskOrEventPageState
                                   fullscreenDialog: false,
                                 ),
                               );
-                              final updatedTimeInterval = await _databaseManager
-                                  .timeInterval(timeInterval.id);
+                              final updatedTimeInterval =
+                                  await _timeIntervalRepository
+                                      .getTimeInterval(timeInterval.id);
                               final index = _timeIntervals.indexWhere(
                                   (item) => item.id == updatedTimeInterval.id);
                               if (index != -1) {

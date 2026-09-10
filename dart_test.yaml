@@ -1,0 +1,7 @@
+# Test runner configuration.
+#
+# The repository/data tests exercise the SQLite-backed DatabaseManager (a
+# process-wide singleton) against an in-memory database. Running test files
+# concurrently in the same process can let them interfere via that shared
+# singleton, so we pin concurrency to 1 (serial) for determinism.
+concurrency: 1
