@@ -41,6 +41,10 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   # audioplayers: phát âm thanh báo hết giờ (chủ yếu cho desktop).
   audioplayers: ^6.1.0
+  # crypto: sha256 verification of downloaded GGUF model files (Phase 9 local
+  # model management). Already present transitively; declared directly since we
+  # now depend on it. Pure Dart, no native code.
+  crypto: ^3.0.0
   shared_preferences: ^2.1.2
   sqflite_common_ffi: ^2.2.5
   # Pinned to the last real (pre-eol) release so sqlite3.dll is bundled on

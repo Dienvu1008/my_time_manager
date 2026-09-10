@@ -1,16 +1,20 @@
-import '../../data/database/database_manager.dart';
-import 'focus_sync_service.dart';
-import 'model_focus_session.dart';
+import '../../domain/repositories/focus_repository.dart';
+import '../../screen_focus_timer/data/focus_sync_service.dart';
+import '../../screen_focus_timer/data/model_focus_session.dart';
+import '../database/database_manager.dart';
 
-/// Repository cho các phiên focus, theo nguyên tắc LOCAL-FIRST.
+/// SQLite-backed [FocusRepository], following the LOCAL-FIRST principle.
 ///
-/// - Nguồn dữ liệu chính là SQLite: mọi phiên luôn được ghi xuống DB trước, nên
-///   tính năng chạy được ngay cả khi offline / chưa cấu hình Firebase.
-/// - Sau khi lưu local, ta CỐ GẮNG đồng bộ lên Firestore qua [FocusSyncService].
-///   Nếu sync không khả dụng hoặc thất bại, phiên vẫn ở local với synced=false
-///   và sẽ được thử lại qua [syncPending].
-class FocusRepository {
-  FocusRepository({
+/// - SQLite is the source of truth: every session is written to the DB first,
+///   so the feature works fully offline / before Firebase is configured.
+/// - After the local write, it best-effort syncs to the cloud via
+///   [FocusSyncService]. If sync is unavailable or fails, the session stays
+///   local with synced=false and is retried by [syncPending].
+///
+/// Thin adapter over the existing [DatabaseManager] singleton — it adds no new
+/// persistence logic, preserving schema and sync semantics exactly.
+class SqliteFocusRepository implements FocusRepository {
+  SqliteFocusRepository({
     DatabaseManager? databaseManager,
     FocusSyncService? syncService,
   })  : _db = databaseManager ?? DatabaseManager(),
@@ -19,13 +23,13 @@ class FocusRepository {
   final DatabaseManager _db;
   final FocusSyncService _sync;
 
-  /// Lưu một phiên focus (local trước, rồi thử sync).
+  @override
   Future<void> saveSession(FocusSession session) async {
     await _db.insertFocusSession(session);
     await _trySync(session);
   }
 
-  /// Cố gắng đồng bộ một phiên; nếu thành công thì đánh dấu synced trong DB.
+  /// Best-effort sync of a single session; marks it synced in the DB on success.
   Future<void> _trySync(FocusSession session) async {
     if (!_sync.isAvailable) return;
     final ok = await _sync.uploadSession(session);
@@ -34,8 +38,7 @@ class FocusRepository {
     }
   }
 
-  /// Thử đồng bộ lại tất cả phiên còn tồn đọng (ví dụ khi vừa đăng nhập hoặc
-  /// vừa có mạng trở lại). An toàn để gọi bất cứ lúc nào.
+  @override
   Future<void> syncPending() async {
     if (!_sync.isAvailable) return;
     final pending = await _db.unsyncedFocusSessions();
@@ -47,10 +50,10 @@ class FocusRepository {
     }
   }
 
-  /// Tất cả phiên (mới nhất trước).
+  @override
   Future<List<FocusSession>> allSessions() => _db.focusSessions();
 
-  /// Phiên trong khoảng [start, end).
+  @override
   Future<List<FocusSession>> sessionsBetween(DateTime start, DateTime end) =>
       _db.focusSessionsBetween(start, end);
 }

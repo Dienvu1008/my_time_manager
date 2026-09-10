@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/stats_cubit.dart';
-import '../data/focus_repository.dart';
+import '../../domain/repositories/focus_repository.dart';
 
 /// Màn hình thống kê các phiên focus theo ngày / tuần / tháng.
 ///

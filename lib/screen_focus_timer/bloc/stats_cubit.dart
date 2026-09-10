@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../data/focus_repository.dart';
+import '../../domain/repositories/focus_repository.dart';
 import '../data/model_focus_session.dart';
 
 /// Khoảng thời gian thống kê.

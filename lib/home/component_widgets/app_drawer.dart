@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../screen_ai/ai_assistant_entry.dart';
+import '../../screen_ai/ai_settings_page.dart';
 import '../../utils/constants.dart';
 import '../../utils/utils.dart';
 
@@ -64,6 +66,33 @@ class MyAppDrawer extends StatelessWidget {
                   _selectedDrawerItemIndex == ScreenSelected.notesScreen.value,
               onTap: () =>
                   _onDrawerItemTapped(ScreenSelected.notesScreen.value)),
+          // AI Assistant — opens as a pushed route (not part of the index-based
+          // screen switcher) so Home's navigation stays unchanged. The pushed
+          // page inherits the app-wide repository providers.
+          ListTile(
+            leading: const Icon(Icons.smart_toy_outlined),
+            title: const Text('AI Assistant'),
+            onTap: () {
+              Navigator.of(context).pop(); // close the drawer
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AiAssistantEntry(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.tune_outlined),
+            title: const Text('AI Settings'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AiSettingsPage(),
+                ),
+              );
+            },
+          ),
           // ListTile(
           //   leading: const Icon(Icons.contacts_outlined),
           //   title: Text(localizations.myContacts),

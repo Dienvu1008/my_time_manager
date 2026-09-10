@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/pomodoro_bloc.dart';
 import '../bloc/pomodoro_config.dart';
-import '../data/focus_repository.dart';
+import '../../domain/repositories/focus_repository.dart';
 import '../data/notification_service.dart';
 import 'focus_stats_screen.dart';
 import 'pomodoro_overlay_controller.dart';

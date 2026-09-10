@@ -16,6 +16,7 @@ import 'package:my_time_manager/data/repositories/sqlite_note_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_trash_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_archive_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_event_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_focus_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
@@ -27,11 +28,12 @@ import 'package:my_time_manager/domain/repositories/event_repository.dart';
 import 'package:my_time_manager/domain/services/task_completion_service.dart';
 import 'package:my_time_manager/domain/services/recurrence_service.dart';
 import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
+import 'package:my_time_manager/domain/services/focus_statistics_service.dart';
 import 'package:my_time_manager/home/home.dart';
 import 'package:my_time_manager/screen_focus_timer/bloc/pomodoro_bloc.dart';
 import 'package:my_time_manager/screen_focus_timer/view/pomodoro_floating_overlay.dart';
 import 'package:my_time_manager/screen_focus_timer/view/pomodoro_overlay_controller.dart';
-import 'package:my_time_manager/screen_focus_timer/data/focus_repository.dart';
+import 'package:my_time_manager/domain/repositories/focus_repository.dart';
 import 'package:my_time_manager/screen_focus_timer/data/focus_sync_service.dart';
 import 'package:my_time_manager/screen_focus_timer/data/notification_service.dart';
 import 'package:my_time_manager/utils/constants.dart';
@@ -102,11 +104,17 @@ class App extends StatelessWidget {
         // Firestore chỉ bật khi Firebase sẵn sàng; nếu không thì dùng NoOp (chạy
         // local-only).
         RepositoryProvider<FocusRepository>(
-          create: (_) => FocusRepository(
+          create: (_) => SqliteFocusRepository(
             syncService: firebaseReady
                 ? FirestoreFocusSyncService()
                 : const NoOpFocusSyncService(),
           ),
+        ),
+        // Read-only aggregation over focus sessions. Backs the future analytics
+        // AI tools and the statistics screen; depends only on FocusRepository.
+        RepositoryProvider<FocusStatisticsService>(
+          create: (context) =>
+              FocusStatisticsService(context.read<FocusRepository>()),
         ),
       ],
       // PomodoroBloc provide TOÀN CỤC (1 instance sống suốt vòng đời app) để
