@@ -13,6 +13,8 @@ import '../ai/policy/action_policy.dart';
 import '../ai/policy/confirmation.dart';
 import '../ai/tools/tool_executor.dart';
 import '../ai/tools/tool_registry.dart';
+import '../data/models/model_conversation.dart';
+import '../domain/repositories/conversation_repository.dart';
 
 /// A message shown in the assistant transcript.
 class AiChatMessage {
@@ -53,8 +55,12 @@ class AiAssistantController extends ChangeNotifier {
     required ContextBuilder contextBuilder,
     ActionPolicy policy = const ActionPolicy(),
     AgentConfig agentConfig = const AgentConfig(),
+    String? timezone,
+    ConversationRepository? conversations,
   })  : _engine = engine,
-        _context = contextBuilder {
+        _context = contextBuilder,
+        _timezone = timezone,
+        _conversations = conversations {
     final executor = ToolExecutor(
       registry,
       policy: policy,
@@ -71,7 +77,20 @@ class AiAssistantController extends ChangeNotifier {
 
   final AiEngine _engine;
   final ContextBuilder _context;
+
+  /// The user's effective IANA timezone, surfaced in the built context.
+  final String? _timezone;
   late final AgentRuntime _agent;
+
+  /// Optional persistence for chat history. When null, the assistant works
+  /// exactly as before (in-memory only) — keeps tests and headless use simple.
+  final ConversationRepository? _conversations;
+
+  /// The conversation currently being viewed/edited. Null until the first user
+  /// message creates one (lazy), or until [load] opens an existing one.
+  Conversation? _current;
+  Conversation? get currentConversation => _current;
+  String? get currentConversationId => _current?.id;
 
   final List<AiChatMessage> _messages = [];
   List<AiChatMessage> get messages => List.unmodifiable(_messages);
@@ -110,23 +129,27 @@ class AiAssistantController extends ChangeNotifier {
     final trimmed = text.trim();
     if (trimmed.isEmpty || isBusy) return;
 
+    await _ensureConversation(trimmed);
     _messages.add(AiChatMessage.user(trimmed));
+    await _persistMessage(AiMessage.user(trimmed));
     _setStatus(AiAssistantStatus.thinking, 'Thinking…');
 
     final token = AiCancellationToken();
     _cancelToken = token;
 
     try {
-      final ctx = await _context.build();
+      final ctx = await _context.build(timezone: _timezone);
       final result = await _agent.run(
         trimmed,
         history: List.unmodifiable(_history),
         contextText: ctx.render(),
         cancelToken: token,
       );
-      _applyResult(trimmed, result);
+      await _applyResult(trimmed, result);
     } catch (e) {
       _messages.add(AiChatMessage.error('Something went wrong: $e'));
+      await _persistMessage(AiMessage.assistant('Something went wrong: $e'),
+          isError: true);
       _setStatus(AiAssistantStatus.error, '');
     } finally {
       _cancelToken = null;
@@ -143,14 +166,16 @@ class AiAssistantController extends ChangeNotifier {
     if (isBusy) return;
 
     final opening = workflow.openingMessage;
+    await _ensureConversation(opening);
     _messages.add(AiChatMessage.user(opening));
+    await _persistMessage(AiMessage.user(opening));
     _setStatus(AiAssistantStatus.thinking, 'Thinking…');
 
     final token = AiCancellationToken();
     _cancelToken = token;
 
     try {
-      final ctx = await _context.build();
+      final ctx = await _context.build(timezone: _timezone);
       final result = await _agent.run(
         opening,
         history: List.unmodifiable(_history),
@@ -158,9 +183,11 @@ class AiAssistantController extends ChangeNotifier {
         extraSystemPrompt: workflow.guidance,
         cancelToken: token,
       );
-      _applyResult(opening, result);
+      await _applyResult(opening, result);
     } catch (e) {
       _messages.add(AiChatMessage.error('Something went wrong: $e'));
+      await _persistMessage(AiMessage.assistant('Something went wrong: $e'),
+          isError: true);
       _setStatus(AiAssistantStatus.error, '');
     } finally {
       _cancelToken = null;
@@ -173,39 +200,159 @@ class AiAssistantController extends ChangeNotifier {
   /// Cancel an in-flight run.
   void cancel() => _cancelToken?.cancel();
 
-  /// Clear the transcript and history.
-  void reset() {
-    _messages.clear();
-    _history.clear();
-    _setStatus(AiAssistantStatus.idle, '');
-  }
+  /// Clear the transcript and history and detach from the current conversation
+  /// (a new one is created lazily on the next message). Alias of [newChat].
+  void reset() => newChat();
 
-  void _applyResult(String userText, AgentResult result) {
+  Future<void> _applyResult(String userText, AgentResult result) async {
+    // Note: the user message is already appended to _messages and persisted by
+    // the caller; here we only add the assistant/error side and grow _history.
     switch (result.stopReason) {
       case AgentStopReason.completed:
-        _messages.add(AiChatMessage.assistant(
-            result.text.isEmpty ? '(no response)' : result.text));
+        final text = result.text.isEmpty ? '(no response)' : result.text;
+        _messages.add(AiChatMessage.assistant(text));
         _history
           ..add(AiMessage.user(userText))
           ..add(AiMessage.assistant(result.text));
+        await _persistMessage(AiMessage.assistant(result.text));
         _setStatus(AiAssistantStatus.idle, '');
         break;
       case AgentStopReason.maxIterations:
-        _messages.add(AiChatMessage.assistant(result.text.isEmpty
+        final text = result.text.isEmpty
             ? 'I stopped after several steps without a final answer.'
-            : result.text));
+            : result.text;
+        _messages.add(AiChatMessage.assistant(text));
+        await _persistMessage(AiMessage.assistant(text));
         _setStatus(AiAssistantStatus.idle, '');
         break;
       case AgentStopReason.cancelled:
         _messages.add(AiChatMessage.error('Cancelled.'));
+        await _persistMessage(AiMessage.assistant('Cancelled.'), isError: true);
         _setStatus(AiAssistantStatus.idle, '');
         break;
       case AgentStopReason.error:
-        _messages.add(AiChatMessage.error(
-            result.errorMessage ?? 'The assistant could not complete this.'));
+        final text =
+            result.errorMessage ?? 'The assistant could not complete this.';
+        _messages.add(AiChatMessage.error(text));
+        await _persistMessage(AiMessage.assistant(text), isError: true);
         _setStatus(AiAssistantStatus.error, '');
         break;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Chat-history persistence
+  // ---------------------------------------------------------------------------
+
+  /// Ensure there is a current [Conversation] before persisting a turn. Creates
+  /// one lazily (title from the first user message) the first time the user
+  /// sends something. No-op when persistence is disabled ([_conversations] null)
+  /// or a conversation already exists.
+  Future<void> _ensureConversation(String firstUserText) async {
+    final repo = _conversations;
+    if (repo == null || _current != null) return;
+    final convo = Conversation(title: _titleFrom(firstUserText));
+    await repo.createConversation(convo);
+    _current = convo;
+    notifyListeners();
+  }
+
+  /// Persist a single message into the current conversation and bump its
+  /// updatedAt (so it sorts to the top and retention tracks last activity).
+  Future<void> _persistMessage(AiMessage message, {bool isError = false}) async {
+    final repo = _conversations;
+    final convo = _current;
+    if (repo == null || convo == null) return;
+    await repo.appendMessage(
+      ChatMessageRecord.fromAiMessage(convo.id, message, isError: isError),
+    );
+    final touched = convo.copyWith(updatedAt: DateTime.now());
+    _current = touched;
+    await repo.updateConversation(touched);
+  }
+
+  /// Derive a short conversation title from the first user message.
+  String _titleFrom(String text) {
+    final oneLine = text.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (oneLine.isEmpty) return 'New chat';
+    return oneLine.length <= 60 ? oneLine : '${oneLine.substring(0, 57)}…';
+  }
+
+  /// Open an existing conversation: rebuild the transcript and the model-facing
+  /// history from stored messages. Safe no-op while busy.
+  Future<void> load(Conversation conversation) async {
+    final repo = _conversations;
+    if (repo == null || isBusy) return;
+    final records = await repo.getMessages(conversation.id);
+    _messages.clear();
+    _history.clear();
+    for (final r in records) {
+      // Rebuild the UI transcript (user / assistant / error bubbles).
+      if (r.isError) {
+        _messages.add(AiChatMessage.error(r.content));
+        continue; // errors are not fed back to the model
+      }
+      switch (r.role) {
+        case AiRole.user:
+          _messages.add(AiChatMessage.user(r.content));
+          _history.add(r.toAiMessage());
+          break;
+        case AiRole.assistant:
+          _messages.add(AiChatMessage.assistant(r.content));
+          _history.add(r.toAiMessage());
+          break;
+        case AiRole.tool:
+        case AiRole.system:
+          // Tool/system rows are not shown as bubbles but stay in history so
+          // the model sees a coherent thread.
+          _history.add(r.toAiMessage());
+          break;
+      }
+    }
+    _current = conversation;
+    _setStatus(AiAssistantStatus.idle, '');
+  }
+
+  /// Start a fresh conversation. Clears the transcript/history; a new
+  /// [Conversation] row is created lazily on the next user message.
+  void newChat() {
+    _messages.clear();
+    _history.clear();
+    _current = null;
+    _setStatus(AiAssistantStatus.idle, '');
+  }
+
+  /// Whether chat history persistence is available (a repo was injected).
+  bool get historyEnabled => _conversations != null;
+
+  /// List saved conversations (most recently updated first). Empty when
+  /// persistence is disabled.
+  Future<List<Conversation>> listConversations() async {
+    final repo = _conversations;
+    if (repo == null) return const [];
+    return repo.getConversations();
+  }
+
+  /// Rename a conversation. Updates the in-memory pointer if it is the current
+  /// one so the UI reflects the new title immediately.
+  Future<void> renameConversation(String id, String title) async {
+    final repo = _conversations;
+    if (repo == null) return;
+    final existing = await repo.getConversation(id);
+    if (existing == null) return;
+    final updated = existing.copyWith(title: title.trim());
+    await repo.updateConversation(updated);
+    if (_current?.id == id) _current = updated;
+    notifyListeners();
+  }
+
+  /// Delete a conversation. If it is the one currently open, start a new chat.
+  Future<void> deleteConversation(String id) async {
+    final repo = _conversations;
+    if (repo == null) return;
+    await repo.deleteConversation(id);
+    if (_current?.id == id) newChat();
+    notifyListeners();
   }
 
   /// A tracer the runtime calls to update the live status line.

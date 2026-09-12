@@ -256,15 +256,52 @@ void main() {
       expect(const AiConfig(mode: AiMode.cloudOptional).allowsCloud, isTrue);
     });
 
-    test('json round-trip', () {
+    test('json round-trip (incl. timezone)', () {
       const cfg = AiConfig(
         provider: AiProviderKind.ollama,
         mode: AiMode.hybrid,
         defaultModel: 'llama3',
         endpoint: 'http://localhost:11434',
         requestTimeout: Duration(seconds: 30),
+        timezone: 'Asia/Ho_Chi_Minh',
       );
-      expect(AiConfig.fromJson(cfg.toJson()), cfg);
+      final restored = AiConfig.fromJson(cfg.toJson());
+      expect(restored, cfg);
+      expect(restored.timezone, 'Asia/Ho_Chi_Minh');
+    });
+
+    test('timezone defaults to null (device) and round-trips as absent', () {
+      const cfg = AiConfig();
+      expect(cfg.timezone, isNull);
+      expect(cfg.toJson().containsKey('timezone'), isFalse);
+      expect(AiConfig.fromJson(cfg.toJson()).timezone, isNull);
+    });
+
+    test('copyWith sets and clears the timezone', () {
+      const cfg = AiConfig(timezone: 'Europe/Paris');
+      expect(cfg.copyWith(timezone: 'Asia/Tokyo').timezone, 'Asia/Tokyo');
+      expect(cfg.copyWith(clearTimezone: true).timezone, isNull);
+      // Not passing it leaves it unchanged.
+      expect(cfg.copyWith(defaultModel: 'm').timezone, 'Europe/Paris');
+    });
+
+    test('chatHistoryRetentionDays defaults to null and round-trips', () {
+      const cfg = AiConfig();
+      expect(cfg.chatHistoryRetentionDays, isNull);
+      expect(cfg.toJson().containsKey('chatHistoryRetentionDays'), isFalse);
+
+      const withRetention = AiConfig(chatHistoryRetentionDays: 30);
+      final restored = AiConfig.fromJson(withRetention.toJson());
+      expect(restored.chatHistoryRetentionDays, 30);
+      expect(restored, withRetention);
+    });
+
+    test('copyWith sets and clears chatHistoryRetentionDays', () {
+      const cfg = AiConfig(chatHistoryRetentionDays: 30);
+      expect(cfg.copyWith(chatHistoryRetentionDays: 90).chatHistoryRetentionDays,
+          90);
+      expect(cfg.copyWith(clearChatHistoryRetentionDays: true)
+          .chatHistoryRetentionDays, isNull);
     });
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../ai/agent/workflows/agent_workflow.dart';
 import '../ai/policy/confirmation.dart';
+import '../data/models/model_conversation.dart';
 import 'ai_assistant_controller.dart';
 
 /// A simple AI Assistant screen. It shows the transcript, a live status line
@@ -92,18 +93,95 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
     _controller.send(text);
   }
 
+  Future<void> _openConversation(Conversation c) async {
+    Navigator.of(context).pop(); // close the drawer
+    await _controller.load(c);
+  }
+
+  Future<void> _renameConversation(Conversation c) async {
+    final editing = TextEditingController(text: c.title);
+    final newTitle = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename conversation'),
+        content: TextField(
+          controller: editing,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Title'),
+          onSubmitted: (v) => Navigator.of(ctx).pop(v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(editing.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    editing.dispose();
+    if (newTitle != null && newTitle.trim().isNotEmpty) {
+      await _controller.renameConversation(c.id, newTitle);
+    }
+  }
+
+  Future<void> _deleteConversation(Conversation c) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete conversation'),
+        content: Text('Delete "${c.title.isEmpty ? 'this chat' : c.title}"? '
+            'This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _controller.deleteConversation(c.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = _controller.messages;
     return Scaffold(
+      endDrawer: _controller.historyEnabled
+          ? _HistoryDrawer(
+              controller: _controller,
+              onOpen: _openConversation,
+              onRename: _renameConversation,
+              onDelete: _deleteConversation,
+            )
+          : null,
       appBar: AppBar(
-        title: const Text('AI Assistant'),
+        title: Text(_controller.currentConversation?.title.isNotEmpty == true
+            ? _controller.currentConversation!.title
+            : 'AI Assistant'),
         actions: [
           IconButton(
-            tooltip: 'Clear',
-            onPressed: _controller.isBusy ? null : _controller.reset,
-            icon: const Icon(Icons.delete_outline),
+            tooltip: 'New chat',
+            onPressed: _controller.isBusy ? null : _controller.newChat,
+            icon: const Icon(Icons.add_comment_outlined),
           ),
+          if (_controller.historyEnabled)
+            Builder(
+              builder: (ctx) => IconButton(
+                tooltip: 'History',
+                onPressed: () => Scaffold.of(ctx).openEndDrawer(),
+                icon: const Icon(Icons.history),
+              ),
+            ),
         ],
       ),
       body: Column(
@@ -295,4 +373,148 @@ class _InputBar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The chat-history panel (endDrawer): a "New chat" action plus the list of
+/// saved conversations with open / rename / delete. Reloads whenever the
+/// controller notifies (new message, rename, delete, new chat).
+class _HistoryDrawer extends StatefulWidget {
+  const _HistoryDrawer({
+    required this.controller,
+    required this.onOpen,
+    required this.onRename,
+    required this.onDelete,
+  });
+
+  final AiAssistantController controller;
+  final Future<void> Function(Conversation) onOpen;
+  final Future<void> Function(Conversation) onRename;
+  final Future<void> Function(Conversation) onDelete;
+
+  @override
+  State<_HistoryDrawer> createState() => _HistoryDrawerState();
+}
+
+class _HistoryDrawerState extends State<_HistoryDrawer> {
+  List<Conversation> _items = const [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_reload);
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_reload);
+    super.dispose();
+  }
+
+  Future<void> _reload() async {
+    final items = await widget.controller.listConversations();
+    if (mounted) {
+      setState(() {
+        _items = items;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final currentId = widget.controller.currentConversationId;
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+              child: Row(
+                children: [
+                  Text('Chat history', style: theme.textTheme.titleMedium),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'New chat',
+                    icon: const Icon(Icons.add_comment_outlined),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      widget.controller.newChat();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _items.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(
+                              'No conversations yet.\n'
+                              'Start chatting to build your history.',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _items.length,
+                          itemBuilder: (_, i) {
+                            final c = _items[i];
+                            final selected = c.id == currentId;
+                            return ListTile(
+                              selected: selected,
+                              leading: const Icon(Icons.chat_bubble_outline),
+                              title: Text(
+                                c.title.isEmpty ? 'New chat' : c.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                _relativeDate(c.updatedAt),
+                                style: theme.textTheme.bodySmall,
+                              ),
+                              onTap: () => widget.onOpen(c),
+                              trailing: PopupMenuButton<String>(
+                                onSelected: (v) {
+                                  if (v == 'rename') widget.onRename(c);
+                                  if (v == 'delete') widget.onDelete(c);
+                                },
+                                itemBuilder: (_) => const [
+                                  PopupMenuItem(
+                                      value: 'rename', child: Text('Rename')),
+                                  PopupMenuItem(
+                                      value: 'delete', child: Text('Delete')),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A compact relative label like "Today 14:05", "Yesterday", or a date.
+String _relativeDate(DateTime dt) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(dt.year, dt.month, dt.day);
+  final diff = today.difference(day).inDays;
+  final hh = dt.hour.toString().padLeft(2, '0');
+  final mm = dt.minute.toString().padLeft(2, '0');
+  if (diff == 0) return 'Today $hh:$mm';
+  if (diff == 1) return 'Yesterday $hh:$mm';
+  final dd = dt.day.toString().padLeft(2, '0');
+  final mo = dt.month.toString().padLeft(2, '0');
+  return '$dd/$mo/${dt.year}';
 }

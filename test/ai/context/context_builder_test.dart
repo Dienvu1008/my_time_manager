@@ -210,4 +210,19 @@ void main() {
     expect(text, contains('Standup'));
     expect(text, contains('Focus (last 7d): 25 min'));
   });
+
+  test('timezone is surfaced in render and toJson when provided', () async {
+    final ctx = await _builder()
+        .build(now: _now, timezone: 'Asia/Ho_Chi_Minh');
+    expect(ctx.timezone, 'Asia/Ho_Chi_Minh');
+    expect(ctx.render(), contains('User timezone: Asia/Ho_Chi_Minh'));
+    expect(ctx.toJson()['timezone'], 'Asia/Ho_Chi_Minh');
+  });
+
+  test('no timezone omits the line and the json key', () async {
+    final ctx = await _builder().build(now: _now);
+    expect(ctx.timezone, isNull);
+    expect(ctx.render(), isNot(contains('User timezone')));
+    expect(ctx.toJson().containsKey('timezone'), isFalse);
+  });
 }

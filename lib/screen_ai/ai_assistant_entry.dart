@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../ai/agent/agent_config.dart';
 import '../ai/config/ai_config.dart';
 import '../ai/config/ai_config_service.dart';
+import '../ai/config/device_timezone.dart';
 import '../ai/context/context_builder.dart';
 import '../ai/core/ai_engine.dart';
 import '../ai/gateway/ai_engine_factory.dart';
@@ -11,6 +12,7 @@ import '../ai/gateway/provider_selection.dart';
 import '../ai/policy/action_policy.dart';
 import '../ai/tools/domain/domain_tools.dart';
 import '../domain/repositories/calendar_repository.dart';
+import '../domain/repositories/conversation_repository.dart';
 import '../domain/repositories/focus_repository.dart';
 import '../domain/repositories/task_repository.dart';
 import '../domain/repositories/time_interval_repository.dart';
@@ -87,12 +89,29 @@ class _AiAssistantEntryState extends State<AiAssistantEntry> {
     }
 
     final engine = selection.engine!;
+    // Resolve the timezone to surface to the model: the user's configured one,
+    // else the device's.
+    final timezone = await effectiveTimezone(config.timezone);
+    if (!mounted) return;
+
     final tasks = context.read<TaskRepository>();
     final calendar = context.read<CalendarRepository>();
     final intervals = context.read<TimeIntervalRepository>();
     final focus = context.read<FocusRepository>();
     final taskCompletion = context.read<TaskCompletionService>();
     final focusStats = context.read<FocusStatisticsService>();
+    final conversations = context.read<ConversationRepository>();
+
+    // Best-effort retention: drop chat history older than the configured
+    // number of days (null = keep forever). Never blocks opening the screen.
+    final retentionDays = config.chatHistoryRetentionDays;
+    if (retentionDays != null && retentionDays > 0) {
+      final cutoff = DateTime.now().subtract(Duration(days: retentionDays));
+      try {
+        await conversations.deleteConversationsUpdatedBefore(cutoff);
+      } catch (_) {/* purge is best-effort; ignore failures */}
+      if (!mounted) return;
+    }
 
     final registry = buildDomainToolRegistry(
       tasks: tasks,
@@ -118,6 +137,8 @@ class _AiAssistantEntryState extends State<AiAssistantEntry> {
         ),
         policy: widget.policy,
         agentConfig: widget.agentConfig,
+        timezone: timezone,
+        conversations: conversations,
       );
     });
   }

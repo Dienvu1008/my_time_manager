@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/ai/tools/domain/task_tools.dart';
+import 'package:my_time_manager/ai/tools/tool.dart';
 import 'package:my_time_manager/ai/tools/tool_executor.dart';
 import 'package:my_time_manager/ai/tools/tool_registry.dart';
 import 'package:my_time_manager/ai/tools/tool_result.dart';
@@ -128,7 +129,7 @@ void main() {
     expect((undone.data as Map)['isCompleted'], false);
   });
 
-  test('all task tools are read-only or write (none destructive)', () {
+  test('task tools expose the expected set incl. destructive delete_task', () {
     final tools = taskTools(repo, TaskCompletionService(repo));
     expect(tools.map((t) => t.name).toSet(), {
       'list_tasks',
@@ -136,6 +137,11 @@ void main() {
       'create_task',
       'update_task',
       'complete_task',
+      'delete_task',
     });
+    // delete_task is the only destructive one (always requires approval).
+    final destructive =
+        tools.where((t) => t.risk == ToolRisk.destructive).map((t) => t.name);
+    expect(destructive, ['delete_task']);
   });
 }

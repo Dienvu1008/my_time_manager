@@ -13,6 +13,7 @@ import 'package:my_time_manager/data/repositories/sqlite_task_list_repository.da
 import 'package:my_time_manager/data/repositories/sqlite_time_interval_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_calendar_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_note_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_conversation_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_trash_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_archive_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_event_repository.dart';
@@ -22,6 +23,7 @@ import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
 import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
 import 'package:my_time_manager/domain/repositories/note_repository.dart';
+import 'package:my_time_manager/domain/repositories/conversation_repository.dart';
 import 'package:my_time_manager/domain/repositories/trash_repository.dart';
 import 'package:my_time_manager/domain/repositories/archive_repository.dart';
 import 'package:my_time_manager/domain/repositories/event_repository.dart';
@@ -90,6 +92,9 @@ class App extends StatelessWidget {
         ),
         RepositoryProvider<NoteRepository>(
           create: (_) => SqliteNoteRepository(),
+        ),
+        RepositoryProvider<ConversationRepository>(
+          create: (_) => SqliteConversationRepository(),
         ),
         RepositoryProvider<TrashRepository>(
           create: (_) => SqliteTrashRepository(),

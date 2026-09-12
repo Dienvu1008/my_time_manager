@@ -23,11 +23,21 @@ class AddOrEditCalendarEventPage extends StatefulWidget {
     super.key,
     this.event,
     this.taskList,
+    this.initialStart,
+    this.initialEnd,
   });
 
   /// Danh sách chứa sự kiện. Null = sự kiện "tự do" (không thuộc danh sách nào).
   final TaskList? taskList;
   final CalendarEvent? event;
+
+  /// Giờ bắt đầu điền sẵn khi TẠO MỚI (ví dụ khi nhấn vào ô giờ trống trên
+  /// lịch). Bỏ qua khi đang sửa một sự kiện có sẵn.
+  final DateTime? initialStart;
+
+  /// Giờ kết thúc điền sẵn khi tạo mới. Nếu null mà có [initialStart] thì mặc
+  /// định là [initialStart] + 1 giờ.
+  final DateTime? initialEnd;
 
   @override
   State<AddOrEditCalendarEventPage> createState() =>
@@ -143,10 +153,17 @@ class _AddOrEditCalendarEventPageState
       }
     } else {
       _id = const Uuid().v4();
-      final now = DateTime.now();
-      // Làm tròn tới giờ kế tiếp cho gọn.
-      _start = DateTime(now.year, now.month, now.day, now.hour + 1);
-      _end = _start.add(const Duration(hours: 1));
+      final initialStart = widget.initialStart;
+      if (initialStart != null) {
+        // Tạo từ ô giờ trống trên lịch -> dùng giờ đã nhấn.
+        _start = initialStart;
+        _end = widget.initialEnd ?? initialStart.add(const Duration(hours: 1));
+      } else {
+        final now = DateTime.now();
+        // Làm tròn tới giờ kế tiếp cho gọn.
+        _start = DateTime(now.year, now.month, now.day, now.hour + 1);
+        _end = _start.add(const Duration(hours: 1));
+      }
     }
   }
 
@@ -318,6 +335,34 @@ class _AddOrEditCalendarEventPageState
     Navigator.pop(context, event);
   }
 
+  /// Xóa (mềm) sự kiện đang sửa: đưa vào Thùng rác (khôi phục được), giống cơ
+  /// chế xóa của task/time interval. Hỏi xác nhận trước.
+  Future<void> _onDelete() async {
+    final existing = widget.event;
+    if (existing == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa sự kiện'),
+        content: const Text('Chuyển sự kiện này vào Thùng rác?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _calendarRepository.softDeleteCalendarEvent(existing.id);
+    if (!mounted) return;
+    Navigator.pop(context, existing);
+  }
+
   String _dateLabel(DateTime d) {
     final dd = d.day.toString().padLeft(2, '0');
     final mm = d.month.toString().padLeft(2, '0');
@@ -333,6 +378,12 @@ class _AddOrEditCalendarEventPageState
         title: Text(_isEditing ? 'Sửa sự kiện' : 'Thêm sự kiện'),
         centerTitle: true,
         actions: [
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Xóa',
+              onPressed: _onDelete,
+            ),
           IconButton(
             icon: const Icon(Icons.save_outlined),
             onPressed: _onSave,

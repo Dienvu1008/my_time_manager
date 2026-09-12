@@ -54,6 +54,8 @@ class AiConfig {
     this.defaultModel,
     this.endpoint,
     this.requestTimeout = const Duration(seconds: 60),
+    this.timezone,
+    this.chatHistoryRetentionDays,
   });
 
   /// The conventional local Ollama endpoint. Used only as a fallback when
@@ -71,6 +73,16 @@ class AiConfig {
 
   /// Default per-request timeout applied by providers that honor it.
   final Duration requestTimeout;
+
+  /// The user's preferred IANA timezone (e.g. 'Asia/Ho_Chi_Minh') used when the
+  /// assistant interprets/creates times. Null = use the device's timezone
+  /// (resolved at runtime). This is only used to inform the model of the
+  /// user's local time; it does not change how times are stored.
+  final String? timezone;
+
+  /// Auto-delete chat conversations whose last activity is older than this many
+  /// days. Null (or <= 0) = keep chat history forever.
+  final int? chatHistoryRetentionDays;
 
   /// True when cloud providers are permitted by the current [mode].
   bool get allowsCloud => mode != AiMode.localOnly;
@@ -94,6 +106,10 @@ class AiConfig {
     String? defaultModel,
     String? endpoint,
     Duration? requestTimeout,
+    String? timezone,
+    bool clearTimezone = false,
+    int? chatHistoryRetentionDays,
+    bool clearChatHistoryRetentionDays = false,
   }) {
     return AiConfig(
       provider: provider ?? this.provider,
@@ -101,6 +117,10 @@ class AiConfig {
       defaultModel: defaultModel ?? this.defaultModel,
       endpoint: endpoint ?? this.endpoint,
       requestTimeout: requestTimeout ?? this.requestTimeout,
+      timezone: clearTimezone ? null : (timezone ?? this.timezone),
+      chatHistoryRetentionDays: clearChatHistoryRetentionDays
+          ? null
+          : (chatHistoryRetentionDays ?? this.chatHistoryRetentionDays),
     );
   }
 
@@ -110,6 +130,9 @@ class AiConfig {
         if (defaultModel != null) 'defaultModel': defaultModel,
         if (endpoint != null) 'endpoint': endpoint,
         'requestTimeoutMs': requestTimeout.inMilliseconds,
+        if (timezone != null) 'timezone': timezone,
+        if (chatHistoryRetentionDays != null)
+          'chatHistoryRetentionDays': chatHistoryRetentionDays,
       };
 
   factory AiConfig.fromJson(Map<String, dynamic> json) {
@@ -121,6 +144,8 @@ class AiConfig {
       requestTimeout: Duration(
         milliseconds: (json['requestTimeoutMs'] as int?) ?? 60000,
       ),
+      timezone: json['timezone'] as String?,
+      chatHistoryRetentionDays: json['chatHistoryRetentionDays'] as int?,
     );
   }
 
@@ -132,15 +157,17 @@ class AiConfig {
         other.mode == mode &&
         other.defaultModel == defaultModel &&
         other.endpoint == endpoint &&
-        other.requestTimeout == requestTimeout;
+        other.requestTimeout == requestTimeout &&
+        other.timezone == timezone &&
+        other.chatHistoryRetentionDays == chatHistoryRetentionDays;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(provider, mode, defaultModel, endpoint, requestTimeout);
+  int get hashCode => Object.hash(provider, mode, defaultModel, endpoint,
+      requestTimeout, timezone, chatHistoryRetentionDays);
 
   @override
   String toString() =>
       'AiConfig(provider: $provider, mode: $mode, model: $defaultModel, '
-      'endpoint: $effectiveEndpoint)';
+      'endpoint: $effectiveEndpoint, timezone: ${timezone ?? '(device)'})';
 }

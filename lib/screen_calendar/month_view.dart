@@ -158,6 +158,10 @@ class MonthViewNew<T extends Object?> extends StatefulWidget {
   /// Callback for the Header title
   final HeaderTitleCallback? onHeaderTitleTap;
 
+  /// Called when the user taps the date number of a cell. Used to jump to the
+  /// day view for that date. Only used by the default cell builder.
+  final void Function(DateTime date)? onDateTap;
+
   /// Defines scroll physics for a page of a month view.
   ///
   /// This can be used to disable the vertical scroll of a page.
@@ -193,6 +197,7 @@ class MonthViewNew<T extends Object?> extends StatefulWidget {
     this.headerStyle = const HeaderStyle(),
     this.safeAreaOption = const SafeAreaOption(),
     this.onHeaderTitleTap,
+    this.onDateTap,
     this.pagePhysics = const ClampingScrollPhysics(),
 
     required this.handleBrightnessChange,
@@ -612,6 +617,7 @@ class MonthViewNewState<T extends Object?> extends State<MonthViewNew<T>> {
       timeIntervals: timeIntervals,
       onTileTap: widget.onEventTap,
       dateStringBuilder: widget.dateStringBuilder,
+      onDateTap: widget.onDateTap,
     );
   }
 

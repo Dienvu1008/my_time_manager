@@ -140,6 +140,67 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
                 ? null
                 : (v) => v == null ? null : c.setMode(v),
           ),
+          const SizedBox(height: 16),
+          Text('Timezone', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            title: const Text('Use device timezone'),
+            subtitle: Text('Device: ${c.deviceTimezone}'),
+            value: c.usingDeviceTimezone,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (useDevice) {
+              // On → clear override (device default). Off → pick device zone as
+              // a starting explicit override the user can then change.
+              c.setTimezone(useDevice ? null : c.deviceTimezone);
+            },
+          ),
+          if (!c.usingDeviceTimezone)
+            DropdownButtonFormField<String>(
+              initialValue: c.availableTimezones.contains(cfg.timezone)
+                  ? cfg.timezone
+                  : null,
+              decoration: const InputDecoration(
+                labelText: 'Timezone',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                for (final tz in c.availableTimezones)
+                  DropdownMenuItem(value: tz, child: Text(tz)),
+              ],
+              onChanged: (tz) => tz == null ? null : c.setTimezone(tz),
+            ),
+          const SizedBox(height: 8),
+          Text('The assistant will interpret times in: ${c.effectiveTimezoneName}',
+              style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 16),
+          Text('Chat history',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<int>(
+            initialValue: c.chatHistoryRetentionDays ?? 0,
+            decoration: const InputDecoration(
+              labelText: 'Auto-delete old conversations',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(value: 0, child: Text('Keep forever')),
+              DropdownMenuItem(value: 7, child: Text('After 7 days')),
+              DropdownMenuItem(value: 30, child: Text('After 30 days')),
+              DropdownMenuItem(value: 90, child: Text('After 90 days')),
+              DropdownMenuItem(value: 180, child: Text('After 180 days')),
+              DropdownMenuItem(value: 365, child: Text('After 365 days')),
+            ],
+            onChanged: (v) => c.setChatHistoryRetentionDays(v),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            c.chatHistoryRetentionDays == null
+                ? 'Conversations are kept until you delete them.'
+                : 'Conversations inactive for more than '
+                    '${c.chatHistoryRetentionDays} days are deleted automatically '
+                    'when you open the assistant.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: c.isBusy

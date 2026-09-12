@@ -1,5 +1,6 @@
 import 'package:my_time_manager/data/database/sample_data.dart';
 import 'package:my_time_manager/data/models/model_calendar_event.dart';
+import 'package:my_time_manager/data/models/model_conversation.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
 import 'package:my_time_manager/data/models/model_note.dart';
 import 'package:my_time_manager/data/models/model_task.dart';
@@ -68,7 +69,7 @@ class DatabaseManager {
 
   /// The current schema version. Kept in one place so the production opener and
   /// the test seam cannot drift apart.
-  static const int _schemaVersion = 11;
+  static const int _schemaVersion = 12;
 
   Future<Database> _initDatabase() async {
     final databasePath = await getDatabasesPath();
@@ -107,6 +108,9 @@ class DatabaseManager {
       //     Calendar). Event có thể thuộc một danh sách như task; hỗ trợ
       //     soft-delete, archive và các trường đồng bộ (googleEventId, etag,
       //     syncStatus...). Bảng 'events' cũ (đơn giản) vẫn giữ nguyên.
+      // v12: thêm bảng conversations + chat_messages cho lịch sử chat AI
+      //     (danh sách/mở lại/đổi tên/xóa cuộc trò chuyện, và tự xóa theo N
+      //     ngày). chat_messages tham chiếu conversations với ON DELETE CASCADE.
       version: _schemaVersion,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
@@ -262,6 +266,11 @@ class DatabaseManager {
       // Tạo bảng calendar_events mới. Không đụng tới dữ liệu cũ.
       await onCreateTableCalendarEvents(db);
     }
+    if (oldVersion < 12) {
+      // Thêm bảng lịch sử chat AI: conversations + chat_messages.
+      await onCreateTableConversations(db);
+      await onCreateTableChatMessages(db);
+    }
   }
 
   /// Tạo các trigger đồng bộ/xóa timeintervals theo tasks (dùng cho cả onCreate
@@ -310,6 +319,8 @@ class DatabaseManager {
     await onCreateTableTimeIntervals(db);
     await onCreateTableFocusSessions(db);
     await onCreateTableNotes(db);
+    await onCreateTableConversations(db);
+    await onCreateTableChatMessages(db);
 
     addSampleData();
 
@@ -1263,6 +1274,120 @@ class DatabaseManager {
   Future<void> deleteNote(String id) async {
     final db = await _databaseManager.database;
     await db.delete('notes', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---------------------------------------------------------------------------
+  // LỊCH SỬ CHAT AI (v12): conversations + chat_messages
+  // ---------------------------------------------------------------------------
+
+  /// Bảng cuộc trò chuyện (metadata). Nội dung tin nằm ở chat_messages.
+  Future<void> onCreateTableConversations(Database db) async {
+    await db.execute(
+      '''
+      CREATE TABLE conversations (
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        createdAt TEXT,
+        updatedAt TEXT
+      )
+      ''',
+    );
+  }
+
+  /// Bảng tin nhắn chat. Xóa theo cuộc trò chuyện nhờ ON DELETE CASCADE (khóa
+  /// ngoài + PRAGMA foreign_keys = ON đã bật ở onConfigure).
+  Future<void> onCreateTableChatMessages(Database db) async {
+    await db.execute(
+      '''
+      CREATE TABLE chat_messages (
+        id TEXT PRIMARY KEY,
+        conversationId TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT,
+        toolCalls TEXT,
+        toolCallId TEXT,
+        name TEXT,
+        isError INTEGER NOT NULL DEFAULT 0,
+        createdAt TEXT,
+        FOREIGN KEY (conversationId) REFERENCES conversations (id) ON DELETE CASCADE
+      )
+      ''',
+    );
+    await db.execute(
+      'CREATE INDEX idx_chat_messages_conversation ON chat_messages (conversationId, createdAt)',
+    );
+  }
+
+  /// Danh sách cuộc trò chuyện, mới cập nhật lên đầu.
+  Future<List<Conversation>> conversations() async {
+    final db = await _databaseManager.database;
+    final maps = await db.query('conversations', orderBy: 'updatedAt DESC');
+    return maps.map((m) => Conversation.fromMap(m)).toList();
+  }
+
+  Future<Conversation?> conversation(String id) async {
+    final db = await _databaseManager.database;
+    final maps =
+        await db.query('conversations', where: 'id = ?', whereArgs: [id]);
+    if (maps.isEmpty) return null;
+    return Conversation.fromMap(maps.first);
+  }
+
+  Future<void> insertConversation(Conversation c) async {
+    final db = await _databaseManager.database;
+    await db.insert(
+      'conversations',
+      c.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateConversation(Conversation c) async {
+    final db = await _databaseManager.database;
+    await db.update(
+      'conversations',
+      c.toMap(),
+      where: 'id = ?',
+      whereArgs: [c.id],
+    );
+  }
+
+  Future<void> deleteConversation(String id) async {
+    final db = await _databaseManager.database;
+    // chat_messages tự xóa theo ON DELETE CASCADE.
+    await db.delete('conversations', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Xóa các cuộc trò chuyện có [updatedAt] cũ hơn [cutoff]. So sánh trên chuỗi
+  /// ISO8601 (sắp xếp từ điển trùng thứ tự thời gian). Trả về số cuộc đã xóa.
+  Future<int> deleteConversationsUpdatedBefore(DateTime cutoff) async {
+    final db = await _databaseManager.database;
+    return db.delete(
+      'conversations',
+      where: 'updatedAt < ?',
+      whereArgs: [cutoff.toIso8601String()],
+    );
+  }
+
+  /// Các tin nhắn của một cuộc trò chuyện, cũ -> mới (theo thứ tự hiển thị).
+  Future<List<ChatMessageRecord>> chatMessages(String conversationId) async {
+    final db = await _databaseManager.database;
+    final maps = await db.query(
+      'chat_messages',
+      where: 'conversationId = ?',
+      whereArgs: [conversationId],
+      orderBy: 'createdAt ASC',
+    );
+    return maps.map((m) => ChatMessageRecord.fromMap(m)).toList();
+  }
+
+  Future<void> insertChatMessage(ChatMessageRecord message) async {
+    final db = await _databaseManager.database;
+    await db.insert(
+      'chat_messages',
+      message.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   /// Thêm một phiên focus.

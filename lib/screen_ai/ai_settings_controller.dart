@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../ai/config/ai_config.dart';
 import '../ai/config/ai_config_service.dart';
+import '../ai/config/device_timezone.dart' as tz;
 import '../ai/core/ai_exception.dart';
 import '../ai/providers/ollama/ollama_ai_engine.dart';
 
@@ -16,13 +17,57 @@ enum AiSettingsStatus { idle, loadingModels, testing }
 /// query the server — so "list models" / "test" reflect the value being edited,
 /// not the saved one.
 class AiSettingsController extends ChangeNotifier {
-  AiSettingsController({AiConfigService? service})
-      : _service = service ?? AiConfigService();
+  AiSettingsController({
+    AiConfigService? service,
+    tz.DeviceTimezoneResolver? timezoneResolver,
+  })  : _service = service ?? AiConfigService(),
+        _timezoneResolver = timezoneResolver ?? tz.deviceTimezone;
 
   final AiConfigService _service;
+  final tz.DeviceTimezoneResolver _timezoneResolver;
 
   AiConfig _config = const AiConfig();
   AiConfig get config => _config;
+
+  /// The device's IANA timezone (resolved on init, for display / the "device
+  /// default" option).
+  String _deviceTimezone = 'UTC';
+  String get deviceTimezone => _deviceTimezone;
+
+  /// The timezone actually in effect: the configured override, else the device
+  /// one. Handy for the UI to show what the assistant will use.
+  String get effectiveTimezoneName => _config.timezone ?? _deviceTimezone;
+
+  /// A curated list of common IANA timezones for the picker (the device zone is
+  /// always included even if not in this list).
+  List<String> get availableTimezones {
+    final set = {..._commonTimezones, _deviceTimezone};
+    final list = set.toList()..sort();
+    return list;
+  }
+
+  static const _commonTimezones = <String>[
+    'UTC',
+    'Asia/Ho_Chi_Minh',
+    'Asia/Bangkok',
+    'Asia/Singapore',
+    'Asia/Tokyo',
+    'Asia/Seoul',
+    'Asia/Shanghai',
+    'Asia/Kolkata',
+    'Asia/Dubai',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Europe/Moscow',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'America/Sao_Paulo',
+    'Australia/Sydney',
+    'Pacific/Auckland',
+  ];
 
   AiSettingsStatus _status = AiSettingsStatus.idle;
   AiSettingsStatus get status => _status;
@@ -35,11 +80,40 @@ class AiSettingsController extends ChangeNotifier {
 
   bool get isBusy => _status != AiSettingsStatus.idle;
 
-  /// Load the saved config and (best-effort) the model list.
+  /// Load the saved config, the device timezone, and (best-effort) the models.
   Future<void> init() async {
     _config = await _service.load();
+    _deviceTimezone = await _timezoneResolver();
     notifyListeners();
     await refreshModels();
+  }
+
+  /// Set the timezone override. Pass null (or the device timezone) to use the
+  /// device default (stored as null so it always tracks the device).
+  void setTimezone(String? timezone) {
+    if (timezone == null || timezone == _deviceTimezone) {
+      _config = _config.copyWith(clearTimezone: true);
+    } else {
+      _config = _config.copyWith(timezone: timezone);
+    }
+    notifyListeners();
+  }
+
+  /// True when using the device default (no override stored).
+  bool get usingDeviceTimezone => _config.timezone == null;
+
+  /// The chat-history retention in days, or null = keep forever.
+  int? get chatHistoryRetentionDays => _config.chatHistoryRetentionDays;
+
+  /// Set how many days of chat history to keep. Pass null (or <= 0) to keep
+  /// history forever (no auto-delete).
+  void setChatHistoryRetentionDays(int? days) {
+    if (days == null || days <= 0) {
+      _config = _config.copyWith(clearChatHistoryRetentionDays: true);
+    } else {
+      _config = _config.copyWith(chatHistoryRetentionDays: days);
+    }
+    notifyListeners();
   }
 
   void setEndpoint(String? endpoint) {

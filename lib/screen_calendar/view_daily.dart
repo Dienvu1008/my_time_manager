@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/data/models/model_calendar_event.dart';
 import 'package:my_time_manager/screen_calendar/calendar_zoom_wrapper.dart';
 import 'package:my_time_manager/screen_calendar/mapping.dart';
 import 'package:calendar_widgets/calendar_widgets.dart';
 import '../data/device_calendar/device_calendar_service.dart';
+import '../screen_tasks/component_widgets/page_add_edit_calendar_event.dart';
 import '../screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 import '../utils/constants.dart';
 import 'day_view.dart';
@@ -34,6 +36,9 @@ class TasksDayView extends StatefulWidget {
   final bool showLanguagesButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
 
+  /// Ngày mở sẵn khi vào day view (ví dụ khi nhấn số ngày từ month/week view).
+  /// Null = hôm nay.
+  final DateTime? initialDate;
 
 
   const TasksDayView({
@@ -54,6 +59,7 @@ class TasksDayView extends StatefulWidget {
     required this.showColorSeedButtonInAppBar,
     required this.showLanguagesButtonInAppBar,
     required this.showMaterialDesignButtonInAppBar,
+    this.initialDate,
 
     //this.state
   }) : super(key: key);
@@ -105,8 +111,10 @@ class _TasksDayViewState extends State<TasksDayView> {
         child: CalendarZoomWrapper(
           showButtons: showZoomButtons,
           builder: (context, zoom, availableHeight) => DayViewWidget(
+            initialDate: widget.initialDate,
             onEmptySlotTap: _openCreateTimeInterval,
             onDeviceEventTap: _openEditDeviceEvent,
+            onCalendarEventTap: _openEditCalendarEvent,
             handleBrightnessChange: widget.handleBrightnessChange,
             handleMaterialVersionChange: widget.handleMaterialVersionChange,
             handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
@@ -168,6 +176,21 @@ class _TasksDayViewState extends State<TasksDayView> {
       await reloadTimeIntervals(_controller);
     }
   }
+
+  /// Nhấn vào sự kiện lịch của app -> mở trang xem/sửa/xóa; nếu có thay đổi thì
+  /// nạp lại lịch. Trang trả về một CalendarEvent (khác null) khi lưu hoặc xóa.
+  Future<void> _openEditCalendarEvent(CalendarEvent event) async {
+    final target = await resolveMasterCalendarEvent(context, event);
+    if (!mounted) return;
+    final result = await Navigator.of(context).push<CalendarEvent>(
+      MaterialPageRoute(
+        builder: (_) => AddOrEditCalendarEventPage(event: target),
+      ),
+    );
+    if (result != null && mounted) {
+      await reloadTimeIntervals(_controller);
+    }
+  }
 }
 
 class DayViewWidget extends StatelessWidget {
@@ -202,13 +225,21 @@ class DayViewWidget extends StatelessWidget {
   /// Gọi khi người dùng nhấn vào một event của lịch thiết bị (để xem/sửa).
   final void Function(DeviceEvent)? onDeviceEventTap;
 
+  /// Gọi khi người dùng nhấn vào một sự kiện lịch của app (để xem/sửa/xóa).
+  final void Function(CalendarEvent)? onCalendarEventTap;
+
+  /// Ngày mở sẵn (null = hôm nay).
+  final DateTime? initialDate;
+
   DayViewWidget({
     super.key,
     this.state,
     this.width,
     this.heightPerMinute = 3,
+    this.initialDate,
     this.onEmptySlotTap,
     this.onDeviceEventTap,
+    this.onCalendarEventTap,
     required this.handleBrightnessChange,
     required this.handleMaterialVersionChange,
     required this.handleUsingBottomBarChange,
@@ -230,6 +261,7 @@ class DayViewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DayViewNew(
+      initialDay: initialDate,
       handleBrightnessChange: handleBrightnessChange,
       handleMaterialVersionChange: handleMaterialVersionChange,
       handleUsingBottomBarChange: handleUsingBottomBarChange,
@@ -262,6 +294,8 @@ class DayViewWidget extends StatelessWidget {
         final payload = events.first.event;
         if (payload is DeviceEvent) {
           onDeviceEventTap?.call(payload);
+        } else if (payload is CalendarEvent) {
+          onCalendarEventTap?.call(payload);
         } else if (payload is TimeInterval) {
           await Navigator.of(context).push(
             MaterialPageRoute(

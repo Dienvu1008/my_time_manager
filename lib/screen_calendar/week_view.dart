@@ -147,6 +147,10 @@ class WeekViewNew<T extends Object?> extends StatefulWidget {
   /// Builder to build week day.
   final DateWidgetBuilder? weekDayBuilder;
 
+  /// Called when the user taps a day header (weekday + date number). Used to
+  /// jump to the day view for that date. Only used by the default day builder.
+  final void Function(DateTime date)? onDayHeaderTap;
+
   /// Builder to build week number.
   final WeekNumberBuilder? weekNumberBuilder;
 
@@ -252,6 +256,7 @@ class WeekViewNew<T extends Object?> extends StatefulWidget {
     this.timeIntervalArranger,
     this.weekTitleHeight = 50,
     this.weekDayBuilder,
+    this.onDayHeaderTap,
     this.weekNumberBuilder,
     this.scrollOffset = 0.0,
     this.onTimeIntervalTileTap,
@@ -445,10 +450,10 @@ class WeekViewNewState<T extends Object?> extends State<WeekViewNew<T>> {
 
   @override
   Widget build(BuildContext context) {
+    // KHÔNG bọc SafeAreaWrapper ở đây (giống day view & month view) để nội dung
+    // trải hết xuống dưới — nhờ đó bottom bar trong suốt vẫn thấy nội dung phía
+    // sau, đồng bộ với day/month view.
     return
-      SafeAreaWrapper(
-      option: widget.safeAreaOption,
-      child:
       LayoutBuilder(builder: (context, constraint) {
         _width = widget.width ?? constraint.maxWidth;
         _updateViewDimensions();
@@ -587,8 +592,7 @@ class WeekViewNewState<T extends Object?> extends State<WeekViewNew<T>> {
             ],
           ),
         );
-      }),
-    );
+      });
   }
 
   /// Returns [TimeIntervalController] associated with this Widget.
@@ -805,16 +809,39 @@ class WeekViewNewState<T extends Object?> extends State<WeekViewNew<T>> {
       return weekday;
     }
     final List<String> weekTitles = List.generate(7, (index) => getWeekday(index));
+    // Hôm nay được làm nổi bật bằng vòng tròn nền (giống month view). Dùng cùng
+    // màu mặc định như FilledCell của month view: nền xanh, chữ trắng.
+    final now = DateTime.now();
+    final bool isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
+    final String dayText =
+        widget.weekDayDateStringBuilder?.call(date.day) ?? date.day.toString();
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(widget.weekDayStringBuilder?.call(date.weekday - 1) ??
-              weekTitles[date.weekday - 1]),
-          Text(widget.weekDayDateStringBuilder?.call(date.day) ??
-              date.day.toString()),
-        ],
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onDayHeaderTap == null
+            ? null
+            : () => widget.onDayHeaderTap!.call(date),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(widget.weekDayStringBuilder?.call(date.weekday - 1) ??
+                weekTitles[date.weekday - 1]),
+            CircleAvatar(
+              radius: 11,
+              backgroundColor: isToday ? Colors.blue : Colors.transparent,
+              child: Text(
+                dayText,
+                style: TextStyle(
+                  color: isToday
+                      ? Colors.white
+                      : DefaultTextStyle.of(context).style.color,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

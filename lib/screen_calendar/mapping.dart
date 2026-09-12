@@ -1,18 +1,24 @@
 import 'package:calendar_widgets/calendar_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/device_calendar/device_calendar_service.dart';
+import '../data/models/model_calendar_event.dart';
 import '../data/models/model_task.dart';
+import '../data/repositories/sqlite_calendar_repository.dart';
 import '../data/repositories/sqlite_task_repository.dart';
 import '../data/repositories/sqlite_time_interval_repository.dart';
+import '../domain/repositories/calendar_repository.dart';
 import '../domain/repositories/task_repository.dart';
 import '../domain/repositories/time_interval_repository.dart';
 import '../data/models/model_time_interval.dart';
 import '../screen_focus_timer/data/model_focus_session.dart';
 import '../screen_focus_timer/view/task_picker_sheet.dart';
 import '../screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';
+import '../screen_tasks/component_widgets/page_add_edit_calendar_event.dart';
 import '../utils/constants.dart';
 import 'page_edit_device_event.dart';
+import 'recurrence_expander.dart';
 
 /// Tải tất cả time interval, làm giàu (gán màu + tiêu đề lấy từ task liên kết)
 /// rồi nạp vào [controller].
@@ -25,6 +31,7 @@ Future<void> enrichTimeIntervals(
   TimeIntervalController controller, {
   TaskRepository? taskRepository,
   TimeIntervalRepository? timeIntervalRepository,
+  CalendarRepository? calendarRepository,
 }) async {
   final taskRepo = taskRepository ?? SqliteTaskRepository();
   final timeIntervalRepo =
@@ -49,8 +56,64 @@ Future<void> enrichTimeIntervals(
 
   controller.addAll(timeIntervals.toCalendarData());
 
+  // Nạp thêm các SỰ KIỆN LỊCH của app (calendar_events) để chúng hiển thị trên
+  // day/week/month giống như time interval.
+  await loadCalendarEventsInto(controller, calendarRepository: calendarRepository);
+
   // Nạp thêm event từ lịch thiết bị (Android/iOS). Trên desktop trả rỗng.
   await loadDeviceEventsInto(controller);
+}
+
+/// Đọc các sự kiện lịch của app (không bị xóa/lưu trữ) và nạp vào [controller].
+/// Chỉ nạp thêm (addAll) — việc xóa dữ liệu cũ do [reloadTimeIntervals] lo.
+///
+/// Sự kiện LẶP LẠI được khai triển thành các lần xuất hiện cụ thể trong một
+/// cửa sổ rộng quanh hiện tại (±1 năm), giống cách nạp event lịch thiết bị.
+/// Sự kiện không lặp được giữ nguyên.
+Future<void> loadCalendarEventsInto(
+  TimeIntervalController controller, {
+  CalendarRepository? calendarRepository,
+  DateTime? now,
+}) async {
+  final repo = calendarRepository ?? SqliteCalendarRepository();
+  final events = await repo.getCalendarEvents();
+  if (events.isEmpty) return;
+
+  final base = now ?? DateTime.now();
+  final windowStart = DateTime(base.year - 1, base.month, base.day);
+  final windowEnd = DateTime(base.year + 1, base.month, base.day);
+
+  final expanded = <CalendarEvent>[];
+  for (final e in events) {
+    if (e.isRecurring) {
+      expanded.addAll(expandRecurringEvent(e, windowStart, windowEnd));
+    } else {
+      expanded.add(e);
+    }
+  }
+  if (expanded.isEmpty) return;
+  controller.addAll(expanded.toCalendarData());
+}
+
+/// Khi người dùng nhấn một sự kiện trên lịch, [tapped] có thể là một LẦN XUẤT
+/// HIỆN (instance) của sự kiện lặp — id dạng `master#epoch`, không có
+/// recurrence, và [CalendarEvent.recurringEventId] trỏ về sự kiện gốc. Sửa
+/// trực tiếp instance đó sẽ ghi nhầm (id không tồn tại trong DB) và làm mất
+/// quy tắc lặp. Hàm này trả về SỰ KIỆN GỐC để mở trang sửa, nếu tìm được;
+/// ngược lại trả về chính [tapped].
+Future<CalendarEvent> resolveMasterCalendarEvent(
+  BuildContext context,
+  CalendarEvent tapped, {
+  CalendarRepository? calendarRepository,
+}) async {
+  final masterId = tapped.recurringEventId;
+  if (masterId == null) return tapped;
+  final repo = calendarRepository ??
+      (context.mounted
+          ? context.read<CalendarRepository>()
+          : SqliteCalendarRepository());
+  final master = await repo.getCalendarEvent(masterId);
+  return master ?? tapped;
 }
 
 /// Đọc event từ lịch thiết bị trong một cửa sổ rộng quanh hiện tại (±1 năm) và
@@ -87,9 +150,11 @@ Future<void> reloadTimeIntervals(
 /// việc muốn gắn — hoặc chọn "không gắn" để tạo interval độc lập. Sau đó mở
 /// [ShowOrSetTimeIntervalsBottomSheet] ở chế độ tạo mới với ngày/giờ điền sẵn
 /// theo [start] và task đã chọn (nếu có). Cuối cùng nạp lại lịch.
-/// Luồng khi nhấn ô trống: nếu thiết bị hỗ trợ lịch (Android/iOS), hỏi người
-/// dùng muốn tạo "Công việc" hay "Sự kiện lịch". Với Sự kiện -> mở trang tạo
-/// event thiết bị; với Công việc (hoặc desktop) -> luồng tạo time interval.
+/// Luồng khi nhấn ô trống: hỏi người dùng muốn tạo loại gì.
+///   - "Công việc": luồng tạo time interval (chọn task rồi đặt khoảng thời gian).
+///   - "Sự kiện lịch": tạo một [CalendarEvent] của app (mọi nền tảng).
+///   - "Sự kiện lịch thiết bị": chỉ hiện khi thiết bị hỗ trợ (Android/iOS).
+/// Mọi lựa chọn đều điền sẵn giờ theo ô đã nhấn ([start]) và nạp lại lịch sau.
 Future<void> openCreateOnEmptySlot({
   required BuildContext context,
   required TimeIntervalController controller,
@@ -98,48 +163,69 @@ Future<void> openCreateOnEmptySlot({
   final service = DeviceCalendarService.instance;
   final canUseDeviceCalendar = service.isSupported;
 
-  if (canUseDeviceCalendar) {
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+  final choice = await showModalBottomSheet<String>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.check_circle_outline),
+            title: const Text('Công việc'),
+            subtitle:
+                const Text('Lên lịch một khoảng thời gian cho công việc'),
+            onTap: () => Navigator.pop(ctx, 'task'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.event_outlined),
+            title: const Text('Sự kiện lịch'),
+            subtitle: const Text('Tạo một sự kiện trong lịch của ứng dụng'),
+            onTap: () => Navigator.pop(ctx, 'app_event'),
+          ),
+          if (canUseDeviceCalendar)
             ListTile(
-              leading: const Icon(Icons.check_circle_outline),
-              title: const Text('Công việc'),
-              subtitle: const Text('Lên lịch một khoảng thời gian cho công việc'),
-              onTap: () => Navigator.pop(ctx, 'task'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.event_outlined),
-              title: const Text('Sự kiện lịch'),
+              leading: const Icon(Icons.event_available_outlined),
+              title: const Text('Sự kiện lịch thiết bị'),
               subtitle: const Text('Tạo sự kiện trên lịch thiết bị'),
-              onTap: () => Navigator.pop(ctx, 'event'),
+              onTap: () => Navigator.pop(ctx, 'device_event'),
             ),
-          ],
+        ],
+      ),
+    ),
+  );
+  if (!context.mounted || choice == null) return;
+
+  if (choice == 'app_event') {
+    final result = await Navigator.of(context).push<CalendarEvent>(
+      MaterialPageRoute(
+        builder: (_) => AddOrEditCalendarEventPage(
+          initialStart: start,
+          initialEnd: start.add(const Duration(hours: 1)),
         ),
       ),
     );
-    if (!context.mounted || choice == null) return;
-
-    if (choice == 'event') {
-      final changed = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => EditDeviceEventPage(
-            initialStart: start,
-            initialEnd: start.add(const Duration(hours: 1)),
-          ),
-        ),
-      );
-      if (changed == true && context.mounted) {
-        await reloadTimeIntervals(controller);
-      }
-      return;
+    if (result != null && context.mounted) {
+      await reloadTimeIntervals(controller);
     }
-    // choice == 'task' -> tiếp tục luồng tạo time interval bên dưới.
+    return;
   }
 
+  if (choice == 'device_event') {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => EditDeviceEventPage(
+          initialStart: start,
+          initialEnd: start.add(const Duration(hours: 1)),
+        ),
+      ),
+    );
+    if (changed == true && context.mounted) {
+      await reloadTimeIntervals(controller);
+    }
+    return;
+  }
+
+  // choice == 'task' -> luồng tạo time interval.
   await openCreateTimeIntervalFlow(
     context: context,
     controller: controller,
@@ -225,6 +311,33 @@ extension ListTimeIntervalCalendarData on List<TimeInterval> {
           color: timeInterval.color,
           event: timeInterval,
         )).toList();
+  }
+}
+
+extension ListCalendarEventCalendarData on List<CalendarEvent> {
+  List<CalendarTimeIntervalData> toCalendarData() {
+    return map((e) {
+      final start = e.start.effective;
+      final end = e.end.effective;
+      // Sự kiện có giờ và nằm gọn trong một ngày -> dùng startTime/endTime.
+      // Cả ngày hoặc kéo dài nhiều ngày -> để full-day (startTime/endTime null)
+      // và dùng endDate, vì CalendarTimeIntervalData không cho startTime span
+      // quá một ngày (giống nhánh DeviceEvent).
+      final sameDay = !e.isAllDay &&
+          start.year == end.year &&
+          start.month == end.month &&
+          start.day == end.day;
+      return CalendarTimeIntervalData(
+        date: start,
+        endDate: sameDay ? null : end,
+        startTime: sameDay ? start : null,
+        endTime: sameDay ? end : null,
+        title: e.title,
+        description: e.description,
+        color: e.color,
+        event: e,
+      );
+    }).toList();
   }
 }
 

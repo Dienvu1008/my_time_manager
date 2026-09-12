@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_time_manager/ai/policy/action_policy.dart';
 import 'package:my_time_manager/ai/tools/domain/domain_tools.dart';
 import 'package:my_time_manager/ai/tools/tool.dart';
 import 'package:my_time_manager/ai/tools/tool_executor.dart';
@@ -35,11 +36,11 @@ class _FakeTaskRepo implements TaskRepository {
   Future<List<Task>> getTasksWithoutTaskList() async =>
       store.values.where((t) => t.taskListId == null).toList();
   @override
-  Future<void> deleteTask(String id) async {}
+  Future<void> deleteTask(String id) async => store.remove(id);
   @override
   Future<void> moveTask(String a, String? b) async {}
   @override
-  Future<void> softDeleteTask(String id) async {}
+  Future<void> softDeleteTask(String id) async => store.remove(id);
   @override
   Future<void> restoreTask(String id) async {}
   @override
@@ -67,11 +68,11 @@ class _FakeCalendarRepo implements CalendarRepository {
   Future<List<CalendarEvent>> getCalendarEventsWithoutTaskList() async =>
       store.values.where((e) => e.taskListId == null).toList();
   @override
-  Future<void> deleteCalendarEvent(String id) async {}
+  Future<void> deleteCalendarEvent(String id) async => store.remove(id);
   @override
   Future<void> moveCalendarEvent(String a, String? b) async {}
   @override
-  Future<void> softDeleteCalendarEvent(String id) async {}
+  Future<void> softDeleteCalendarEvent(String id) async => store.remove(id);
   @override
   Future<void> restoreCalendarEvent(String id) async {}
   @override
@@ -108,7 +109,7 @@ class _FakeTimeRepo implements TimeIntervalRepository {
   Future<List<TimeInterval>> getTimeIntervalsOfSubtask(String id) async =>
       store.values.where((t) => t.subtaskId == id).toList();
   @override
-  Future<void> deleteTimeInterval(String id) async {}
+  Future<void> deleteTimeInterval(String id) async => store.remove(id);
   @override
   Future<void> rescheduleAllReminders() async {}
 }
@@ -181,15 +182,22 @@ void main() {
     );
     expect(tools.map((e) => e.name).toSet(), {
       'list_tasks', 'get_task', 'create_task', 'update_task', 'complete_task',
+      'delete_task',
       'list_calendar_events', 'get_calendar_event', 'create_calendar_event',
-      'update_calendar_event',
+      'update_calendar_event', 'delete_calendar_event',
       'list_time_intervals', 'create_time_interval', 'update_time_interval',
+      'delete_time_interval',
       'list_focus_sessions', 'get_focus_statistics',
       'get_focus_summary', 'get_productivity_summary',
       'get_productivity_metrics',
     });
-    // No tool is destructive in this initial set.
-    expect(tools.every((t) => t.risk != ToolRisk.destructive), isTrue);
+    // The only destructive tools are the three delete tools.
+    final destructive = tools
+        .where((t) => t.risk == ToolRisk.destructive)
+        .map((t) => t.name)
+        .toSet();
+    expect(destructive,
+        {'delete_task', 'delete_calendar_event', 'delete_time_interval'});
   });
 
   group('calendar tools', () {
@@ -345,6 +353,74 @@ void main() {
       expect((d['tasks'] as Map)['total'], 2);
       expect((d['tasks'] as Map)['completed'], 1);
       expect((d['tasks'] as Map)['outstanding'], 1);
+    });
+  });
+
+  group('delete tools', () {
+    test('delete_task removes the task (allow-all executor)', () async {
+      final tasks = _FakeTaskRepo();
+      await tasks.createTask(Task(title: 'X'));
+      final id = tasks.store.keys.first;
+      final exec = buildExecutor(tasks: tasks);
+      final r = await exec.execute('delete_task', {'id': id});
+      expect(r.success, isTrue);
+      expect(tasks.store.containsKey(id), isFalse);
+    });
+
+    test('delete_task unknown id -> not_found', () async {
+      final r = await buildExecutor().execute('delete_task', {'id': 'nope'});
+      expect(r.errorCode, ToolResult.codeNotFound);
+    });
+
+    test('delete_calendar_event removes the event', () async {
+      final cal = _FakeCalendarRepo();
+      final exec = buildExecutor(calendar: cal);
+      final created = await exec.execute('create_calendar_event', {
+        'title': 'E',
+        'start': '2026-03-02T09:00:00',
+        'end': '2026-03-02T10:00:00',
+      });
+      final id = (created.data as Map)['id'] as String;
+      final r = await exec.execute('delete_calendar_event', {'id': id});
+      expect(r.success, isTrue);
+      expect(cal.store.containsKey(id), isFalse);
+    });
+
+    test('delete_time_interval removes the interval', () async {
+      final time = _FakeTimeRepo();
+      final exec = buildExecutor(time: time);
+      final created = await exec
+          .execute('create_time_interval', {'startDate': '2026-03-02'});
+      final id = (created.data as Map)['id'] as String;
+      final r = await exec.execute('delete_time_interval', {'id': id});
+      expect(r.success, isTrue);
+      expect(time.store.containsKey(id), isFalse);
+    });
+
+    test('delete tools are DESTRUCTIVE and blocked without approval', () async {
+      final tasks = _FakeTaskRepo();
+      await tasks.createTask(Task(title: 'X'));
+      final id = tasks.store.keys.first;
+
+      // Executor WITH the default policy + a handler that rejects.
+      final registry = ToolRegistry(buildDomainTools(
+        tasks: tasks,
+        taskCompletion: TaskCompletionService(tasks),
+        calendar: _FakeCalendarRepo(),
+        timeIntervals: _FakeTimeRepo(),
+        focus: _FakeFocusRepo(),
+        focusStats: FocusStatisticsService(_FakeFocusRepo()),
+      ));
+      final exec = ToolExecutor(
+        registry,
+        policy: const ActionPolicy(),
+        confirm: (_) async => false, // user rejects
+      );
+
+      final r = await exec.execute('delete_task', {'id': id});
+      expect(r.errorCode, ToolResult.codePermissionDenied);
+      expect(tasks.store.containsKey(id), isTrue,
+          reason: 'destructive delete must not run without approval');
     });
   });
 }

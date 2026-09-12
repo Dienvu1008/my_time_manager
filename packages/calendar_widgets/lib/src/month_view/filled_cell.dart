@@ -47,6 +47,10 @@ class FilledCell<T extends Object?> extends StatelessWidget {
   /// color of highlighted cell title
   final Color highlightedTitleColor;
 
+  /// Called when the user taps the date number of this cell. Used to jump to
+  /// the day view for [date].
+  final void Function(DateTime date)? onDateTap;
+
   /// This class will defines how cell will be displayed.
   /// This widget will display all the events as tile below date title.
   const FilledCell({
@@ -63,6 +67,7 @@ class FilledCell<T extends Object?> extends StatelessWidget {
     this.titleColor = Constants.black,
     this.highlightedTitleColor = Constants.white,
     this.dateStringBuilder,
+    this.onDateTap,
   }) : super(key: key);
 
   @override
@@ -76,21 +81,25 @@ class FilledCell<T extends Object?> extends StatelessWidget {
           SizedBox(
             height: 5.0,
           ),
-          CircleAvatar(
-            radius: highlightRadius,
-            backgroundColor:
-            shouldHighlight ? highlightColor : Colors.transparent,
-            child: Text(
-              dateStringBuilder?.call(date,locale) ?? "${date.day}",
-              style: TextStyle(
-                color: shouldHighlight
-                    ? highlightedTitleColor
-                    : isInMonth
-                // ? titleColor
-                // : titleColor.withOpacity(0.4),
-                    ? textColor.withOpacity(0.4)
-                    : textColor,
-                fontSize: 12,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onDateTap == null ? null : () => onDateTap!.call(date),
+            child: CircleAvatar(
+              radius: highlightRadius,
+              backgroundColor:
+              shouldHighlight ? highlightColor : Colors.transparent,
+              child: Text(
+                dateStringBuilder?.call(date,locale) ?? "${date.day}",
+                style: TextStyle(
+                  color: shouldHighlight
+                      ? highlightedTitleColor
+                      : isInMonth
+                  // ? titleColor
+                  // : titleColor.withOpacity(0.4),
+                      ? textColor.withOpacity(0.4)
+                      : textColor,
+                  fontSize: 12,
+                ),
               ),
             ),
           ),

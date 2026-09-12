@@ -200,6 +200,39 @@ class CompleteTaskTool extends _TaskTool {
       }, a);
 }
 
+class DeleteTaskTool extends _TaskTool {
+  const DeleteTaskTool(super.tasks, super.completion);
+  @override
+  String get name => 'delete_task';
+  @override
+  String get description =>
+      'Move a task to the trash by id (soft delete — the user can restore it '
+      'from the Trash). This is a destructive action and always requires '
+      'explicit user approval.';
+  @override
+  ToolRisk get risk => ToolRisk.destructive;
+  @override
+  Map<String, dynamic> get parametersSchema => const {
+        'type': 'object',
+        'properties': {
+          'id': {'type': 'string'}
+        },
+        'required': ['id'],
+      };
+  @override
+  Future<ToolResult> execute(Map<String, dynamic> a) => guarded((args) async {
+        final id = args.requireString('id');
+        try {
+          await tasks.getTask(id);
+        } catch (_) {
+          return ToolResult.failure(
+              ToolResult.codeNotFound, 'No task with id "$id".');
+        }
+        await tasks.softDeleteTask(id);
+        return ToolResult.ok({'id': id, 'deleted': true});
+      }, a);
+}
+
 /// Convenience: build all task tools from the shared dependencies.
 List<Tool> taskTools(TaskRepository tasks, TaskCompletionService completion) => [
       ListTasksTool(tasks, completion),
@@ -207,4 +240,5 @@ List<Tool> taskTools(TaskRepository tasks, TaskCompletionService completion) => 
       CreateTaskTool(tasks, completion),
       UpdateTaskTool(tasks, completion),
       CompleteTaskTool(tasks, completion),
+      DeleteTaskTool(tasks, completion),
     ];

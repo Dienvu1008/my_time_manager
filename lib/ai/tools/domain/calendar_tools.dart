@@ -192,9 +192,42 @@ class UpdateCalendarEventTool extends _CalendarTool {
       }, a);
 }
 
+class DeleteCalendarEventTool extends _CalendarTool {
+  const DeleteCalendarEventTool(super.calendar);
+  @override
+  String get name => 'delete_calendar_event';
+  @override
+  String get description =>
+      'Move a calendar event to the trash by id (soft delete — the user can '
+      'restore it from the Trash). Destructive: always requires explicit user '
+      'approval.';
+  @override
+  ToolRisk get risk => ToolRisk.destructive;
+  @override
+  Map<String, dynamic> get parametersSchema => const {
+        'type': 'object',
+        'properties': {
+          'id': {'type': 'string'}
+        },
+        'required': ['id'],
+      };
+  @override
+  Future<ToolResult> execute(Map<String, dynamic> a) => guarded((args) async {
+        final id = args.requireString('id');
+        final existing = await calendar.getCalendarEvent(id);
+        if (existing == null) {
+          return ToolResult.failure(
+              ToolResult.codeNotFound, 'No calendar event with id "$id".');
+        }
+        await calendar.softDeleteCalendarEvent(id);
+        return ToolResult.ok({'id': id, 'deleted': true});
+      }, a);
+}
+
 List<Tool> calendarTools(CalendarRepository calendar) => [
       ListCalendarEventsTool(calendar),
       GetCalendarEventTool(calendar),
       CreateCalendarEventTool(calendar),
       UpdateCalendarEventTool(calendar),
+      DeleteCalendarEventTool(calendar),
     ];

@@ -76,10 +76,16 @@ class AgentContext {
     required this.todaySchedule,
     required this.upcoming,
     required this.focus,
+    this.timezone,
   });
 
   /// The reference "now" the context was built at.
   final DateTime now;
+
+  /// The user's effective IANA timezone (device or configured). When present it
+  /// is surfaced to the model so it interprets/creates times in the user's
+  /// local zone rather than UTC. Null when unknown.
+  final String? timezone;
 
   /// A capped list of outstanding (incomplete, visible) tasks.
   final List<ContextTask> outstandingTasks;
@@ -99,6 +105,7 @@ class AgentContext {
 
   Map<String, dynamic> toJson() => {
         'now': now.toIso8601String(),
+        if (timezone != null) 'timezone': timezone,
         'outstandingTasks': outstandingTasks.map((t) => t.toJson()).toList(),
         'totalOutstanding': totalOutstanding,
         'todaySchedule': todaySchedule.map((s) => s.toJson()).toList(),
@@ -111,6 +118,10 @@ class AgentContext {
   String render() {
     final b = StringBuffer();
     b.writeln('Current context (as of ${_fmtDateTime(now)}):');
+    if (timezone != null && timezone!.isNotEmpty) {
+      b.writeln('- User timezone: $timezone. Interpret and create times in this '
+          'local timezone (use its UTC offset), not UTC.');
+    }
 
     b.writeln('- Outstanding tasks: $totalOutstanding'
         '${totalOutstanding > outstandingTasks.length ? ' (showing ${outstandingTasks.length})' : ''}');

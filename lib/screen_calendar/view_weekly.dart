@@ -3,11 +3,13 @@ import 'package:calendar_widgets/calendar_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app.dart';
+import 'package:my_time_manager/data/models/model_calendar_event.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/screen_calendar/calendar_zoom_wrapper.dart';
 import 'package:my_time_manager/screen_calendar/mapping.dart';
 import 'package:my_time_manager/screen_calendar/week_view.dart';
 import '../data/device_calendar/device_calendar_service.dart';
+import '../screen_tasks/component_widgets/page_add_edit_calendar_event.dart';
 import '../screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 import '../utils/constants.dart';
 import 'page_edit_device_event.dart';
@@ -32,6 +34,11 @@ class TasksWeekView extends StatefulWidget {
   final bool showColorSeedButtonInAppBar;
   final bool showLanguagesButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
+
+  /// Gọi khi người dùng nhấn vào SỐ NGÀY ở header cột -> nhảy sang day view của
+  /// ngày đó.
+  final void Function(DateTime date)? onJumpToDay;
+
   const TasksWeekView({
     Key? key,
     required this.handleBrightnessChange,
@@ -50,6 +57,7 @@ class TasksWeekView extends StatefulWidget {
     required this.showColorSeedButtonInAppBar,
     required this.showLanguagesButtonInAppBar,
     required this.showMaterialDesignButtonInAppBar,
+    this.onJumpToDay,
     //this.state
   }) : super(key: key);
 
@@ -97,6 +105,8 @@ class _TasksWeekViewState extends State<TasksWeekView> {
           builder: (context, zoom, availableHeight) => WeekViewWidget(
             onEmptySlotTap: _openCreateTimeInterval,
             onDeviceEventTap: _openEditDeviceEvent,
+            onCalendarEventTap: _openEditCalendarEvent,
+            onJumpToDay: widget.onJumpToDay,
             handleBrightnessChange: widget.handleBrightnessChange,
             handleMaterialVersionChange: widget.handleMaterialVersionChange,
             handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
@@ -154,6 +164,21 @@ class _TasksWeekViewState extends State<TasksWeekView> {
       await reloadTimeIntervals(_controller);
     }
   }
+
+  /// Nhấn vào sự kiện lịch của app -> mở trang xem/sửa/xóa; nếu có thay đổi thì
+  /// nạp lại lịch. Trang trả về một CalendarEvent (khác null) khi lưu hoặc xóa.
+  Future<void> _openEditCalendarEvent(CalendarEvent event) async {
+    final target = await resolveMasterCalendarEvent(context, event);
+    if (!mounted) return;
+    final result = await Navigator.of(context).push<CalendarEvent>(
+      MaterialPageRoute(
+        builder: (_) => AddOrEditCalendarEventPage(event: target),
+      ),
+    );
+    if (result != null && mounted) {
+      await reloadTimeIntervals(_controller);
+    }
+  }
 }
 
 class WeekViewWidget extends StatelessWidget {
@@ -187,10 +212,18 @@ class WeekViewWidget extends StatelessWidget {
   /// Gọi khi nhấn vào event lịch thiết bị (để xem/sửa).
   final void Function(DeviceEvent)? onDeviceEventTap;
 
+  /// Gọi khi nhấn vào một sự kiện lịch của app (để xem/sửa/xóa).
+  final void Function(CalendarEvent)? onCalendarEventTap;
+
+  /// Gọi khi nhấn số ngày ở header cột -> nhảy sang day view của ngày đó.
+  final void Function(DateTime date)? onJumpToDay;
+
   const WeekViewWidget({super.key, this.state, this.width,
     this.heightPerMinute = 1,
     this.onEmptySlotTap,
+    this.onJumpToDay,
     this.onDeviceEventTap,
+    this.onCalendarEventTap,
     required this.handleBrightnessChange,
     required this.handleMaterialVersionChange,
     required this.handleUsingBottomBarChange,
@@ -234,10 +267,13 @@ class WeekViewWidget extends StatelessWidget {
       showMaterialDesignButtonInAppBar,
       heightPerMinute: heightPerMinute,
       //width: width,
+      onDayHeaderTap: onJumpToDay,
       onTimeIntervalTileTap: (events, date) async {
         final payload = events.first.event;
         if (payload is DeviceEvent) {
           onDeviceEventTap?.call(payload);
+        } else if (payload is CalendarEvent) {
+          onCalendarEventTap?.call(payload);
         } else if (payload is TimeInterval) {
           await Navigator.of(context).push(
             MaterialPageRoute(

@@ -105,6 +105,13 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
   /// True khi speed-dial FAB đang mở.
   bool _fabOpen = false;
 
+  /// Bộ đếm "epoch" để buộc các [TaskListCard] con dựng lại (mỗi card tự cache
+  /// danh sách item con trong state của nó và chỉ nạp một lần ở initState).
+  /// Khi kéo-thả một item sang danh sách khác, ta tăng token này và ghép vào
+  /// key của từng card -> Flutter tạo lại state -> card nạp lại item từ DB, nên
+  /// card nguồn bỏ item vừa chuyển đi và card đích hiện item mới ngay lập tức.
+  int _reloadToken = 0;
+
   @override
   void initState() {
     super.initState();
@@ -142,6 +149,9 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
     } else {
       return;
     }
+    // Buộc các card danh sách con nạp lại (xem [_reloadToken]) để card nguồn bỏ
+    // item vừa chuyển và card đích hiện nó ngay, không cần rời màn rồi quay lại.
+    _reloadToken++;
     await _init();
     if (mounted) {
       final where = newListId == null
@@ -166,7 +176,14 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
   Future<void> _onTaskListDelete(TaskList taskList) async {
     // Soft-delete: Ä‘Æ°a danh sÃ¡ch (vÃ  task con) vÃ o thÃ¹ng rÃ¡c.
     await _taskListRepository.softDeleteTaskList(taskList.id);
-    _taskLists!.remove(taskList.id);
+    // Bỏ đúng danh sách khỏi state (so khớp theo id) và rebuild ngay. Trước đây
+    // gọi remove(taskList.id) — xóa một String khỏi List<TaskList> nên không
+    // bao giờ khớp, khiến card vẫn hiển thị cho tới khi rời màn rồi quay lại.
+    if (mounted) {
+      setState(() => _taskLists?.removeWhere((l) => l.id == taskList.id));
+    } else {
+      _taskLists?.removeWhere((l) => l.id == taskList.id);
+    }
     await _saveOrder();
   }
 
@@ -174,7 +191,13 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
   /// không xóa. Có thể bỏ lưu trữ lại từ màn Lưu trữ.
   Future<void> _onTaskListArchive(TaskList taskList) async {
     await _taskListRepository.archiveTaskList(taskList.id);
-    _taskLists!.remove(taskList.id);
+    // Bỏ đúng danh sách khỏi state (so khớp theo id) và rebuild ngay — xem ghi
+    // chú ở _onTaskListDelete về lỗi remove(taskList.id) cũ.
+    if (mounted) {
+      setState(() => _taskLists?.removeWhere((l) => l.id == taskList.id));
+    } else {
+      _taskLists?.removeWhere((l) => l.id == taskList.id);
+    }
     await _saveOrder();
     if (mounted) {
       ScaffoldMessenger.of(context)
@@ -299,6 +322,7 @@ class _TasksOverviewPageState extends State<TasksOverviewPage> {
                   TaskListsHolder(
                     onReorder: _reorderTaskLists,
                     taskLists: _taskLists ?? [],
+                    reloadToken: _reloadToken,
                     onItemMovedToList: _moveItemToList,
                     onTaskListDelete: (value) async {
                       _onTaskListDelete(value);
@@ -576,6 +600,7 @@ class TaskListsHolder extends StatefulWidget {
     required this.onReorder,
     required this.taskLists,
     required this.isProVersion,
+    this.reloadToken = 0,
     this.onItemMovedToList,
   }) : super(key: key);
 
@@ -585,6 +610,10 @@ class TaskListsHolder extends StatefulWidget {
   final Function(int, int) onReorder;
   final List<TaskList> taskLists;
   final bool isProVersion;
+
+  /// Tăng mỗi khi cần buộc các card danh sách con nạp lại item (xem
+  /// [_TasksOverviewPageState._reloadToken]). Ghép vào key của từng card.
+  final int reloadToken;
 
   /// Được gọi khi kéo-thả một item (Task/CalendarEvent) vào một danh sách.
   final Future<void> Function(dynamic item, String? newListId)?
@@ -604,7 +633,10 @@ class _TaskListsHolderState extends State<TaskListsHolder> {
       children: List.generate(widget.taskLists.length, (index) {
         final taskList = widget.taskLists[index];
         return TaskListCard(
-          key: ValueKey(taskList),
+          // Ghép reloadToken vào key: khi có kéo-thả item giữa các danh sách,
+          // token đổi -> key đổi -> Flutter dựng lại state của card -> card nạp
+          // lại item con từ DB (card nguồn bỏ item, card đích thêm item).
+          key: ValueKey('${taskList.id}_${widget.reloadToken}'),
           taskList: taskList,
           onItemMovedToList: widget.onItemMovedToList,
           onTaskListDelete: (TaskList taskList) async {

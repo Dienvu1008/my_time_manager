@@ -127,6 +127,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   int _selectedDrawerItemIndex = ScreenSelected.tasksOverviewScreen.value;
   int _selectedNavBarItemIndex = 0;
 
+  /// Ngày mục tiêu cho day view của lịch, được đặt khi người dùng nhấn số ngày
+  /// ở month/week view để "nhảy" về day view của ngày đó. Null = hôm nay.
+  DateTime? _calendarDayTarget;
+
   bool hasShownDialog = false;
 
   late final TimeIntervalRepository _timeIntervalRepository =
@@ -146,6 +150,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     switch (screenSelected) {
       case PageOfCalendarScreenSelected.dayPage:
         return TasksDayView(
+          // Mở sẵn ngày đã nhấn từ month/week view (null = hôm nay). Dùng
+          // ValueKey để đổi ngày mục tiêu buộc dựng lại day view đúng ngày.
+          key: ValueKey('day-${_calendarDayTarget?.toIso8601String() ?? 'today'}'),
+          initialDate: _calendarDayTarget,
           handleBrightnessChange: widget.handleBrightnessChange,
           handleMaterialVersionChange: widget.handleMaterialVersionChange,
           handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
@@ -166,6 +174,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
         );
       case PageOfCalendarScreenSelected.weekPage:
         return TasksWeekView(
+          onJumpToDay: _jumpToCalendarDay,
           handleBrightnessChange: widget.handleBrightnessChange,
           handleMaterialVersionChange: widget.handleMaterialVersionChange,
           handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
@@ -187,6 +196,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
       case PageOfCalendarScreenSelected.monthPage:
         return TasksMonthView(
+          onJumpToDay: _jumpToCalendarDay,
           handleBrightnessChange: widget.handleBrightnessChange,
           handleMaterialVersionChange: widget.handleMaterialVersionChange,
           handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
@@ -221,6 +231,19 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   void _onNavBarItemTapped(int index) {
     setState(() {
       _selectedNavBarItemIndex = index;
+      // Khi người dùng tự chuyển tab lịch (Day/Week/Month), bỏ ngày mục tiêu để
+      // day view quay lại hành vi mặc định (mở hôm nay) ở lần vào sau.
+      if (index != PageOfCalendarScreenSelected.dayPage.value) {
+        _calendarDayTarget = null;
+      }
+    });
+  }
+
+  /// Nhấn số ngày ở month/week view -> chuyển sang day view của [date].
+  void _jumpToCalendarDay(DateTime date) {
+    setState(() {
+      _calendarDayTarget = DateTime(date.year, date.month, date.day);
+      _selectedNavBarItemIndex = PageOfCalendarScreenSelected.dayPage.value;
     });
   }
 

@@ -2,11 +2,13 @@ import 'package:calendar_widgets/calendar_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app.dart';
+import 'package:my_time_manager/data/models/model_calendar_event.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
 import 'package:my_time_manager/screen_calendar/calendar_zoom_wrapper.dart';
 import 'package:my_time_manager/screen_calendar/mapping.dart';
 
 import '../data/device_calendar/device_calendar_service.dart';
+import '../screen_tasks/component_widgets/page_add_edit_calendar_event.dart';
 import '../screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 import '../utils/constants.dart';
 import 'month_view.dart';
@@ -34,6 +36,10 @@ class TasksMonthView extends StatefulWidget {
   final bool showLanguagesButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
 
+  /// Gọi khi người dùng nhấn vào SỐ NGÀY của một ô -> nhảy sang day view của
+  /// ngày đó.
+  final void Function(DateTime date)? onJumpToDay;
+
   const TasksMonthView({
     Key? key,
     required this.handleBrightnessChange,
@@ -52,6 +58,7 @@ class TasksMonthView extends StatefulWidget {
     required this.showColorSeedButtonInAppBar,
     required this.showLanguagesButtonInAppBar,
     required this.showMaterialDesignButtonInAppBar,
+    this.onJumpToDay,
     //this.state
   }) : super(key: key);
 
@@ -99,6 +106,8 @@ class _TasksMonthViewState extends State<TasksMonthView> {
           maxZoom: 2.5,
           builder: (context, zoom, availableHeight) => MonthViewWidget(
             onDeviceEventTap: _openEditDeviceEvent,
+            onCalendarEventTap: _openEditCalendarEvent,
+            onJumpToDay: widget.onJumpToDay,
             handleBrightnessChange: widget.handleBrightnessChange,
             handleMaterialVersionChange: widget.handleMaterialVersionChange,
             handleUsingBottomBarChange: widget.handleUsingBottomBarChange,
@@ -148,6 +157,21 @@ class _TasksMonthViewState extends State<TasksMonthView> {
       await reloadTimeIntervals(_controller);
     }
   }
+
+  /// Nhấn vào sự kiện lịch của app -> mở trang xem/sửa/xóa; nếu có thay đổi thì
+  /// nạp lại lịch. Trang trả về một CalendarEvent (khác null) khi lưu hoặc xóa.
+  Future<void> _openEditCalendarEvent(CalendarEvent event) async {
+    final target = await resolveMasterCalendarEvent(context, event);
+    if (!mounted) return;
+    final result = await Navigator.of(context).push<CalendarEvent>(
+      MaterialPageRoute(
+        builder: (_) => AddOrEditCalendarEventPage(event: target),
+      ),
+    );
+    if (result != null && mounted) {
+      await reloadTimeIntervals(_controller);
+    }
+  }
 }
 
 class MonthViewWidget extends StatelessWidget {
@@ -178,12 +202,20 @@ class MonthViewWidget extends StatelessWidget {
   /// Gọi khi nhấn vào event lịch thiết bị (để xem/sửa).
   final void Function(DeviceEvent)? onDeviceEventTap;
 
+  /// Gọi khi nhấn vào một sự kiện lịch của app (để xem/sửa/xóa).
+  final void Function(CalendarEvent)? onCalendarEventTap;
+
+  /// Gọi khi nhấn số ngày của một ô -> nhảy sang day view của ngày đó.
+  final void Function(DateTime date)? onJumpToDay;
+
   const MonthViewWidget({
     super.key,
     this.state,
     this.width,
     this.cellAspectRatio = 0.55,
     this.onDeviceEventTap,
+    this.onCalendarEventTap,
+    this.onJumpToDay,
     required this.handleBrightnessChange,
     required this.handleMaterialVersionChange,
     required this.handleUsingBottomBarChange,
@@ -227,10 +259,13 @@ class MonthViewWidget extends StatelessWidget {
       key: state,
       width: width,
       cellAspectRatio: cellAspectRatio,
+      onDateTap: onJumpToDay,
       onEventTap: (event, date) async {
         final payload = event.event;
         if (payload is DeviceEvent) {
           onDeviceEventTap?.call(payload);
+        } else if (payload is CalendarEvent) {
+          onCalendarEventTap?.call(payload);
         } else if (payload is TimeInterval) {
           await Navigator.of(context).push(
             MaterialPageRoute(

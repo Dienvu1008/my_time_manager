@@ -195,8 +195,41 @@ TimeOfDay? _parseHm(String? hm) {
   return TimeOfDay(hour: h, minute: m);
 }
 
+class DeleteTimeIntervalTool extends _TimeTool {
+  const DeleteTimeIntervalTool(super.intervals);
+  @override
+  String get name => 'delete_time_interval';
+  @override
+  String get description =>
+      'Delete a planned time interval (time block) by id and cancel its '
+      'reminders. Destructive: always requires explicit user approval.';
+  @override
+  ToolRisk get risk => ToolRisk.destructive;
+  @override
+  Map<String, dynamic> get parametersSchema => const {
+        'type': 'object',
+        'properties': {
+          'id': {'type': 'string'}
+        },
+        'required': ['id'],
+      };
+  @override
+  Future<ToolResult> execute(Map<String, dynamic> a) => guarded((args) async {
+        final id = args.requireString('id');
+        try {
+          await intervals.getTimeInterval(id);
+        } catch (_) {
+          return ToolResult.failure(
+              ToolResult.codeNotFound, 'No time interval with id "$id".');
+        }
+        await intervals.deleteTimeInterval(id);
+        return ToolResult.ok({'id': id, 'deleted': true});
+      }, a);
+}
+
 List<Tool> timePlanningTools(TimeIntervalRepository intervals) => [
       ListTimeIntervalsTool(intervals),
       CreateTimeIntervalTool(intervals),
       UpdateTimeIntervalTool(intervals),
+      DeleteTimeIntervalTool(intervals),
     ];

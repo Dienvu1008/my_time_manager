@@ -13,6 +13,7 @@ import '../tools/tool_result.dart';
 import 'agent_config.dart';
 import 'agent_result.dart';
 import 'agent_trace.dart';
+import 'text_tool_call_parser.dart';
 
 /// A domain-specific agent for personal time management. NOT a general-purpose
 /// coding agent.
@@ -42,6 +43,12 @@ class AgentRuntime {
   final ToolExecutor _executor;
   final AgentConfig _config;
   final AgentTracer _trace;
+
+  /// Parser that recovers tool calls a model emitted as plain text (JSON) when
+  /// the backend did not populate the structured tool-call field. Built from
+  /// the registry's tool names so it only recognizes real tools.
+  late final TextToolCallParser _textToolParser =
+      TextToolCallParser(_registry.tools.map((t) => t.name).toSet());
 
   /// Run the agent on a single [userMessage]. [history] may seed prior turns.
   ///
@@ -122,7 +129,17 @@ class AgentRuntime {
       }
       _trace(AgentModelResponse(iteration, response));
 
-      if (!response.hasToolCalls) {
+      // Prefer the backend's structured tool calls. If there are none, fall
+      // back to parsing tool calls the model may have emitted as text/JSON in
+      // its content (common with smaller local models). Either way they go
+      // through the same execute → policy → confirm flow.
+      var toolCalls = response.toolCalls;
+      if (toolCalls.isEmpty) {
+        final fromText = _textToolParser.parse(response.text);
+        if (fromText.isNotEmpty) toolCalls = fromText;
+      }
+
+      if (toolCalls.isEmpty) {
         // Final answer.
         messages.add(AiMessage.assistant(response.text));
         _trace(AgentFinished(iteration,
@@ -136,8 +153,8 @@ class AgentRuntime {
       }
 
       // Record the assistant's tool-call turn, then run each tool.
-      messages.add(AiMessage.assistantToolCalls(response.toolCalls));
-      for (final call in response.toolCalls) {
+      messages.add(AiMessage.assistantToolCalls(toolCalls));
+      for (final call in toolCalls) {
         if (cancelToken?.isCancelled ?? false) {
           return _finish(
               messages, AgentStopReason.cancelled, iteration, started);

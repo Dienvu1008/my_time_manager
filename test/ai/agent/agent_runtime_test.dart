@@ -12,7 +12,9 @@ import 'package:my_time_manager/ai/core/ai_request.dart';
 import 'package:my_time_manager/ai/core/ai_response.dart';
 import 'package:my_time_manager/ai/core/ai_stream_event.dart';
 import 'package:my_time_manager/ai/core/ai_tool_call.dart';
+import 'package:my_time_manager/ai/policy/action_policy.dart';
 import 'package:my_time_manager/ai/tools/tool.dart';
+import 'package:my_time_manager/ai/tools/tool_executor.dart';
 import 'package:my_time_manager/ai/tools/tool_registry.dart';
 import 'package:my_time_manager/ai/tools/tool_result.dart';
 
@@ -278,4 +280,85 @@ void main() {
     expect(req.messages[1].content, 'first');
     expect(req.messages.last.content, 'second');
   });
+
+  group('text tool-call fallback (model emits JSON as content)', () {
+    test('a text JSON tool call is executed, not treated as a final answer',
+        () async {
+      final tool = _RecordingTool('list_tasks', const ToolResult.ok({'n': 0}));
+      final engine = _ScriptedEngine([
+        // Model prints the call as content instead of using tool_calls.
+        const AiResponse(
+            text: '{"name": "list_tasks", "arguments": {"onlyIncomplete": true}}'),
+        const AiResponse(text: 'You have no open tasks.'),
+      ]);
+      final agent = AgentRuntime(engine: engine, registry: ToolRegistry([tool]));
+
+      final result = await agent.run('what are my tasks?');
+      expect(tool.calls.single['onlyIncomplete'], true,
+          reason: 'the text-emitted call must actually run the tool');
+      expect(result.text, 'You have no open tasks.');
+      expect(result.iterations, 2);
+    });
+
+    test('text tool call still passes through the ActionPolicy (needs approval)',
+        () async {
+      // A "write" tool proposed as text must NOT run without confirmation.
+      final registry = ToolRegistry([_WriteTool()]);
+      final tool = registry.lookup('create_calendar_event') as _WriteTool;
+      final executor = ToolExecutor(
+        registry,
+        policy: const ActionPolicy(), // confirmWrites
+        confirm: (_) async => false, // user rejects
+      );
+      final engine = _ScriptedEngine([
+        const AiResponse(
+            text:
+                '{"name": "create_calendar_event", "arguments": {"title": "ML"}}'),
+        const AiResponse(text: 'Okay, I will not add it.'),
+      ]);
+      final agent = AgentRuntime(
+          engine: engine, registry: registry, executor: executor);
+
+      await agent.run('add my class');
+      expect(tool.executed, 0,
+          reason: 'a write proposed as text must still require approval');
+    });
+
+    test('text tool call runs when the user approves', () async {
+      final registry = ToolRegistry([_WriteTool()]);
+      final tool = registry.lookup('create_calendar_event') as _WriteTool;
+      final executor = ToolExecutor(
+        registry,
+        policy: const ActionPolicy(),
+        confirm: (_) async => true, // user approves
+      );
+      final engine = _ScriptedEngine([
+        const AiResponse(
+            text:
+                '{"name": "create_calendar_event", "arguments": {"title": "ML"}}'),
+        const AiResponse(text: 'Added.'),
+      ]);
+      final agent = AgentRuntime(
+          engine: engine, registry: registry, executor: executor);
+
+      await agent.run('add my class');
+      expect(tool.executed, 1);
+    });
+  });
+}
+
+/// A write-risk tool that records executions.
+class _WriteTool extends Tool {
+  int executed = 0;
+  @override
+  String get name => 'create_calendar_event';
+  @override
+  String get description => 'create event';
+  @override
+  ToolRisk get risk => ToolRisk.write;
+  @override
+  Future<ToolResult> execute(Map<String, dynamic> arguments) async {
+    executed++;
+    return const ToolResult.ok('created');
+  }
 }

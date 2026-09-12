@@ -18,6 +18,8 @@ class AiConfigService {
   static const _kModel = 'ai.defaultModel';
   static const _kEndpoint = 'ai.endpoint';
   static const _kTimeoutMs = 'ai.requestTimeoutMs';
+  static const _kTimezone = 'ai.timezone';
+  static const _kRetentionDays = 'ai.chatHistoryRetentionDays';
 
   Future<SharedPreferences> get _p async =>
       _prefs ??= await SharedPreferences.getInstance();
@@ -34,6 +36,9 @@ class AiConfigService {
       requestTimeout: p.containsKey(_kTimeoutMs)
           ? Duration(milliseconds: p.getInt(_kTimeoutMs)!)
           : defaults.requestTimeout,
+      timezone: p.getString(_kTimezone),
+      chatHistoryRetentionDays:
+          p.containsKey(_kRetentionDays) ? p.getInt(_kRetentionDays) : null,
     );
   }
 
@@ -53,6 +58,16 @@ class AiConfigService {
       await p.remove(_kEndpoint);
     }
     await p.setInt(_kTimeoutMs, config.requestTimeout.inMilliseconds);
+    if (config.timezone != null) {
+      await p.setString(_kTimezone, config.timezone!);
+    } else {
+      await p.remove(_kTimezone);
+    }
+    if (config.chatHistoryRetentionDays != null) {
+      await p.setInt(_kRetentionDays, config.chatHistoryRetentionDays!);
+    } else {
+      await p.remove(_kRetentionDays);
+    }
   }
 
   AiProviderKind? _readProvider(SharedPreferences p) {

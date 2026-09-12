@@ -50,7 +50,10 @@ class ContextBuilder {
   final FocusStatisticsService? _focusStats;
   final ContextOptions _options;
 
-  Future<AgentContext> build({DateTime? now}) async {
+  /// Build the context. [timezone] is the user's effective IANA timezone
+  /// (resolved by the caller from config/device); it is surfaced to the model
+  /// so it uses local time. [now] is injectable for deterministic tests.
+  Future<AgentContext> build({DateTime? now, String? timezone}) async {
     final ref = now ?? DateTime.now();
     final dayStart = DateTime(ref.year, ref.month, ref.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
@@ -125,6 +128,7 @@ class ContextBuilder {
 
     return AgentContext(
       now: ref,
+      timezone: timezone,
       outstandingTasks: cappedTasks,
       totalOutstanding: outstanding.length,
       todaySchedule: today,
