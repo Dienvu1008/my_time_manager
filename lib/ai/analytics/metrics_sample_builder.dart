@@ -1,4 +1,4 @@
-import '../../data/models/model_time_interval.dart';
+import '../../domain/models/model_time_interval.dart';
 import '../../domain/repositories/focus_repository.dart';
 import '../../domain/repositories/time_interval_repository.dart';
 import 'metric_inputs.dart';

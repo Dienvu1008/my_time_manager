@@ -1,6 +1,6 @@
 import '../../domain/repositories/note_repository.dart';
 import '../database/database_manager.dart';
-import '../models/model_note.dart';
+import '../../domain/models/model_note.dart';
 
 /// SQLite-backed [NoteRepository]. Thin adapter over [DatabaseManager].
 class SqliteNoteRepository implements NoteRepository {

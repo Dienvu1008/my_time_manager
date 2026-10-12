@@ -1,6 +1,6 @@
 import '../../domain/repositories/focus_repository.dart';
 import '../../screen_focus_timer/data/focus_sync_service.dart';
-import '../../screen_focus_timer/data/model_focus_session.dart';
+import '../../domain/models/model_focus_session.dart';
 import '../database/database_manager.dart';
 
 /// SQLite-backed [FocusRepository], following the LOCAL-FIRST principle.

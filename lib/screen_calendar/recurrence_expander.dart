@@ -1,4 +1,4 @@
-import '../data/models/model_calendar_event.dart';
+import '../domain/models/model_calendar_event.dart';
 
 /// Khai triển (expand) một [CalendarEvent] lặp lại thành các lần xuất hiện
 /// (instances) CỤ THỂ nằm trong một cửa sổ thời gian, CHỈ để hiển thị trên

@@ -1,6 +1,6 @@
-import '../../../data/models/model_calendar_event.dart';
-import '../../../data/models/model_task.dart';
-import '../../../data/models/model_time_interval.dart';
+import '../../../domain/models/model_calendar_event.dart';
+import '../../../domain/models/model_task.dart';
+import '../../../domain/models/model_time_interval.dart';
 
 /// Compact, deterministic JSON views of domain models for tool results. These
 /// are intentionally smaller than the full model maps: they expose only the

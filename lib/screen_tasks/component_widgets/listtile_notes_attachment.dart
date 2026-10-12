@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/models/model_note.dart';
+import '../../domain/models/model_note.dart';
 import '../../domain/repositories/note_repository.dart';
 import '../../screen_notes/page_note_editor.dart';
 import '../../screen_notes/page_note_picker.dart';

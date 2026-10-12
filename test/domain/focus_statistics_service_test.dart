@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/domain/repositories/focus_repository.dart';
 import 'package:my_time_manager/domain/services/focus_statistics_service.dart';
-import 'package:my_time_manager/screen_focus_timer/data/model_focus_session.dart';
+import 'package:my_time_manager/domain/models/model_focus_session.dart';
 
 /// In-memory fake of [FocusRepository]. `sessionsBetween` returns a fixed list
 /// so we can test the aggregation deterministically without SQLite (and without

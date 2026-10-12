@@ -1,6 +1,6 @@
 import '../../domain/repositories/event_repository.dart';
 import '../database/database_manager.dart';
-import '../models/models.dart';
+import '../../domain/models/models.dart';
 
 /// SQLite-backed [EventRepository] for the legacy `events` table.
 class SqliteEventRepository implements EventRepository {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:my_time_manager/shared/appflowy_description.dart';
@@ -16,7 +16,7 @@ import 'package:my_time_manager/utils/constants.dart';
 import 'package:my_time_manager/utils/utils.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../data/models/model_time_interval.dart';
+import '../../domain/models/model_time_interval.dart';
 
 class AddOrEditTimeIntervalPage extends StatefulWidget {
   const AddOrEditTimeIntervalPage({

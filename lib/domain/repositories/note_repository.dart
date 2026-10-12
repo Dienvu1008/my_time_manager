@@ -1,4 +1,4 @@
-import '../../data/models/model_note.dart';
+import '../models/model_note.dart';
 
 /// Domain boundary for **notes** (rich-text notes attachable to tasks, time
 /// intervals, and calendar events via their `noteIds` lists).

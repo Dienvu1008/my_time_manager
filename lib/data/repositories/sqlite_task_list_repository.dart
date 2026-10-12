@@ -1,6 +1,6 @@
 import '../../domain/repositories/task_list_repository.dart';
 import '../database/database_manager.dart';
-import '../models/model_list.dart';
+import '../../domain/models/model_list.dart';
 
 /// SQLite-backed [TaskListRepository].
 ///

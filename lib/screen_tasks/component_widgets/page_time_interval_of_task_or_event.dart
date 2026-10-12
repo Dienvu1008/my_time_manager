@@ -14,13 +14,13 @@ import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_tas
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 
 import '../../app/app_localizations.dart';
-import '../../data/models/model_list.dart';
-import '../../data/models/model_task.dart';
+import '../../domain/models/model_list.dart';
+import '../../domain/models/model_task.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../../domain/repositories/task_list_repository.dart';
 import '../../domain/repositories/time_interval_repository.dart';
 import '../../domain/services/time_interval_progress_service.dart';
-import '../../data/models/model_time_interval.dart';
+import '../../domain/models/model_time_interval.dart';
 import '../../home/component_widgets/button_select_calendar_mode.dart';
 import '../../home/component_widgets/button_show_timeline_calendar.dart';
 import '../../utils/utils.dart';

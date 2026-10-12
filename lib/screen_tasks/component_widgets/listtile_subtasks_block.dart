@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_schedule.dart';
 
 /// Khối chỉnh sửa danh sách công việc con của một task.

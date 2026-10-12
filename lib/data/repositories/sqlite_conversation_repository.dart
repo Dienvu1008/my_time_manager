@@ -1,6 +1,6 @@
 import '../../domain/repositories/conversation_repository.dart';
 import '../database/database_manager.dart';
-import '../models/model_conversation.dart';
+import '../../domain/models/model_conversation.dart';
 
 /// [ConversationRepository] chạy trên SQLite. Adapter mỏng qua [DatabaseManager].
 class SqliteConversationRepository implements ConversationRepository {

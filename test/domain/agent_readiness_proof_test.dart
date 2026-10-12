@@ -3,12 +3,12 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
-import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/data/repositories/sqlite_archive_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_task_list_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_task_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_trash_repository.dart';
-import 'package:my_time_manager/data/models/model_list.dart';
+import 'package:my_time_manager/domain/models/model_list.dart';
 import 'package:my_time_manager/domain/repositories/archive_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_repository.dart';

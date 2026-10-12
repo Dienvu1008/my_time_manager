@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/ai/core/ai_message.dart';
 import 'package:my_time_manager/ai/core/ai_tool_call.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
-import 'package:my_time_manager/data/models/model_conversation.dart';
+import 'package:my_time_manager/domain/models/model_conversation.dart';
 import 'package:my_time_manager/data/repositories/sqlite_conversation_repository.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 

@@ -1,4 +1,4 @@
-import '../../../data/models/model_calendar_event.dart';
+import '../../../domain/models/model_calendar_event.dart';
 import '../../../domain/repositories/calendar_repository.dart';
 import '../tool.dart';
 import '../tool_args.dart';

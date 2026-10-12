@@ -1,9 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:my_time_manager/data/models/model_calendar_event.dart';
-import 'package:my_time_manager/data/models/model_list.dart';
-import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/models/model_calendar_event.dart';
+import 'package:my_time_manager/domain/models/model_list.dart';
+import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/card_calendar_event.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_calendar_event.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_list.dart';
@@ -11,7 +11,7 @@ import 'package:my_time_manager/screen_tasks/component_widgets/page_add_edit_tas
 import 'package:my_time_manager/screen_tasks/component_widgets/card_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../app/app_localizations.dart';
-import '../data/models/models.dart';
+import '../domain/models/models.dart';
 import '../data/repositories/sqlite_task_list_repository.dart';
 import '../domain/repositories/task_repository.dart';
 import '../domain/repositories/task_list_repository.dart';

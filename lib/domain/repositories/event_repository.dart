@@ -1,4 +1,4 @@
-import '../../data/models/models.dart';
+import '../models/models.dart';
 
 /// Domain boundary for the **legacy `events` table** ([Event] model).
 ///

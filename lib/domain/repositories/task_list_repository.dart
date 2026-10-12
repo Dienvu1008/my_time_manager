@@ -1,4 +1,4 @@
-import '../../data/models/model_list.dart';
+import '../models/model_list.dart';
 
 /// Domain boundary for **task lists**.
 ///

@@ -1,4 +1,4 @@
-import '../../data/models/model_time_interval.dart';
+import '../models/model_time_interval.dart';
 import '../repositories/time_interval_repository.dart';
 
 /// Domain rules for changing a time interval's completion / measurable progress.

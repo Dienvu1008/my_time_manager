@@ -1,4 +1,4 @@
-import '../../data/models/model_conversation.dart';
+import '../models/model_conversation.dart';
 
 /// Ranh giới domain cho **lịch sử chat AI**: các cuộc trò chuyện và tin nhắn
 /// của chúng. Tầng UI (và tương lai là các công cụ AI) phụ thuộc vào interface

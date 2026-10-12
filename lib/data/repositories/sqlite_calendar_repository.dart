@@ -1,6 +1,6 @@
 import '../../domain/repositories/calendar_repository.dart';
 import '../database/database_manager.dart';
-import '../models/model_calendar_event.dart';
+import '../../domain/models/model_calendar_event.dart';
 
 /// SQLite-backed [CalendarRepository].
 ///

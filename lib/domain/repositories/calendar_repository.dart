@@ -1,4 +1,4 @@
-import '../../data/models/model_calendar_event.dart';
+import '../models/model_calendar_event.dart';
 
 /// Domain boundary for **calendar events** (the Google-Calendar-compatible
 /// [CalendarEvent] model).

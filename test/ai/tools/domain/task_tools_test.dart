@@ -4,7 +4,7 @@ import 'package:my_time_manager/ai/tools/tool.dart';
 import 'package:my_time_manager/ai/tools/tool_executor.dart';
 import 'package:my_time_manager/ai/tools/tool_registry.dart';
 import 'package:my_time_manager/ai/tools/tool_result.dart';
-import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/services/task_completion_service.dart';
 

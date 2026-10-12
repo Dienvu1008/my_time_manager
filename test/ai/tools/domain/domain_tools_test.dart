@@ -5,16 +5,16 @@ import 'package:my_time_manager/ai/tools/tool.dart';
 import 'package:my_time_manager/ai/tools/tool_executor.dart';
 import 'package:my_time_manager/ai/tools/tool_registry.dart';
 import 'package:my_time_manager/ai/tools/tool_result.dart';
-import 'package:my_time_manager/data/models/model_calendar_event.dart';
-import 'package:my_time_manager/data/models/model_task.dart';
-import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/domain/models/model_calendar_event.dart';
+import 'package:my_time_manager/domain/models/model_task.dart';
+import 'package:my_time_manager/domain/models/model_time_interval.dart';
 import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
 import 'package:my_time_manager/domain/repositories/focus_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
 import 'package:my_time_manager/domain/services/focus_statistics_service.dart';
 import 'package:my_time_manager/domain/services/task_completion_service.dart';
-import 'package:my_time_manager/screen_focus_timer/data/model_focus_session.dart';
+import 'package:my_time_manager/domain/models/model_focus_session.dart';
 
 // ---- Fakes (headless; no SQLite, no NotificationService) --------------------
 

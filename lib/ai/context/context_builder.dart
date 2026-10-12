@@ -1,5 +1,5 @@
-import '../../data/models/model_calendar_event.dart';
-import '../../data/models/model_time_interval.dart';
+import '../../domain/models/model_calendar_event.dart';
+import '../../domain/models/model_time_interval.dart';
 import '../../domain/repositories/calendar_repository.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../../domain/repositories/time_interval_repository.dart';

@@ -7,7 +7,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../../data/models/model_time_interval.dart';
+import '../../domain/models/model_time_interval.dart';
 
 /// Dịch vụ thông báo khi hết giờ, xử lý khác nhau theo nền tảng:
 ///

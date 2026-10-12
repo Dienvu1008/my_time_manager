@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' show TimeOfDay;
 
-import '../../../data/models/model_time_interval.dart';
+import '../../../domain/models/model_time_interval.dart';
 import '../../../domain/repositories/time_interval_repository.dart';
 import '../tool.dart';
 import '../tool_args.dart';

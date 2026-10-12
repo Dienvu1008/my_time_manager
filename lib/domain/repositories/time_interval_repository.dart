@@ -1,4 +1,4 @@
-import '../../data/models/model_time_interval.dart';
+import '../models/model_time_interval.dart';
 
 /// Domain boundary for **time intervals** (planned schedule entries for a task
 /// or one of its subtasks).

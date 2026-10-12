@@ -4,7 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
-import 'package:my_time_manager/data/models/model_calendar_event.dart';
+import 'package:my_time_manager/domain/models/model_calendar_event.dart';
 import 'package:my_time_manager/data/repositories/sqlite_calendar_repository.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 

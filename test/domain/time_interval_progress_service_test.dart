@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_time_manager/data/models/model_time_interval.dart';
+import 'package:my_time_manager/domain/models/model_time_interval.dart';
 import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
 import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
 

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-import '../models/model_calendar_event.dart';
+import '../../domain/models/model_calendar_event.dart';
 import '../repositories/sqlite_calendar_repository.dart';
 import '../../domain/repositories/calendar_repository.dart';
 

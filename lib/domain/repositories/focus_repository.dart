@@ -1,4 +1,4 @@
-import '../../screen_focus_timer/data/model_focus_session.dart';
+import '../models/model_focus_session.dart';
 
 /// Domain boundary for **focus sessions** (Pomodoro focus runs used for
 /// statistics and, in the future, by AI focus/analytics tools).

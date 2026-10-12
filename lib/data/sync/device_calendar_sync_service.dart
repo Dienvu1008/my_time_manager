@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../device_calendar/device_calendar_service.dart';
-import '../models/model_calendar_event.dart';
+import '../../domain/models/model_calendar_event.dart';
 import '../repositories/sqlite_calendar_repository.dart';
 import '../../domain/repositories/calendar_repository.dart';
 

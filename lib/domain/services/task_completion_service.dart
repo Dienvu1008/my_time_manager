@@ -1,4 +1,4 @@
-import '../../data/models/model_task.dart';
+import '../models/model_task.dart';
 import '../repositories/task_repository.dart';
 
 /// Domain rules for changing a task's completion / measurable progress.

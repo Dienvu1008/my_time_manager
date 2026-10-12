@@ -76,8 +76,8 @@ these features.
 
 | ID | Phase | State |
 |---|---|---|
-| C1 | Stabilization (dead-code cleanup, regression tests, DB-init/transaction review, debug-output cleanup, doc alignment) | planned — **recommended first** |
-| C2 | Domain boundary cleanup (models → neutral package; retire legacy model/table where safe) | planned |
+| C1 | Stabilization (dead-code cleanup, regression tests, DB-init/transaction review, debug-output cleanup, doc alignment) | **done** (commit `fbfe0b1`) |
+| C2 | Domain boundary cleanup (models → `lib/domain/models/`; domain no longer imports `data/`) | **done** |
 | C3 | Thin application layer + authorized mutation workflows + side-effect coordination | planned |
 | C4 | Persistence refactor (`DatabaseManager` → per-aggregate DAOs behind a façade) | planned |
 | C5 | Goal / Plan / Milestone foundations | planned |
@@ -129,6 +129,23 @@ Nothing removed; nothing renumbered inside either track.
 
 ## 5. Known residuals / corrections to older docs
 
+- **C2 completed (domain/data model relocation).** The domain-shaped model
+  classes moved from `lib/data/models/` and `lib/screen_focus_timer/data/` into
+  `lib/domain/models/` (`model_task`, `model_list`, `model_time_interval`,
+  `model_calendar_event`, `model_note`, `model_conversation`,
+  `model_focus_session`, and the `Event`/`FocusInterval` barrel `models.dart`).
+  `lib/domain/**` now imports **no** `data/` path — the H2 dependency-direction
+  leak is closed. This was a pure file move: no field, schema, serialization,
+  or behavior change. Accepted, deliberately-deferred compromises (NOT fixed in
+  C2, to keep it a safe move): (1) these models still import
+  `package:flutter/material.dart` for `Color`/`TimeOfDay` — purging Flutter from
+  domain value types is a larger, invasive change left for a later phase;
+  (2) `model_conversation` imports `lib/ai/core` value types (`AiMessage`/
+  `AiToolCall`) — acceptable as those are provider-independent; (3) the legacy
+  `model_measurable_task.dart` / `model_task_with_subtasks.dart` were left in
+  `lib/data/models/` (one still has a live UI consumer; they are not on the
+  domain-leak surface) — retiring them is deferred to a separate legacy-cleanup
+  step.
 - **Notification side effect still in persistence.**
   `ARCHITECTURE_REFACTOR_REPORT.md` says the UI/Bloc/Controller layer no longer
   calls `DatabaseManager` directly — true — but `DatabaseManager` itself still

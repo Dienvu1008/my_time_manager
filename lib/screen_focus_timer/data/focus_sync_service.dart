@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'model_focus_session.dart';
+import '../../domain/models/model_focus_session.dart';
 
 /// Giao diện đồng bộ phiên focus lên đám mây.
 ///

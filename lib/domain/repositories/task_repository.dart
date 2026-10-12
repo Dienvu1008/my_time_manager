@@ -1,4 +1,4 @@
-import '../../data/models/model_task.dart';
+import '../models/model_task.dart';
 
 /// Domain boundary for **tasks** (the unified [Task] model, which covers plain,
 /// measurable, and with-subtasks tasks).

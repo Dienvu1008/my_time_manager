@@ -4,7 +4,7 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../data/models/model_note.dart';
+import '../domain/models/model_note.dart';
 import '../domain/repositories/note_repository.dart';
 
 /// Màn soạn thảo một ghi chú bằng trình soạn thảo block appflowy_editor.

@@ -1,4 +1,4 @@
-import '../../screen_focus_timer/data/model_focus_session.dart';
+import '../models/model_focus_session.dart';
 import '../repositories/focus_repository.dart';
 
 /// Aggregated focus statistics for a time range. All fields are computed

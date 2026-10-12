@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/models/model_task.dart';
+import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/screen_focus_timer/bloc/pomodoro_config.dart';
-import 'package:my_time_manager/screen_focus_timer/data/model_focus_session.dart';
+import 'package:my_time_manager/domain/models/model_focus_session.dart';
 import 'package:my_time_manager/screen_focus_timer/view/pomodoro_screen.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/attached_notes_view.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/bottomsheet_show_or_set_time_intervals.dart';

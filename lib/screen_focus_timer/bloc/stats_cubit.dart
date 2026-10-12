@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/repositories/focus_repository.dart';
-import '../data/model_focus_session.dart';
+import '../../domain/models/model_focus_session.dart';
 
 /// Khoảng thời gian thống kê.
 enum StatsRange {

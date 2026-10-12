@@ -1,6 +1,6 @@
 import 'package:uuid/uuid.dart';
 
-import '../../data/models/model_time_interval.dart';
+import '../models/model_time_interval.dart';
 import '../repositories/time_interval_repository.dart';
 import 'repeat_rule.dart';
 

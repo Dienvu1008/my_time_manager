@@ -1,6 +1,6 @@
 import '../../domain/repositories/task_repository.dart';
 import '../database/database_manager.dart';
-import '../models/model_task.dart';
+import '../../domain/models/model_task.dart';
 
 /// SQLite-backed [TaskRepository].
 ///

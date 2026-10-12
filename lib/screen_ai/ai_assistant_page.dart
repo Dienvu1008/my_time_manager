@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../ai/agent/workflows/agent_workflow.dart';
 import '../ai/policy/confirmation.dart';
-import '../data/models/model_conversation.dart';
+import '../domain/models/model_conversation.dart';
 import 'ai_assistant_controller.dart';
 
 /// A simple AI Assistant screen. It shows the transcript, a live status line

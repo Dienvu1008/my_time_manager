@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/models/model_calendar_event.dart';
-import 'package:my_time_manager/data/models/model_list.dart';
+import 'package:my_time_manager/domain/models/model_calendar_event.dart';
+import 'package:my_time_manager/domain/models/model_list.dart';
 import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_location.dart';

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../data/model_focus_session.dart';
+import '../../domain/models/model_focus_session.dart';
 
 /// Giai đoạn hiện tại trong chu kỳ Pomodoro.
 enum PomodoroPhase {

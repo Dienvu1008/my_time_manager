@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_time_manager/app/app.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
-import 'package:my_time_manager/data/models/model_calendar_event.dart';
+import 'package:my_time_manager/domain/models/model_calendar_event.dart';
 import 'package:my_time_manager/utils/constants.dart';
 import 'package:my_time_manager/utils/utils.dart';
 

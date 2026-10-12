@@ -13,7 +13,7 @@ import '../ai/policy/action_policy.dart';
 import '../ai/policy/confirmation.dart';
 import '../ai/tools/tool_executor.dart';
 import '../ai/tools/tool_registry.dart';
-import '../data/models/model_conversation.dart';
+import '../domain/models/model_conversation.dart';
 import '../domain/repositories/conversation_repository.dart';
 
 /// A message shown in the assistant transcript.
