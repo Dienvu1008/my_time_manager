@@ -32,33 +32,6 @@ A cross-platform time-management application built with **Flutter**: manage task
 
 ---
 
-## Screenshots
-
-> Images are stored in the `res/` folder of the repository.
-
-**Overview & task types**
-
-| Overview | Task | Measurable task | Task with subtasks |
-| --- | --- | --- | --- |
-| ![Overview](res/overview.jpg) | ![Task](res/task.jpg) | ![Measurable task](res/measurabletask.jpg) | ![Task with subtasks](res/taskwithsubtasks.jpg) |
-
-**Planning & timeline**
-
-| Planned | Set time interval | Plan tracking | Timeline |
-| --- | --- | --- | --- |
-| ![Planned](res/planned.jpg) | ![Set time interval](res/settimeinterval.jpg) | ![Plan tracking](res/plan-tracking.jpg) | ![Timeline](res/timeline.jpg) |
-
-**Calendar views**
-
-| Daily | Weekly | Monthly |
-| --- | --- | --- |
-| ![Daily view](res/example-daily-view.jpg) | ![Weekly view](res/example-weekly-view.jpg) | ![Monthly view](res/example-monthly-view.jpg) |
-
-**Light / dark mode**
-
-![Light and dark mode](res/dark_light_mode.gif)
-
----
 
 ## Features
 
