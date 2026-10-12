@@ -1,7 +1,6 @@
 import 'package:calendar_widgets/src_table_calendar/table_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:my_time_manager/home/component_widgets/button_use_bottom_bar.dart';
-import 'package:my_time_manager/screen_tasks/page_tasks_timeline.dart';
 import '../../app/app_localizations.dart';
 import '../../utils/constants.dart';
 import 'button_brightness.dart';

@@ -39,7 +39,7 @@ enum AiAssistantStatus { idle, thinking, toolRunning, error }
 /// Drives the AI Assistant screen: holds the transcript, builds targeted
 /// context, runs the agent loop, surfaces confirmation requests to the UI, and
 /// exposes status for progress indicators. Uses ChangeNotifier to match the
-/// app's existing lightweight controller pattern (DataController).
+/// app's lightweight controller pattern used across the UI.
 ///
 /// It assembles its own [AgentRuntime] and [ToolExecutor] from the primitives
 /// (engine, registry, policy, context builder). Building them here — rather than

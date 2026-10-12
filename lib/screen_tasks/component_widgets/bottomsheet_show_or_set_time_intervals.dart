@@ -11,7 +11,6 @@ import 'package:my_time_manager/domain/repositories/time_interval_repository.dar
 import 'package:my_time_manager/domain/services/recurrence_service.dart';
 import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
 import 'package:my_time_manager/data/models/model_time_interval.dart';
-import 'package:my_time_manager/home/data_controller_provider.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_alarm.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_repeat.dart';
 import 'package:my_time_manager/domain/services/repeat_rule.dart';

@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/auth/bloc/auth_bloc.dart';
 import 'package:my_time_manager/auth/view/account_screen.dart';
-import 'package:my_time_manager/home/data_controller_provider.dart';
 import 'package:my_time_manager/screen_calendar/view_daily.dart';
 import 'package:my_time_manager/screen_calendar/view_monthly.dart';
 import 'package:my_time_manager/screen_tasks/page_tasks_timeline_new.dart';
@@ -30,7 +29,6 @@ import '../screen_notes/page_notes_list.dart';
 import '../screen_settings/page_settings_sync_and_backup.dart';
 import '../screen_settings/page_settings_user_interface.dart';
 import '../screen_tasks/page_tasks_overview.dart';
-import '../screen_tasks/page_tasks_timeline.dart';
 import '../utils/constants.dart';
 import '../screen_material_design/page_elevation.dart';
 import '../screen_material_design/page_typography.dart';
@@ -53,7 +51,6 @@ import 'component_widgets/destinations_settings_screen.dart';
 import 'component_widgets/destionations_nav_rail_calendar_screen.dart';
 import 'component_widgets/transition_navigation.dart';
 import 'component_widgets/transition_one_two.dart';
-import 'data_controller.dart';
 
 class Home extends StatefulWidget {
   const Home({

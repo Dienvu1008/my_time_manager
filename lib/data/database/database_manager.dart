@@ -9,7 +9,7 @@ import 'package:my_time_manager/screen_focus_timer/data/model_focus_session.dart
 import 'package:my_time_manager/screen_focus_timer/data/notification_service.dart';
 import 'package:my_time_manager/screen_archive/model_archived_item.dart';
 import 'package:my_time_manager/screen_trash/model_trashed_item.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -445,113 +445,6 @@ class DatabaseManager {
     // Trigger đồng bộ tiêu đề/màu xuống interval của task cha + trigger xóa
     // interval khi xóa task.
     await _createTaskTriggers(db);
-
-    //_addSampleData();
-  }
-
-  Future<void> _addSampleData() async {
-    final db = await _initDatabase();
-
-    await db.insert(
-      'tasklists',
-      {
-        'id': 'a',
-        'title': 'Enjoy your life',
-        'description': 'Do something that make you happy'
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    await db.insert(
-      'tasks',
-      {
-        'id': 'a1',
-        'title': 'Eat what you find tasty',
-        'description': '',
-        'color': 0xFF0000FF,
-        'isCompleted': 0,
-        'isImportant': 1,
-        'taskListId': 'a',
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    await db.insert(
-      'tasks',
-      {
-        'id': 'a2',
-        'title':
-            'Sit in a beautiful and quiet cafe, observing everything around you',
-        'description': '',
-        'color': 0xFF0000FF,
-        'isCompleted': 0,
-        'isImportant': 0,
-        'taskListId': 'a',
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    await db.insert(
-      'tasks',
-      {
-        'id': 'a3',
-        'title': 'Have a good sleep at night',
-        'description': '',
-        'color': 0xFF0000FF,
-        'isCompleted': 0,
-        'isImportant': 1,
-        'taskListId': 'a',
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    await db.insert(
-      'tasks',
-      {
-        'id': 'a4',
-        'title': 'Take a deep breath, make your mind be at peace',
-        'description': '',
-        'color': 0xFF0000FF,
-        'isCompleted': 0,
-        'isImportant': 1,
-        'taskListId': 'a',
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    await db.insert(
-      'tasks',
-      {
-        'id': 'a5',
-        'title': 'Talk frequently with the person you feel comfortable with',
-        'description': '',
-        'color': 0xFF0000FF,
-        'isCompleted': 0,
-        'isImportant': 1,
-        'taskListId': 'a',
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    await db.insert(
-      'tasklists',
-      {
-        'id': 'b',
-        'title': 'Challenge',
-        'description': 'Workout and maintain your good habits'
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    await db.insert(
-      'tasklists',
-      {
-        'id': 'c',
-        'title': 'Study',
-        'description': 'Flutter Dart, Machine Learning, Electrical Engineering'
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
   }
 
   Future<void> deleteDatabase() async {
@@ -976,8 +869,7 @@ class DatabaseManager {
         await NotificationService.instance.scheduleForTimeInterval(ti);
       }
     } catch (e) {
-      // ignore: avoid_print
-      print('rescheduleAllReminders lỗi: $e');
+      debugPrint('rescheduleAllReminders lỗi: $e');
     }
   }
 
@@ -997,30 +889,6 @@ class DatabaseManager {
       await NotificationService.instance.cancelForTimeIntervalId(id);
     }
     await db.delete('timeintervals', where: 'id = ?', whereArgs: [id]);
-  }
-
-  Future<void> printTimeIntervals() async {
-    final db = await _databaseManager.database;
-    List<Map> result = await db.query('timeintervals');
-    for (var row in result) {
-      print(row);
-    }
-  }
-
-  Future<void> printTasks() async {
-    final db = await _databaseManager.database;
-    List<Map> result = await db.query('tasks');
-    for (var row in result) {
-      print(row);
-    }
-  }
-
-  Future<void> printTaskLists() async {
-    final db = await _databaseManager.database;
-    List<Map> result = await db.query('tasklists');
-    for (var row in result) {
-      print(row);
-    }
   }
 
   Future<void> onCreateTableTaskLists(Database db) async {
