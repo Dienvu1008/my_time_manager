@@ -1,4 +1,3 @@
-import 'package:my_time_manager/data/database/sample_data.dart';
 import 'package:my_time_manager/data/models/model_calendar_event.dart';
 import 'package:my_time_manager/data/models/model_conversation.dart';
 import 'package:my_time_manager/data/models/model_list.dart';
@@ -322,7 +321,12 @@ class DatabaseManager {
     await onCreateTableConversations(db);
     await onCreateTableChatMessages(db);
 
-    addSampleData();
+    // KHÔNG gọi addSampleData() ở đây. Đó là hàm async seed dữ liệu mẫu, gọi
+    // KHÔNG await và bên trong lại re-enter DatabaseManager().database (mở lại
+    // DB) NGAY TRONG lúc onCreate đang chạy trong transaction mở của sqflite.
+    // Việc này phá trạng thái transaction -> COMMIT lúc mở thất bại
+    // ("no current transaction") -> sqflite đóng DB -> mọi truy vấn sau báo
+    // database_closed. Người dùng thật cũng không cần dữ liệu mẫu.
 
 
     // Run the CREATE {tasks} TABLE statement on the database.

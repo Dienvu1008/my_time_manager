@@ -30,6 +30,17 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- AdMob App ID (BẮT BUỘC khi phụ thuộc google_mobile_ads).
+             Plugin có một ContentProvider (MobileAdsInitProvider) tự chạy lúc
+             khởi động app và sẽ CRASH nếu thiếu meta-data này — kể cả khi
+             MobileAds.instance.initialize() ở Dart đang bị tắt.
+             Đang dùng App ID MẪU (test) công khai của Google để app chạy được
+             mà không cần tài khoản AdMob thật và không hiện quảng cáo thật.
+             Khi có App ID thật, thay giá trị bên dưới (dạng ca-app-pub-XXXX~YYYY). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

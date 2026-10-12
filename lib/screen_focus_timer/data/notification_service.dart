@@ -138,21 +138,46 @@ class NotificationService {
     }
   }
 
-  /// Yêu cầu quyền hiển thị thông báo trên mobile (Android 13+/iOS) và quyền
-  /// đặt báo thức chính xác (Android 12+).
-  Future<void> requestPermissions() async {
+  /// Xin quyền HIỂN THỊ THÔNG BÁO (Android 13+ / iOS). Đây là hộp thoại nhẹ,
+  /// KHÔNG đưa người dùng rời khỏi app — an toàn để gọi lúc khởi động (sau khi
+  /// UI đã render). KHÔNG bao gồm quyền báo thức chính xác (xem
+  /// [requestExactAlarmPermission]).
+  Future<void> requestNotificationPermission() async {
     if (!_isMobile) return;
     try {
       final android = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       await android?.requestNotificationsPermission();
-      await android?.requestExactAlarmsPermission();
       await _plugin
           .resolvePlatformSpecificImplementation<
               IOSFlutterLocalNotificationsPlugin>()
           ?.requestPermissions(alert: true, badge: true, sound: true);
     } catch (e) {
-      debugPrint('requestPermissions lỗi: $e');
+      debugPrint('requestNotificationPermission lỗi: $e');
+    }
+  }
+
+  /// Xin quyền ĐẶT BÁO THỨC CHÍNH XÁC (Android 12+). CẢNH BÁO: trên Android
+  /// 12+, hàm này KHÔNG mở hộp thoại mà CHUYỂN sang màn Cài đặt hệ thống
+  /// (Alarms & reminders), đưa app ra nền. Vì vậy chỉ nên gọi ĐÚNG LÚC người
+  /// dùng chủ động bật/đặt nhắc, KHÔNG gọi lúc khởi động. No-op trên nền tảng
+  /// khác Android hoặc khi đã có quyền.
+  ///
+  /// Trả về true nếu (sau lời gọi) quyền đã được cấp hoặc không cần xin.
+  Future<bool> requestExactAlarmPermission() async {
+    if (!_isMobile) return true;
+    try {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android == null) return true;
+      // Nếu đã có quyền thì không mở màn Cài đặt.
+      final already = await android.canScheduleExactNotifications();
+      if (already == true) return true;
+      final granted = await android.requestExactAlarmsPermission();
+      return granted ?? false;
+    } catch (e) {
+      debugPrint('requestExactAlarmPermission lỗi: $e');
+      return false;
     }
   }
 
@@ -239,6 +264,14 @@ class NotificationService {
     final title = timeInterval.title.isNotEmpty
         ? timeInterval.title
         : 'Sắp đến giờ';
+
+    // Đảm bảo có quyền báo thức chính xác trước khi zonedSchedule (Android 12+).
+    // Gọi ở đây — đúng lúc người dùng thực sự đặt nhắc — nên nếu có mở màn Cài
+    // đặt hệ thống thì cũng là hành động họ chủ động, không phải lúc khởi động.
+    // Đã có quyền -> no-op (không mở Cài đặt). Không chặn: nếu người dùng từ
+    // chối, plugin vẫn cố lên lịch (có thể kém chính xác) thay vì bỏ hẳn.
+    await requestExactAlarmPermission();
+
     for (final minutes in timeInterval.reminderMinutesBefore.toSet()) {
       final when = start.subtract(Duration(minutes: minutes));
       final body = _reminderBody(minutes, start);

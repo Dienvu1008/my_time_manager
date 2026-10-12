@@ -20,9 +20,12 @@ Future<void> main() async {
   // Khởi tạo dịch vụ thông báo (bao gồm nạp timezone) cho Focus Timer và tính
   // năng nhắc lịch. An toàn, tự bỏ qua nếu lỗi.
   await NotificationService.instance.init();
-  // Xin quyền thông báo + báo thức chính xác (Android 13+/12+, iOS). Không chặn
-  // khởi động: bọc try/catch ở bên trong service.
-  await NotificationService.instance.requestPermissions();
+  // LƯU Ý: KHÔNG xin quyền báo thức chính xác (exact alarm) ở đây. Trên
+  // Android 12+, requestExactAlarmsPermission() KHÔNG mở hộp thoại mà CHUYỂN
+  // sang màn Cài đặt hệ thống — nếu gọi (và await) trước runApp thì app bị đưa
+  // ra nền ngay khi khởi động, quay lại thấy màn trắng/loading. Quyền thông báo
+  // (dialog nhẹ, không rời app) được xin SAU khi UI đã hiện (xem bên dưới),
+  // còn quyền exact-alarm để xin đúng lúc người dùng bật/đặt nhắc.
 
   // Định danh thiết bị (deviceId) cho tính năng export/import: mọi bản ghi ghi
   // từ máy này sẽ mang deviceId này. An toàn nếu lỗi (deviceId = null).
@@ -68,6 +71,15 @@ Future<void> main() async {
   const bool isProVersion = false;
 
   runApp(App(isProVersion: isProVersion, firebaseReady: firebaseReady));
+
+  // Sau khi UI đã render (không chặn khởi động), xin quyền THÔNG BÁO — đây là
+  // hộp thoại nhẹ (Android 13+/iOS), không đưa người dùng rời khỏi app. Quyền
+  // báo thức chính xác KHÔNG xin ở đây (nó mở màn Cài đặt hệ thống, gây gián
+  // đoạn) — sẽ xin đúng lúc người dùng bật/đặt nhắc.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Không await: chạy nền, lỗi được nuốt bên trong service.
+    NotificationService.instance.requestNotificationPermission();
+  });
 
   // --- AdMob TẠM THỜI BỊ TẮT ---
   // Tài khoản AdMob đang bị deactivate nên khởi tạo Google Mobile Ads sẽ gây

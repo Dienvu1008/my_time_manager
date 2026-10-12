@@ -100,48 +100,67 @@ class _TaskCardState extends State<TaskCard> {
               Expanded(
                 child: GestureDetector(
                   onTap: () => widget.onTaskEdit(task),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.only(right: 0, left: 8),
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // Thay ListTile bằng Padding + Row tự-co-theo-nội-dung. ListTile
+                  // áp một chiều cao tối thiểu cố định; khi title xếp nhiều dòng
+                  // (nhãn "Quan trọng" + tiêu đề + mục tiêu + ghi chú) và bị bọc
+                  // trong IntrinsicHeight ở kiểu leadingColorBar, nội dung vượt
+                  // quá chiều cao đó -> RenderFlex overflow vài pixel ở đáy.
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8, right: 0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        if (task.isImportant)
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              localizations.important,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 10),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (task.isImportant)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    child: Text(
+                                      localizations.important,
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 10),
+                                    ),
+                                  ),
+                                Text(
+                                  task.title,
+                                  style: task.isCompleted
+                                      ? textTheme.labelLarge!.copyWith(
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                          color: labelColor)
+                                      : textTheme.labelLarge!
+                                          .copyWith(color: labelColor),
+                                ),
+                                if (task.isMeasurable)
+                                  Text(
+                                    _targetLabel(localizations),
+                                    style: textTheme.labelMedium!
+                                        .copyWith(color: labelColor),
+                                  ),
+                                if (task.noteIds.isNotEmpty)
+                                  AttachedNotesView(
+                                    noteIds: task.noteIds,
+                                    color: labelColor,
+                                    textStyle: textTheme.labelMedium!
+                                        .copyWith(color: labelColor),
+                                  ),
+                              ],
                             ),
                           ),
-                        Text(
-                          task.title,
-                          style: task.isCompleted
-                              ? textTheme.labelLarge!.copyWith(
-                                  decoration: TextDecoration.lineThrough,
-                                  color: labelColor)
-                              : textTheme.labelLarge!
-                                  .copyWith(color: labelColor),
                         ),
-                        if (task.isMeasurable)
-                          Text(
-                            _targetLabel(localizations),
-                            style: textTheme.labelMedium!
-                                .copyWith(color: labelColor),
-                          ),
-                        if (task.noteIds.isNotEmpty)
-                          AttachedNotesView(
-                            noteIds: task.noteIds,
-                            color: labelColor,
-                            textStyle: textTheme.labelMedium!
-                                .copyWith(color: labelColor),
-                          ),
+                        _buildMenu(context, localizations, labelColor),
                       ],
                     ),
-                    trailing: _buildMenu(context, localizations, labelColor),
                   ),
                 ),
               ),
