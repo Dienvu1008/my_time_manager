@@ -5,6 +5,13 @@ persistence layer, so that every UI/Bloc/Controller goes through domain
 repositories and domain services instead of calling `DatabaseManager` directly —
 making the codebase ready for a future AI agent to drive the same capabilities.
 
+> **Known residual (noted during roadmap reconciliation):** the UI/Bloc/Controller
+> layer no longer calls `DatabaseManager` directly, but `DatabaseManager` itself
+> still invokes `NotificationService` from `insertTimeInterval` /
+> `updateTimeInterval` / `deleteTimeInterval`. "No notification side effects in
+> low-level persistence" is therefore not yet satisfied; it is resolved in **Core
+> Track Phase R** (see `docs/architecture/roadmap.md`).
+
 **Hard constraints honored throughout:**
 
 - No AI / Ollama / llama.cpp / Rust / AI dependencies were added.

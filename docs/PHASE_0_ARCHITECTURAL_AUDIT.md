@@ -1,5 +1,12 @@
 # Phase 0 — Architectural Audit
 
+> **Historical document.** This was the pre-AI-work audit. It remains accurate as
+> a point-in-time record but is superseded in parts by
+> `ARCHITECTURE_REFACTOR_REPORT.md` and the canonical index
+> `docs/architecture/roadmap.md`. Note this audit predates the AI Track and the
+> schema has since advanced (now v12). "Phase 0" here is the **AI Track** audit
+> (AI-P0), not Core Track Phase C-anything.
+
 **Goal of this phase:** understand the existing architecture and decide *where* the
 AI layer will attach — **without implementing any AI code**. No dependencies were
 added. This is a findings report only.
