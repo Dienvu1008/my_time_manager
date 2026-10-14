@@ -1,0 +1,12 @@
+My Time Manager
+Copyright 2023-2026 Dienvu1008
+
+This product is licensed under the Apache License, Version 2.0 (the "License").
+You may obtain a copy of the License in the LICENSE file in this repository or at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+This product includes third-party open-source software distributed under their
+own licenses (declared in pubspec.yaml and resolved in pubspec.lock), including
+but not limited to Flutter and the Dart ecosystem packages. Those components
+remain under their respective licenses.
