@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart' show TimeOfDay;
-import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/domain/models/model_task.dart';
@@ -18,39 +17,19 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 /// REGRESSION GUARD for the write-consistency invariant that the now-deleted
 /// legacy `DataController.update(event, updated)` violated: it persisted the
 /// OLD `event` while mutating only in-memory display state with `updated`,
-/// causing DB/memory divergence. The repository is the single write path now;
-/// this pins the invariant so no future caller can reintroduce the bug.
+/// causing DB/memory divergence.
 ///
-/// (The reminder side effect that DatabaseManager runs on insert/update is a
-/// no-op off-mobile, so it does nothing under `@TestOn('vm')`.)
+/// Since Phase C3, [SqliteTimeIntervalRepository] injects [NoOpReminderScheduler]
+/// by default, so these tests no longer need Flutter platform bindings or
+/// channel mocks — they are pure Dart + FFI SQLite.
 void main() {
   setUpAll(() {
-    // Creating/updating a time interval goes through DatabaseManager, which
-    // calls NotificationService. Its singleton eagerly constructs an
-    // AudioPlayer, and flutter_local_notifications/audioplayers hit platform
-    // method channels that don't exist under `flutter test`. Stub those
-    // channels so construction + the (off-mobile, no-op) scheduling calls
-    // succeed instead of throwing MissingPluginException. This is test-harness
-    // setup only; it does not change production behavior.
-    final binding = TestWidgetsFlutterBinding.ensureInitialized();
-    final messenger = binding.defaultBinaryMessenger;
-    for (final channel in const [
-      'xyz.luan/audioplayers',
-      'xyz.luan/audioplayers.global',
-      'dexterous.com/flutter/local_notifications',
-    ]) {
-      messenger.setMockMethodCallHandler(
-        MethodChannel(channel),
-        (methodCall) async => null,
-      );
-    }
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   });
 
   setUp(() async {
-    // Fresh in-memory DB per test (see the task-repository test for why we do
-    // not tear it down between tests).
+    // Fresh in-memory DB per test.
     await DatabaseManager().resetForTesting(inMemory: true);
   });
 
@@ -104,8 +83,7 @@ void main() {
     );
     await repo.updateTimeInterval(updated);
 
-    // Re-read from the DB: the persisted row must reflect the UPDATED values,
-    // never the original ones.
+    // Re-read from the DB: the persisted row must reflect the UPDATED values.
     final reloaded = await repo.getTimeInterval(original.id);
     expect(reloaded.id, original.id);
     expect(reloaded.title, 'After');

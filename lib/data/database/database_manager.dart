@@ -6,10 +6,9 @@ import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/domain/models/model_time_interval.dart';
 import 'package:my_time_manager/domain/models/models.dart';
 import 'package:my_time_manager/domain/models/model_focus_session.dart';
-import 'package:my_time_manager/screen_focus_timer/data/notification_service.dart';
 import 'package:my_time_manager/screen_archive/model_archived_item.dart';
 import 'package:my_time_manager/screen_trash/model_trashed_item.dart';
-import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -487,9 +486,9 @@ class DatabaseManager {
       _withDeviceId(timeInterval.toMap()),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    // Lên lịch các thông báo nhắc (nếu có). An toàn: lỗi được nuốt bên trong.
-    await NotificationService.instance.scheduleForTimeInterval(timeInterval);
-    //printTimeIntervals();
+    // Side-effect (lên lịch nhắc) được xử lý bởi SqliteTimeIntervalRepository
+    // thông qua ReminderScheduler — DatabaseManager không gọi NotificationService
+    // nữa (fix H3 trong Core Track C3).
   }
 
   Future<void> insertEvent(Event event) async {
@@ -827,8 +826,7 @@ class DatabaseManager {
       where: 'id = ?',
       whereArgs: [timeInterval.id],
     );
-    // Lên lịch lại thông báo nhắc (scheduleForTimeInterval tự hủy mốc cũ trước).
-    await NotificationService.instance.scheduleForTimeInterval(timeInterval);
+    // Side-effect (lên lịch lại nhắc) được xử lý bởi SqliteTimeIntervalRepository.
   }
 
   // A method that deletes a task list data from the tasklists table.
@@ -859,35 +857,10 @@ class DatabaseManager {
     await db.delete('events', where: 'id = ?', whereArgs: [id]);
   }
 
-  /// Lên lịch lại toàn bộ thông báo nhắc từ DB. Dùng khi người dùng bật lại
-  /// cài đặt nhắc (đã hủy hết khi tắt). An toàn nếu đang tắt (service tự bỏ qua).
-  Future<void> rescheduleAllReminders() async {
-    try {
-      await NotificationService.instance.cancelAll();
-      final all = await timeIntervals();
-      for (final ti in all) {
-        await NotificationService.instance.scheduleForTimeInterval(ti);
-      }
-    } catch (e) {
-      debugPrint('rescheduleAllReminders lỗi: $e');
-    }
-  }
-
   Future<void> deleteTimeInterval(String id) async {
     final db = await _databaseManager.database;
-    // Đọc interval trước khi xóa để hủy đúng các mốc nhắc đã đặt.
-    final rows =
-        await db.query('timeintervals', where: 'id = ?', whereArgs: [id]);
-    if (rows.isNotEmpty) {
-      try {
-        final ti = TimeInterval.fromMap(rows.first);
-        await NotificationService.instance.cancelForTimeInterval(ti);
-      } catch (_) {
-        await NotificationService.instance.cancelForTimeIntervalId(id);
-      }
-    } else {
-      await NotificationService.instance.cancelForTimeIntervalId(id);
-    }
+    // Xóa row. Side-effect hủy nhắc được xử lý bởi SqliteTimeIntervalRepository
+    // (đọc interval trước rồi gọi ReminderScheduler.cancel) — không cần làm ở đây.
     await db.delete('timeintervals', where: 'id = ?', whereArgs: [id]);
   }
 

@@ -11,6 +11,7 @@ import 'package:my_time_manager/auth/view/auth_gate.dart';
 import 'package:my_time_manager/data/repositories/sqlite_task_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_task_list_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_time_interval_repository.dart';
+import 'package:my_time_manager/application/notification_reminder_scheduler.dart';
 import 'package:my_time_manager/data/repositories/sqlite_calendar_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_note_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_conversation_repository.dart';
@@ -77,7 +78,9 @@ class App extends StatelessWidget {
               TaskCompletionService(context.read<TaskRepository>()),
         ),
         RepositoryProvider<TimeIntervalRepository>(
-          create: (_) => SqliteTimeIntervalRepository(),
+          create: (_) => SqliteTimeIntervalRepository(
+            reminderScheduler: const NotificationReminderScheduler(),
+          ),
         ),
         RepositoryProvider<RecurrenceService>(
           create: (context) =>
@@ -362,7 +365,10 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
   AppBloc({TimeIntervalRepository? timeIntervalRepository})
       : _timeIntervalRepository =
-            timeIntervalRepository ?? SqliteTimeIntervalRepository(),
+            timeIntervalRepository ??
+            SqliteTimeIntervalRepository(
+              reminderScheduler: const NotificationReminderScheduler(),
+            ),
         super(AppState(
             useMaterial3: true,
             useBottomBar: true,
