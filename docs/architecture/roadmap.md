@@ -90,7 +90,7 @@ these features.
 | C12 | Analytics & planned-vs-actual (reuses AI-P11 deterministic metrics) | planned |
 | **R** | **Reminders & Alarms** (after C3) | **done** — contract in §6 |
 | **H** | **Habit Tracking** (after R) | **done** — contract in §6 |
-| **DR** | **Daily Review & Adaptive Rescheduling** (after H + C5) | planned — contract in §6 |
+| **DR** | **Daily Review & Adaptive Rescheduling** (after H + C5) | **in progress** — DR1 done (deterministic core), DR2 (UI + review time/notification) planned — contract in §6 |
 | C16 | Dashboard & user-facing UI | planned (visibility preserved) |
 | C17 | Integrations (Telegram, VS Code where applicable) | planned (visibility preserved) |
 | C18 | Benchmarking & dogfooding / observability | planned (visibility preserved) |
@@ -489,8 +489,74 @@ open questions.
   availability limits; repeated review produces no duplicate/unintended
   mutations.
 - **Rollback:** proposals transient/reversible; feature flag disables the review.
-- **Open:** DR-a (atomicity when a multi-item accepted batch partially fails);
-  DR-b (definition of a "user-fixed" appointment that must never auto-move).
+- **Settled DR-a (atomicity):** apply is **per-item transactional**. Each
+  accepted item is re-validated (fresh fingerprint + conflict re-check) and
+  applied independently; the result reports per item `applied` /
+  `rejectedStale` / `rejectedConflict` / `failed` (plus `noChange`,
+  `notApplicable`, `notConfirmed`). No item is ever left half-applied (split
+  = create part 2, then update the original; if the update fails the created
+  row is deleted again). Items already applied are **not** rolled back when a
+  later one fails — reported as a partial result.
+- **Settled DR-b (user-fixed appointments):** DR **never moves
+  CalendarEvents**. Opaque events (`transparency != transparent` and
+  `status != cancelled`, recurring ones expanded via the injected occurrence
+  expander — same closure shape as R's `CalendarOccurrenceExpander`; all-day
+  opaque events block the whole day) block availability; transparent /
+  cancelled events do not. DR only changes **task TimeInterval occurrences**
+  (never a RepeatRule / series — intervals carry no series link, every row is
+  an occurrence). Habits are reported (pending / missed today), never moved.
+  **Deadline** = an incomplete interval whose known end date is on/before the
+  review day; a deadline is never moved silently (`movesDeadline` flag shown
+  in the confirmation) and with no slot it is `unresolvable` (unchanged).
+- **DR1 delivered (deterministic core, no schema change, no UI)** —
+  `lib/application/daily_review/` (barrel `daily_review.dart`; pure, no
+  Flutter / sqflite / plugin / `lib/ai` imports, guarded by
+  `test/application/daily_review/daily_review_layering_test.dart`):
+  - `Availability` value object (working hours per weekday, default
+    09:00–18:00 Mon–Fri; `minSlot` 15 min; `buffer`; 5-min start grid;
+    `horizonDays` 7) + `AvailabilityCalculator` (busy blocks, `findSlot`,
+    conflicts, free time). Free = in working hours AND not blocked by an
+    opaque event AND not overlapping another incomplete, fully-timed interval
+    (date-only intervals have no duration and don't block).
+  - `DailyReviewService.review(now, availability)` → `DailyReview`: `overdue`
+    (known end < now), `startedIncomplete`
+    (`TimeIntervalProgressService.isStartedButIncomplete`, new pure helper),
+    `dueToday`; intervals of hidden / completed tasks or completed subtasks
+    excluded; order important → time → id; `habitsPending` / `habitsMissed`
+    (via `HabitStatisticsService.resolveDays`); `unscheduledTasks`
+    (informational backlog, not in `isAllClear`); `freeTimeToday`; counts;
+    positive empty state `isAllClear`.
+  - `ReschedulePlanner.plan(review, selections, availability)` →
+    transient `RescheduleProposal` (items with current vs proposed ranges,
+    conflicts, reason / assumption codes, `source`, per-item
+    `intervalFingerprint` + proposal fingerprint, `ignoredIds` for non-interval
+    selections such as habits / events). Policies: items processed in review
+    order; moved items free their slot, kept ones keep blocking, placed ones
+    block. `doNow` = next free slot today; `reschedule` = next free slot
+    on/after the target day (default tomorrow) within the horizon, or an
+    explicit `at` that is conflict-checked and never auto-shifted (conflict →
+    excluded from apply); `split` = two occurrences (part 1 today updates the
+    original, part 2 on/after the target day is a NEW row; default halves;
+    both fit or nothing); `keepPending` = no change; `cancelOccurrence` =
+    delete ONLY that occurrence (destructive, flagged, confirmed). Overcapacity
+    → only what fits; the rest `noCapacity` (keep pending) or, for deadlines,
+    `unresolvable`. Unknown duration → `needsDuration` unless the selection
+    supplies `duration` (Q-DR3).
+  - `ProposalApplier.apply(proposal, acceptedIds, confirm:, now:)`: nothing is
+    written without an approving `ReviewConfirmationHandler`
+    (`ReviewConfirmationRequest` — a domain-level equivalent of the AI
+    `ConfirmationRequest`, which is bound to `lib/ai` tools; declined /
+    throwing handler → no-op); re-reads each interval, rejects stale
+    fingerprints / hidden tasks, re-checks conflicts and past slots; writes
+    only via `TimeIntervalRepository` (reminders reconcile). Re-applying the
+    same proposal → `rejectedStale` (idempotent).
+  - Feature flag: `dailyReviewEnabledKey = 'dailyReviewEnabled'` (default on)
+    + `isDailyReviewEnabled(read)`; UI toggle in DR2.
+  - Tests: `test/application/daily_review/` (categorization, availability,
+    planner, applier incl. stale / conflict / partial failure / idempotency,
+    SQLite in-memory end-to-end, layering).
+- **DR2 (planned):** review screen + actions, configurable review time and
+  notification, settings toggle, wiring of the recurring-event expander.
 
 ### Phase C5 — Goal / Milestone foundations (contract, implemented)
 
@@ -779,10 +845,10 @@ open questions.
 ## 8. Remaining open questions (not settled by prior approvals)
 
 - ~~**H-a:** does `skipped` pause or break a streak?~~ Settled: pause (H1).
-- **DR-a:** atomicity when applying a multi-item accepted batch and one fails
-  (proposed: per-item transactional + report partial result).
-- **DR-b:** definition of a "user-fixed" appointment that must never auto-move
-  (proposed: a CalendarEvent marked busy/opaque, or an explicit lock flag).
+- ~~**DR-a:** atomicity of a partially failing accepted batch.~~ Settled:
+  per-item transactional + partial result (DR1, §6 DR).
+- ~~**DR-b:** definition of a "user-fixed" appointment.~~ Settled: DR never
+  moves CalendarEvents; opaque events block availability (DR1, §6 DR).
 
 ---
 
