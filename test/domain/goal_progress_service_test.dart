@@ -59,6 +59,8 @@ class _FakeGoalRepository implements GoalRepository {
   @override
   Future<void> setMilestoneCompleted(String id, bool completed) async {}
   @override
+  Future<void> reorderMilestones(String goalId, List<String> orderedIds) async {}
+  @override
   Future<List<GoalLink>> getLinksForEntity(
           String entityType, String entityId) async =>
       const [];

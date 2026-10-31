@@ -195,6 +195,32 @@ void main() {
       expect(links.single.milestoneId, isNull);
       expect(links.single.entityId, t.id);
     });
+
+    test('reorderMilestones sets sortOrder = index; other goals untouched',
+        () async {
+      final g = Goal(title: 'G');
+      final other = Goal(title: 'Other');
+      await goals.createGoal(g);
+      await goals.createGoal(other);
+      final a = Milestone(goalId: g.id, title: 'A');
+      final b = Milestone(goalId: g.id, title: 'B');
+      final c = Milestone(goalId: g.id, title: 'C');
+      final x = Milestone(goalId: other.id, title: 'X', sortOrder: 5);
+      for (final m in [a, b, c, x]) {
+        await goals.createMilestone(m);
+      }
+
+      await goals.reorderMilestones(g.id, [c.id, x.id, a.id, b.id]);
+      final back = await goals.getMilestones(g.id);
+      expect(back.map((m) => m.title), ['C', 'A', 'B']);
+      expect(back.map((m) => m.sortOrder), [0, 2, 3]);
+      expect((await goals.getMilestone(x.id))!.sortOrder, 5);
+
+      await goals.reorderMilestones(g.id, [c.id, a.id, b.id]);
+      final again = await goals.getMilestones(g.id);
+      expect(again.map((m) => m.title), ['C', 'A', 'B']);
+      expect(again.map((m) => m.sortOrder), [0, 1, 2]);
+    });
   });
 
   group('links', () {

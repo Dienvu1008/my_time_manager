@@ -249,6 +249,23 @@ class GoalDao {
     );
   }
 
+  /// Sắp xếp lại các cột mốc: sortOrder = vị trí trong [orderedIds], trong một
+  /// transaction. Id không thuộc [goalId] bị bỏ qua.
+  Future<void> reorderMilestones(String goalId, List<String> orderedIds) async {
+    final db = await _getDatabase();
+    final now = DateTime.now().toIso8601String();
+    await db.transaction((txn) async {
+      for (var i = 0; i < orderedIds.length; i++) {
+        await txn.update(
+          'milestones',
+          {'sortOrder': i, 'updateTimeStamp': now},
+          where: 'id = ? AND goalId = ?',
+          whereArgs: [orderedIds[i], goalId],
+        );
+      }
+    });
+  }
+
   // ------------------------------------------------------------------
   // GOAL LINKS
   // ------------------------------------------------------------------

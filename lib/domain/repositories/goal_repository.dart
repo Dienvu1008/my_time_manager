@@ -70,6 +70,11 @@ abstract class GoalRepository {
   /// Set/clear the milestone's manual completed flag (stamps completedAt).
   Future<void> setMilestoneCompleted(String id, bool completed);
 
+  /// Reorder the milestones of a goal: sets sortOrder = index in
+  /// [orderedIds], in a single transaction. Ids that do not belong to
+  /// [goalId] are ignored.
+  Future<void> reorderMilestones(String goalId, List<String> orderedIds);
+
   // --- Links ---
 
   /// All links of a goal.

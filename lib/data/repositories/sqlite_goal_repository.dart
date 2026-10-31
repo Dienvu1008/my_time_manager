@@ -65,6 +65,10 @@ class SqliteGoalRepository implements GoalRepository {
       _dao.setMilestoneCompleted(id, completed);
 
   @override
+  Future<void> reorderMilestones(String goalId, List<String> orderedIds) =>
+      _dao.reorderMilestones(goalId, orderedIds);
+
+  @override
   Future<List<GoalLink>> getLinks(String goalId) => _dao.linksOf(goalId);
 
   @override

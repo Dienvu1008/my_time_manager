@@ -2138,6 +2138,98 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- Shared pickers / form fields ---
+
+  String get search {
+    return {
+      'en': 'Search',
+      'vi': 'Tìm kiếm',
+      'de': 'Suchen',
+      'cs': 'Hledat',
+      'es': 'Buscar',
+      'fr': 'Rechercher',
+      'it': 'Cerca',
+      'ja': '検索',
+      'ko': '검색',
+      'no': 'Søk',
+      'ru': 'Поиск',
+      'sv': 'Sök',
+      'zh': '搜索',
+    }[locale.languageCode]!;
+  }
+
+  String get pickerNoItems {
+    return {
+      'en': 'Nothing to choose',
+      'vi': 'Không có mục nào để chọn',
+      'de': 'Nichts zur Auswahl',
+      'cs': 'Není z čeho vybírat',
+      'es': 'No hay nada que elegir',
+      'fr': 'Rien à choisir',
+      'it': 'Niente da scegliere',
+      'ja': '選択できる項目がありません',
+      'ko': '선택할 항목이 없습니다',
+      'no': 'Ingenting å velge',
+      'ru': 'Нечего выбрать',
+      'sv': 'Inget att välja',
+      'zh': '没有可选择的项目',
+    }[locale.languageCode]!;
+  }
+
+  String get color {
+    return {
+      'en': 'Color',
+      'vi': 'Màu',
+      'de': 'Farbe',
+      'cs': 'Barva',
+      'es': 'Color',
+      'fr': 'Couleur',
+      'it': 'Colore',
+      'ja': '色',
+      'ko': '색상',
+      'no': 'Farge',
+      'ru': 'Цвет',
+      'sv': 'Färg',
+      'zh': '颜色',
+    }[locale.languageCode]!;
+  }
+
+  String get dateNotSet {
+    return {
+      'en': 'Not set',
+      'vi': 'Chưa đặt',
+      'de': 'Nicht festgelegt',
+      'cs': 'Nenastaveno',
+      'es': 'Sin definir',
+      'fr': 'Non défini',
+      'it': 'Non impostata',
+      'ja': '未設定',
+      'ko': '설정 안 됨',
+      'no': 'Ikke angitt',
+      'ru': 'Не задано',
+      'sv': 'Inte angivet',
+      'zh': '未设置',
+    }[locale.languageCode]!;
+  }
+
+  String get clearDate {
+    return {
+      'en': 'Clear date',
+      'vi': 'Xóa ngày',
+      'de': 'Datum löschen',
+      'cs': 'Vymazat datum',
+      'es': 'Borrar fecha',
+      'fr': 'Effacer la date',
+      'it': 'Cancella data',
+      'ja': '日付をクリア',
+      'ko': '날짜 지우기',
+      'no': 'Fjern dato',
+      'ru': 'Очистить дату',
+      'sv': 'Rensa datum',
+      'zh': '清除日期',
+    }[locale.languageCode]!;
+  }
+
   String get brightness {
     return {
       'en': 'Brightness',
