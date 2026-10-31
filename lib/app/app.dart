@@ -33,6 +33,8 @@ import 'package:my_time_manager/domain/repositories/time_interval_repository.dar
 import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
 import 'package:my_time_manager/domain/repositories/note_repository.dart';
 import 'package:my_time_manager/domain/repositories/conversation_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_ai_action_log_repository.dart';
+import 'package:my_time_manager/domain/repositories/ai_action_log_repository.dart';
 import 'package:my_time_manager/domain/repositories/trash_repository.dart';
 import 'package:my_time_manager/domain/repositories/archive_repository.dart';
 import 'package:my_time_manager/domain/repositories/event_repository.dart';
@@ -130,6 +132,10 @@ class App extends StatelessWidget {
         ),
         RepositoryProvider<ConversationRepository>(
           create: (_) => SqliteConversationRepository(),
+        ),
+        // Nhật ký hành động AI (Phase C8b).
+        RepositoryProvider<AiActionLogRepository>(
+          create: (_) => SqliteAiActionLogRepository(),
         ),
         RepositoryProvider<TrashRepository>(
           create: (_) => SqliteTrashRepository(),

@@ -4,6 +4,7 @@ import '../../../domain/repositories/project_repository.dart';
 import '../../../domain/services/project_workspace_service.dart';
 import '../tool.dart';
 import '../tool_args.dart';
+import '../tool_guard.dart';
 import '../tool_result.dart';
 import 'tool_views.dart';
 
@@ -14,17 +15,9 @@ abstract class _ProjectTool extends Tool {
   final ProjectRepository projects;
   final ProjectWorkspaceService workspace;
 
-  Future<ToolResult> guarded(
-      Future<ToolResult> Function(ToolArgs args) body, Map<String, dynamic> a) async {
-    try {
-      return await body(ToolArgs(a));
-    } on ToolArgumentError catch (e) {
-      return ToolResult.failure(ToolResult.codeInvalidArguments, e.message);
-    } on ArgumentError catch (e) {
-      return ToolResult.failure(
-          ToolResult.codeInvalidArguments, '${e.message}');
-    }
-  }
+  Future<ToolResult> guarded(Future<ToolResult> Function(ToolArgs args) body,
+          Map<String, dynamic> a) =>
+      guardToolCall(a, body);
 
   ToolResult projectNotFound(String id) =>
       ToolResult.failure(ToolResult.codeNotFound, 'No project with id "$id".');
@@ -104,16 +97,15 @@ class GetProjectWorkspaceTool extends _ProjectTool {
           if (ws.project.isDeleted) 'inTrash': true,
           if (description != null) 'description': description,
         };
-        void put<T>(String key, List<T> items,
-            Map<String, dynamic> Function(T) view) {
+        void put<T>(
+            String key, List<T> items, Map<String, dynamic> Function(T) view) {
           out[key] = items.take(_maxWorkspaceList).map(view).toList();
           if (items.length > _maxWorkspaceList) {
             out['${key}Total'] = items.length;
           }
         }
 
-        put('taskLists', ws.taskLists,
-            (l) => {'id': l.id, 'title': l.title});
+        put('taskLists', ws.taskLists, (l) => {'id': l.id, 'title': l.title});
         put(
             'tasks',
             ws.tasks,

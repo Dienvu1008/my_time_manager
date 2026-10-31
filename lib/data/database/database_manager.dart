@@ -16,6 +16,7 @@ import 'daos/goal_dao.dart';
 import 'daos/project_dao.dart';
 import 'daos/learning_dao.dart';
 import 'daos/reminder_rule_dao.dart';
+import 'daos/ai_action_log_dao.dart';
 import 'device_id_helper.dart' as device_id;
 
 class DatabaseManager {
@@ -86,7 +87,7 @@ class DatabaseManager {
 
   /// The current schema version. Kept in one place so the production opener and
   /// the test seam cannot drift apart.
-  static const int _schemaVersion = 16;
+  static const int _schemaVersion = 17;
 
   Future<Database> _initDatabase() async {
     final databasePath = await getDatabasesPath();
@@ -144,6 +145,9 @@ class DatabaseManager {
       //     điểm tuyệt đối), index idx_reminder_rules_entity và 3 trigger
       //     delete_reminder_rules_of_* (xóa cứng timeinterval / calendar event
       //     / task → xóa rule). Hoàn toàn bổ sung: không đổi cột của bảng cũ.
+      // v17: thêm bảng ai_action_log (nhật ký hành động ghi/xóa của trợ lý AI)
+      //     + index idx_ai_action_log_created. Không FK, không trigger. Hoàn
+      //     toàn bổ sung: không đổi cột của bảng cũ.
       version: _schemaVersion,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
@@ -163,6 +167,9 @@ class DatabaseManager {
   /// Thứ tự tôn trọng khóa ngoại: cha trước, con sau (goals → milestones →
   /// goal_links; projects → project_items, đặt sau mọi bảng thực thể;
   /// courses → course_modules → lessons → lesson_progress).
+  ///
+  /// `ai_action_log` (v17) CỐ Ý không có ở đây: là dữ liệu kiểm toán cục bộ
+  /// của thiết bị, không sao lưu / nhập (giống conversations / chat_messages).
   static const List<String> allDataTables = [
     'tasklists',
     'tasks',
@@ -332,6 +339,10 @@ class DatabaseManager {
       // lại ở v9) và calendar_events (v11) đều đã tồn tại ở đây.
       await ReminderRuleDao.createSchema(db);
     }
+    if (oldVersion < 17) {
+      // Thêm bảng ai_action_log + index. Không đụng tới bảng/cột cũ nào.
+      await AiActionLogDao.createSchema(db);
+    }
   }
 
   /// Tạo các trigger đồng bộ/xóa timeintervals theo tasks (dùng cho cả onCreate
@@ -393,6 +404,8 @@ class DatabaseManager {
     // Rule nhắc (v16). Phải sau TimeInterval/CalendarEvent/Task (trigger trên
     // các bảng đó).
     await ReminderRuleDao.createSchema(db);
+    // Nhật ký hành động AI (v17).
+    await AiActionLogDao.createSchema(db);
 
 
     // Run the CREATE {tasks} TABLE statement on the database.

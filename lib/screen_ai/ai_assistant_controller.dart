@@ -10,6 +10,7 @@ import '../ai/core/ai_cancellation_token.dart';
 import '../ai/core/ai_engine.dart';
 import '../ai/core/ai_message.dart';
 import '../ai/policy/action_policy.dart';
+import '../ai/policy/ai_action_log.dart';
 import '../ai/policy/confirmation.dart';
 import '../ai/tools/tool_executor.dart';
 import '../ai/tools/tool_registry.dart';
@@ -57,6 +58,7 @@ class AiAssistantController extends ChangeNotifier {
     AgentConfig agentConfig = const AgentConfig(),
     String? timezone,
     ConversationRepository? conversations,
+    AiActionLog actionLog = const NoOpAiActionLog(),
   })  : _engine = engine,
         _context = contextBuilder,
         _timezone = timezone,
@@ -65,6 +67,8 @@ class AiAssistantController extends ChangeNotifier {
       registry,
       policy: policy,
       confirm: _handleConfirmation,
+      actionLog: actionLog,
+      conversationId: () => _current?.id,
     );
     _agent = AgentRuntime(
       engine: engine,

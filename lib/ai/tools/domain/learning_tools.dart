@@ -3,6 +3,7 @@ import '../../../domain/repositories/learning_repository.dart';
 import '../../../domain/services/learning_progress_service.dart';
 import '../tool.dart';
 import '../tool_args.dart';
+import '../tool_guard.dart';
 import '../tool_result.dart';
 import 'tool_views.dart';
 
@@ -13,17 +14,9 @@ abstract class _LearningTool extends Tool {
   final LearningRepository learning;
   final LearningProgressService progress;
 
-  Future<ToolResult> guarded(
-      Future<ToolResult> Function(ToolArgs args) body, Map<String, dynamic> a) async {
-    try {
-      return await body(ToolArgs(a));
-    } on ToolArgumentError catch (e) {
-      return ToolResult.failure(ToolResult.codeInvalidArguments, e.message);
-    } on ArgumentError catch (e) {
-      return ToolResult.failure(
-          ToolResult.codeInvalidArguments, '${e.message}');
-    }
-  }
+  Future<ToolResult> guarded(Future<ToolResult> Function(ToolArgs args) body,
+          Map<String, dynamic> a) =>
+      guardToolCall(a, body);
 
   ToolResult courseNotFound(String id) =>
       ToolResult.failure(ToolResult.codeNotFound, 'No course with id "$id".');
@@ -148,7 +141,10 @@ class SetLessonCompletedTool extends _LearningTool
         'type': 'object',
         'properties': {
           'lessonId': {'type': 'string'},
-          'isCompleted': {'type': 'boolean', 'description': 'Defaults to true.'},
+          'isCompleted': {
+            'type': 'boolean',
+            'description': 'Defaults to true.'
+          },
         },
         'required': ['lessonId'],
       };

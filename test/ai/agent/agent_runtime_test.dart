@@ -117,6 +117,14 @@ void main() {
     expect(first.tools.single.name, 'list_tasks');
   });
 
+  test('default system prompt carries the untrusted-data rule (C8b)',
+      () async {
+    final engine = _ScriptedEngine([const AiResponse(text: 'ok')]);
+    await AgentRuntime(engine: engine, registry: ToolRegistry()).run('hi');
+    expect(engine.received.first.messages.first.content,
+        contains(AgentConfig.untrustedDataRule));
+  });
+
   test('one tool call: executes tool then returns the follow-up answer',
       () async {
     final tool = _RecordingTool('list_tasks', const ToolResult.ok({'count': 2}));

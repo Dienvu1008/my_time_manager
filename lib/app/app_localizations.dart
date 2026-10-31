@@ -3765,6 +3765,309 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- AI activity log (Core Track C8b) ---
+  // aiActivityLogInfo là template chứa '{n}' / '{days}': nơi gọi dùng replaceAll.
+
+  String get aiActivityLog {
+    return {
+      'en': 'AI activity log',
+      'vi': 'Nhật ký hoạt động AI',
+      'de': 'KI-Aktivitätsprotokoll',
+      'cs': 'Protokol aktivit AI',
+      'es': 'Registro de actividad de IA',
+      'fr': 'Journal d\'activité de l\'IA',
+      'it': 'Registro attività IA',
+      'ja': 'AI アクティビティログ',
+      'ko': 'AI 활동 기록',
+      'no': 'AI-aktivitetslogg',
+      'ru': 'Журнал действий ИИ',
+      'sv': 'AI-aktivitetslogg',
+      'zh': 'AI 活动日志',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActivityLogEmpty {
+    return {
+      'en': 'No AI actions recorded yet.',
+      'vi': 'Chưa có hành động AI nào được ghi lại.',
+      'de': 'Noch keine KI-Aktionen aufgezeichnet.',
+      'cs': 'Zatím nebyly zaznamenány žádné akce AI.',
+      'es': 'Aún no hay acciones de IA registradas.',
+      'fr': 'Aucune action de l\'IA enregistrée pour l\'instant.',
+      'it': 'Nessuna azione IA registrata finora.',
+      'ja': 'まだ AI の操作は記録されていません。',
+      'ko': '아직 기록된 AI 작업이 없습니다.',
+      'no': 'Ingen AI-handlinger registrert ennå.',
+      'ru': 'Действия ИИ пока не записаны.',
+      'sv': 'Inga AI-åtgärder har registrerats ännu.',
+      'zh': '尚无 AI 操作记录。',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActivityLogInfo {
+    return {
+      'en':
+          'Write and destructive actions proposed by the AI assistant. Keeps the newest {n} entries from the last {days} days on this device; not included in backups.',
+      'vi':
+          'Các hành động ghi và xóa do trợ lý AI đề xuất. Giữ {n} mục mới nhất trong {days} ngày gần đây trên thiết bị này; không có trong bản sao lưu.',
+      'de':
+          'Vom KI-Assistenten vorgeschlagene Schreib- und Löschaktionen. Behält die neuesten {n} Einträge der letzten {days} Tage auf diesem Gerät; nicht in Sicherungen enthalten.',
+      'cs':
+          'Zápisové a mazací akce navržené asistentem AI. Uchovává nejnovějších {n} záznamů za posledních {days} dní na tomto zařízení; není součástí záloh.',
+      'es':
+          'Acciones de escritura y eliminación propuestas por el asistente de IA. Conserva las {n} entradas más recientes de los últimos {days} días en este dispositivo; no se incluye en las copias de seguridad.',
+      'fr':
+          'Actions d\'écriture et de suppression proposées par l\'assistant IA. Conserve les {n} entrées les plus récentes des {days} derniers jours sur cet appareil ; non incluses dans les sauvegardes.',
+      'it':
+          'Azioni di scrittura ed eliminazione proposte dall\'assistente IA. Conserva le {n} voci più recenti degli ultimi {days} giorni su questo dispositivo; non incluse nei backup.',
+      'ja':
+          'AI アシスタントが提案した書き込み・削除操作です。この端末に直近 {days} 日間の最新 {n} 件を保持します。バックアップには含まれません。',
+      'ko':
+          'AI 도우미가 제안한 쓰기 및 삭제 작업입니다. 이 기기에 최근 {days}일 동안의 최신 {n}개 항목을 보관하며 백업에는 포함되지 않습니다.',
+      'no':
+          'Skrive- og slettehandlinger foreslått av AI-assistenten. Beholder de nyeste {n} oppføringene fra de siste {days} dagene på denne enheten; ikke med i sikkerhetskopier.',
+      'ru':
+          'Действия записи и удаления, предложенные ИИ-помощником. Хранятся последние {n} записей за {days} дней на этом устройстве; не входят в резервные копии.',
+      'sv':
+          'Skriv- och raderingsåtgärder som AI-assistenten föreslagit. Behåller de senaste {n} posterna från de senaste {days} dagarna på den här enheten; ingår inte i säkerhetskopior.',
+      'zh': 'AI 助手提议的写入和删除操作。本设备保留最近 {days} 天内最新的 {n} 条记录；不包含在备份中。',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActivityLogClear {
+    return {
+      'en': 'Clear log',
+      'vi': 'Xóa nhật ký',
+      'de': 'Protokoll löschen',
+      'cs': 'Vymazat protokol',
+      'es': 'Borrar registro',
+      'fr': 'Effacer le journal',
+      'it': 'Cancella registro',
+      'ja': 'ログを消去',
+      'ko': '기록 지우기',
+      'no': 'Tøm logg',
+      'ru': 'Очистить журнал',
+      'sv': 'Rensa logg',
+      'zh': '清除日志',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActivityLogClearConfirm {
+    return {
+      'en': 'Delete all entries from the AI activity log?',
+      'vi': 'Xóa toàn bộ mục trong nhật ký hoạt động AI?',
+      'de': 'Alle Einträge aus dem KI-Aktivitätsprotokoll löschen?',
+      'cs': 'Smazat všechny záznamy z protokolu aktivit AI?',
+      'es': '¿Eliminar todas las entradas del registro de actividad de IA?',
+      'fr': 'Supprimer toutes les entrées du journal d\'activité de l\'IA ?',
+      'it': 'Eliminare tutte le voci dal registro attività IA?',
+      'ja': 'AI アクティビティログのすべての項目を削除しますか？',
+      'ko': 'AI 활동 기록의 모든 항목을 삭제할까요?',
+      'no': 'Slette alle oppføringer fra AI-aktivitetsloggen?',
+      'ru': 'Удалить все записи из журнала действий ИИ?',
+      'sv': 'Radera alla poster i AI-aktivitetsloggen?',
+      'zh': '删除 AI 活动日志中的所有记录？',
+    }[locale.languageCode]!;
+  }
+
+  String get aiOutcomeAll {
+    return {
+      'en': 'All',
+      'vi': 'Tất cả',
+      'de': 'Alle',
+      'cs': 'Vše',
+      'es': 'Todo',
+      'fr': 'Tout',
+      'it': 'Tutti',
+      'ja': 'すべて',
+      'ko': '전체',
+      'no': 'Alle',
+      'ru': 'Все',
+      'sv': 'Alla',
+      'zh': '全部',
+    }[locale.languageCode]!;
+  }
+
+  String get aiOutcomeExecuted {
+    return {
+      'en': 'Executed',
+      'vi': 'Đã thực hiện',
+      'de': 'Ausgeführt',
+      'cs': 'Provedeno',
+      'es': 'Ejecutada',
+      'fr': 'Exécutée',
+      'it': 'Eseguita',
+      'ja': '実行済み',
+      'ko': '실행됨',
+      'no': 'Utført',
+      'ru': 'Выполнено',
+      'sv': 'Utförd',
+      'zh': '已执行',
+    }[locale.languageCode]!;
+  }
+
+  String get aiOutcomeDeclined {
+    return {
+      'en': 'Declined',
+      'vi': 'Đã từ chối',
+      'de': 'Abgelehnt',
+      'cs': 'Odmítnuto',
+      'es': 'Rechazada',
+      'fr': 'Refusée',
+      'it': 'Rifiutata',
+      'ja': '拒否',
+      'ko': '거부됨',
+      'no': 'Avslått',
+      'ru': 'Отклонено',
+      'sv': 'Avböjd',
+      'zh': '已拒绝',
+    }[locale.languageCode]!;
+  }
+
+  String get aiOutcomeFailed {
+    return {
+      'en': 'Failed',
+      'vi': 'Thất bại',
+      'de': 'Fehlgeschlagen',
+      'cs': 'Selhalo',
+      'es': 'Fallida',
+      'fr': 'Échouée',
+      'it': 'Non riuscita',
+      'ja': '失敗',
+      'ko': '실패',
+      'no': 'Mislyktes',
+      'ru': 'Ошибка',
+      'sv': 'Misslyckad',
+      'zh': '失败',
+    }[locale.languageCode]!;
+  }
+
+  String get aiOutcomeDeniedByPolicy {
+    return {
+      'en': 'Denied by policy',
+      'vi': 'Bị chặn bởi chính sách',
+      'de': 'Durch Richtlinie verweigert',
+      'cs': 'Zamítnuto zásadou',
+      'es': 'Denegada por la política',
+      'fr': 'Refusée par la politique',
+      'it': 'Negata dalla policy',
+      'ja': 'ポリシーにより拒否',
+      'ko': '정책에 의해 거부됨',
+      'no': 'Avvist av policy',
+      'ru': 'Запрещено политикой',
+      'sv': 'Nekad av policy',
+      'zh': '被策略拒绝',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActionArguments {
+    return {
+      'en': 'Arguments',
+      'vi': 'Tham số',
+      'de': 'Argumente',
+      'cs': 'Argumenty',
+      'es': 'Argumentos',
+      'fr': 'Arguments',
+      'it': 'Argomenti',
+      'ja': '引数',
+      'ko': '인수',
+      'no': 'Argumenter',
+      'ru': 'Аргументы',
+      'sv': 'Argument',
+      'zh': '参数',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActionResult {
+    return {
+      'en': 'Result',
+      'vi': 'Kết quả',
+      'de': 'Ergebnis',
+      'cs': 'Výsledek',
+      'es': 'Resultado',
+      'fr': 'Résultat',
+      'it': 'Risultato',
+      'ja': '結果',
+      'ko': '결과',
+      'no': 'Resultat',
+      'ru': 'Результат',
+      'sv': 'Resultat',
+      'zh': '结果',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActionError {
+    return {
+      'en': 'Error',
+      'vi': 'Lỗi',
+      'de': 'Fehler',
+      'cs': 'Chyba',
+      'es': 'Error',
+      'fr': 'Erreur',
+      'it': 'Errore',
+      'ja': 'エラー',
+      'ko': '오류',
+      'no': 'Feil',
+      'ru': 'Ошибка',
+      'sv': 'Fel',
+      'zh': '错误',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActionRiskLevel {
+    return {
+      'en': 'Risk level',
+      'vi': 'Mức rủi ro',
+      'de': 'Risikostufe',
+      'cs': 'Úroveň rizika',
+      'es': 'Nivel de riesgo',
+      'fr': 'Niveau de risque',
+      'it': 'Livello di rischio',
+      'ja': 'リスクレベル',
+      'ko': '위험 수준',
+      'no': 'Risikonivå',
+      'ru': 'Уровень риска',
+      'sv': 'Risknivå',
+      'zh': '风险级别',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActionPolicyMode {
+    return {
+      'en': 'Policy mode',
+      'vi': 'Chế độ chính sách',
+      'de': 'Richtlinienmodus',
+      'cs': 'Režim zásad',
+      'es': 'Modo de política',
+      'fr': 'Mode de politique',
+      'it': 'Modalità policy',
+      'ja': 'ポリシーモード',
+      'ko': '정책 모드',
+      'no': 'Policymodus',
+      'ru': 'Режим политики',
+      'sv': 'Policyläge',
+      'zh': '策略模式',
+    }[locale.languageCode]!;
+  }
+
+  String get aiActionConversation {
+    return {
+      'en': 'Conversation',
+      'vi': 'Cuộc trò chuyện',
+      'de': 'Unterhaltung',
+      'cs': 'Konverzace',
+      'es': 'Conversación',
+      'fr': 'Conversation',
+      'it': 'Conversazione',
+      'ja': '会話',
+      'ko': '대화',
+      'no': 'Samtale',
+      'ru': 'Разговор',
+      'sv': 'Konversation',
+      'zh': '对话',
+    }[locale.languageCode]!;
+  }
+
   String get brightness {
     return {
       'en': 'Brightness',

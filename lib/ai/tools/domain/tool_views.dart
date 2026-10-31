@@ -19,8 +19,10 @@ import '../../../domain/services/learning_progress_service.dart';
 /// or imported from elsewhere (goal / milestone / project / course
 /// descriptions, note snippets, lesson content) is returned wrapped by
 /// [untrusted] as `{'untrusted': true, 'text': ..., 'truncated'?: true}` so the
-/// model can tell DATA from instructions. Titles stay plain strings (same as
-/// the task views). Full prompt-injection hardening is Phase C8b.
+/// model can tell DATA from instructions. Phase C8b extends the convention to
+/// the older views: task descriptions and calendar event location /
+/// description. Titles stay plain strings; the system prompt
+/// (`AgentConfig.untrustedDataRule`) tells the model titles are data too.
 class ToolViews {
   const ToolViews._();
 
@@ -34,7 +36,8 @@ class ToolViews {
         'isCompleted': t.isCompleted,
         'isImportant': t.isImportant,
         if (t.taskListId != null) 'taskListId': t.taskListId,
-        if (t.description.isNotEmpty) 'description': t.description,
+        if (untrusted(t.description) != null)
+          'description': untrusted(t.description),
         'isMeasurable': t.isMeasurable,
         if (t.isMeasurable) 'howMuchHasBeenDone': t.howMuchHasBeenDone,
         if (t.isMeasurable) 'unit': t.unit,
@@ -62,7 +65,9 @@ class ToolViews {
         'id': e.id,
         'title': e.title,
         if (e.taskListId != null) 'taskListId': e.taskListId,
-        if (e.location.isNotEmpty) 'location': e.location,
+        if (untrusted(e.location) != null) 'location': untrusted(e.location),
+        if (untrusted(e.description) != null)
+          'description': untrusted(e.description, maxLength: 1000),
         'isAllDay': e.start.isAllDay,
         'start': e.start.effective.toIso8601String(),
         'end': e.end.effective.toIso8601String(),

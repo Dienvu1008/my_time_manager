@@ -91,7 +91,7 @@ void main() {
 
       final version = (await db.rawQuery('PRAGMA user_version')).first.values
           .first as int;
-      expect(version, 16);
+      expect(version, greaterThanOrEqualTo(16));
 
       Future<Set<String>> names(String type) async => (await db.rawQuery(
               'SELECT name FROM sqlite_master WHERE type = ?', [type]))

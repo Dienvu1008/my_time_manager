@@ -4,6 +4,7 @@ import '../../../domain/models/model_time_interval.dart';
 import '../../../domain/repositories/time_interval_repository.dart';
 import '../tool.dart';
 import '../tool_args.dart';
+import '../tool_guard.dart';
 import '../tool_result.dart';
 import 'tool_views.dart';
 
@@ -11,14 +12,9 @@ abstract class _TimeTool extends Tool {
   const _TimeTool(this.intervals);
   final TimeIntervalRepository intervals;
 
-  Future<ToolResult> guarded(
-      Future<ToolResult> Function(ToolArgs args) body, Map<String, dynamic> a) async {
-    try {
-      return await body(ToolArgs(a));
-    } on ToolArgumentError catch (e) {
-      return ToolResult.failure(ToolResult.codeInvalidArguments, e.message);
-    }
-  }
+  Future<ToolResult> guarded(Future<ToolResult> Function(ToolArgs args) body,
+          Map<String, dynamic> a) =>
+      guardToolCall(a, body);
 }
 
 class ListTimeIntervalsTool extends _TimeTool {
@@ -68,10 +64,22 @@ class CreateTimeIntervalTool extends _TimeTool {
         'properties': {
           'title': {'type': 'string'},
           'taskId': {'type': 'string'},
-          'startDate': {'type': 'string', 'description': 'ISO date (YYYY-MM-DD).'},
-          'endDate': {'type': 'string', 'description': 'ISO date; defaults to startDate.'},
-          'startTime': {'type': 'string', 'description': '"HH:mm" for a timed block.'},
-          'endTime': {'type': 'string', 'description': '"HH:mm" for a timed block.'},
+          'startDate': {
+            'type': 'string',
+            'description': 'ISO date (YYYY-MM-DD).'
+          },
+          'endDate': {
+            'type': 'string',
+            'description': 'ISO date; defaults to startDate.'
+          },
+          'startTime': {
+            'type': 'string',
+            'description': '"HH:mm" for a timed block.'
+          },
+          'endTime': {
+            'type': 'string',
+            'description': '"HH:mm" for a timed block.'
+          },
         },
         'required': ['startDate'],
       };

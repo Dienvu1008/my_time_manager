@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'data/database/database_manager.dart';
 import 'data/repositories/sqlite_trash_repository.dart';
+import 'data/repositories/sqlite_ai_action_log_repository.dart';
 import 'data/device_id_provider.dart';
 import 'firebase_options.dart';
 import 'screen_focus_timer/data/notification_service.dart';
@@ -52,6 +53,14 @@ Future<void> main() async {
     await SqliteTrashRepository().purgeExpiredTrash(retentionDays);
   } catch (e) {
     debugPrint('Dọn thùng rác khi khởi động lỗi: $e');
+  }
+
+  // Dọn nhật ký hành động AI (Phase C8b): giữ tối đa 1000 dòng mới nhất và
+  // không cũ hơn 90 ngày. Best-effort, không chặn app khởi động.
+  try {
+    await SqliteAiActionLogRepository().purge(now: DateTime.now());
+  } catch (e) {
+    debugPrint('Dọn nhật ký AI khi khởi động lỗi: $e');
   }
 
   // Khởi tạo Firebase. Bọc try/catch để nếu bạn CHƯA chạy `flutterfire

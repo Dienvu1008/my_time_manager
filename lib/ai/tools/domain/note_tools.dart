@@ -1,6 +1,6 @@
 import '../../../domain/repositories/note_repository.dart';
 import '../tool.dart';
-import '../tool_args.dart';
+import '../tool_guard.dart';
 import '../tool_result.dart';
 import 'tool_views.dart';
 
@@ -35,32 +35,28 @@ class SearchNotesTool extends Tool {
         'required': ['query'],
       };
   @override
-  Future<ToolResult> execute(Map<String, dynamic> a) async {
-    try {
-      final args = ToolArgs(a);
-      final query = args.requireString('query').trim();
-      final limit =
-          (args.optInt('limit') ?? _defaultLimit).clamp(1, _maxLimit);
-      final needle = query.toLowerCase();
-      final hits = <Map<String, dynamic>>[];
-      for (final n in await notes.getNotes()) {
-        final text = ToolViews.plainTextOfDoc(n.contentJson);
-        final inTitle = n.title.toLowerCase().contains(needle);
-        final inText = text.toLowerCase().contains(needle);
-        if (!inTitle && !inText) continue;
-        final snippet = ToolViews.snippet(text, inText ? query : '');
-        hits.add({
-          'id': n.id,
-          'title': n.title,
-          if (snippet != null) 'snippet': snippet,
-        });
-        if (hits.length >= limit) break;
-      }
-      return ToolResult.ok({'count': hits.length, 'notes': hits});
-    } on ToolArgumentError catch (e) {
-      return ToolResult.failure(ToolResult.codeInvalidArguments, e.message);
-    }
-  }
+  Future<ToolResult> execute(Map<String, dynamic> a) =>
+      guardToolCall(a, (args) async {
+        final query = args.requireString('query').trim();
+        final limit =
+            (args.optInt('limit') ?? _defaultLimit).clamp(1, _maxLimit);
+        final needle = query.toLowerCase();
+        final hits = <Map<String, dynamic>>[];
+        for (final n in await notes.getNotes()) {
+          final text = ToolViews.plainTextOfDoc(n.contentJson);
+          final inTitle = n.title.toLowerCase().contains(needle);
+          final inText = text.toLowerCase().contains(needle);
+          if (!inTitle && !inText) continue;
+          final snippet = ToolViews.snippet(text, inText ? query : '');
+          hits.add({
+            'id': n.id,
+            'title': n.title,
+            if (snippet != null) 'snippet': snippet,
+          });
+          if (hits.length >= limit) break;
+        }
+        return ToolResult.ok({'count': hits.length, 'notes': hits});
+      });
 }
 
 /// Convenience: build all note tools.

@@ -2,6 +2,7 @@ import '../../../domain/models/model_calendar_event.dart';
 import '../../../domain/repositories/calendar_repository.dart';
 import '../tool.dart';
 import '../tool_args.dart';
+import '../tool_guard.dart';
 import '../tool_result.dart';
 import 'tool_views.dart';
 
@@ -9,14 +10,9 @@ abstract class _CalendarTool extends Tool {
   const _CalendarTool(this.calendar);
   final CalendarRepository calendar;
 
-  Future<ToolResult> guarded(
-      Future<ToolResult> Function(ToolArgs args) body, Map<String, dynamic> a) async {
-    try {
-      return await body(ToolArgs(a));
-    } on ToolArgumentError catch (e) {
-      return ToolResult.failure(ToolResult.codeInvalidArguments, e.message);
-    }
-  }
+  Future<ToolResult> guarded(Future<ToolResult> Function(ToolArgs args) body,
+          Map<String, dynamic> a) =>
+      guardToolCall(a, body);
 
   /// Build an [EventDateTime] from an ISO string, honoring the all-day flag.
   EventDateTime eventDateTime(DateTime dt, {required bool allDay}) => allDay
@@ -110,8 +106,8 @@ class CreateCalendarEventTool extends _CalendarTool {
         final start = args.requireDateTime('start');
         final end = args.requireDateTime('end');
         if (!end.isAfter(start)) {
-          return ToolResult.failure(ToolResult.codeInvalidArguments,
-              'end must be after start.');
+          return ToolResult.failure(
+              ToolResult.codeInvalidArguments, 'end must be after start.');
         }
         final allDay = args.optBool('isAllDay');
         final event = CalendarEvent(
@@ -169,8 +165,8 @@ class UpdateCalendarEventTool extends _CalendarTool {
             ? eventDateTime(newEndDt, allDay: allDay)
             : existing.end;
         if (!end.effective.isAfter(start.effective)) {
-          return ToolResult.failure(ToolResult.codeInvalidArguments,
-              'end must be after start.');
+          return ToolResult.failure(
+              ToolResult.codeInvalidArguments, 'end must be after start.');
         }
         final updated = CalendarEvent(
           id: existing.id,

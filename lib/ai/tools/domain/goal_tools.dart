@@ -5,6 +5,7 @@ import '../../../domain/repositories/task_repository.dart';
 import '../../../domain/services/goal_progress_service.dart';
 import '../tool.dart';
 import '../tool_args.dart';
+import '../tool_guard.dart';
 import '../tool_result.dart';
 import 'tool_views.dart';
 
@@ -17,17 +18,9 @@ abstract class _GoalTool extends Tool {
   final GoalProgressService progress;
   final TaskRepository tasks;
 
-  Future<ToolResult> guarded(
-      Future<ToolResult> Function(ToolArgs args) body, Map<String, dynamic> a) async {
-    try {
-      return await body(ToolArgs(a));
-    } on ToolArgumentError catch (e) {
-      return ToolResult.failure(ToolResult.codeInvalidArguments, e.message);
-    } on ArgumentError catch (e) {
-      return ToolResult.failure(
-          ToolResult.codeInvalidArguments, '${e.message}');
-    }
-  }
+  Future<ToolResult> guarded(Future<ToolResult> Function(ToolArgs args) body,
+          Map<String, dynamic> a) =>
+      guardToolCall(a, body);
 
   ToolResult goalNotFound(String id) =>
       ToolResult.failure(ToolResult.codeNotFound, 'No goal with id "$id".');
@@ -458,8 +451,8 @@ class TrashGoalTool extends _GoalTool implements ConfirmationDescriber {
 }
 
 /// Convenience: build all goal / milestone tools.
-List<Tool> goalTools(
-        GoalRepository goals, GoalProgressService progress, TaskRepository tasks) =>
+List<Tool> goalTools(GoalRepository goals, GoalProgressService progress,
+        TaskRepository tasks) =>
     [
       ListGoalsTool(goals, progress, tasks),
       GetGoalTool(goals, progress, tasks),

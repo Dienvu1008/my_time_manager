@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../screen_ai/ai_action_log_screen.dart';
 import '../../screen_ai/ai_assistant_entry.dart';
 import '../../screen_ai/ai_settings_page.dart';
 import '../../screen_goals/goals_list_screen.dart';
@@ -146,6 +147,19 @@ class MyAppDrawer extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => const AiSettingsPage(),
+                ),
+              );
+            },
+          ),
+          // AI activity log (Phase C8b) — read-only audit of AI write actions.
+          ListTile(
+            leading: const Icon(Icons.fact_check_outlined),
+            title: Text(localizations.aiActivityLog),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AiActionLogScreen(),
                 ),
               );
             },

@@ -57,6 +57,18 @@ class ToolArgs {
     throw ToolArgumentError('"$key" must be an integer.');
   }
 
+  /// Optional int (like [optInt]) that must lie within [min]..[max]
+  /// (inclusive) when present. Throws [ToolArgumentError] when out of range.
+  int? optIntInRange(String key, {int? min, int? max}) {
+    final v = optInt(key);
+    if (v == null) return null;
+    if ((min != null && v < min) || (max != null && v > max)) {
+      throw ToolArgumentError(
+          '"$key" must be between ${min ?? '-∞'} and ${max ?? '∞'}.');
+    }
+    return v;
+  }
+
   /// Optional enum given by its `.name`, or null when absent. Throws on an
   /// unknown name (never silently defaults).
   T? optEnum<T extends Enum>(String key, List<T> values) {

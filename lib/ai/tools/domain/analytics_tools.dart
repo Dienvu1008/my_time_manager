@@ -7,6 +7,7 @@ import '../../analytics/metrics_sample_builder.dart';
 import '../../analytics/productivity_metrics.dart';
 import '../tool.dart';
 import '../tool_args.dart';
+import '../tool_guard.dart';
 import '../tool_result.dart';
 
 /// Read-only analytics tools. They combine existing domain APIs into small,
@@ -18,14 +19,9 @@ abstract class _AnalyticsTool extends Tool {
   @override
   ToolRisk get risk => ToolRisk.readOnly;
 
-  Future<ToolResult> guarded(
-      Future<ToolResult> Function(ToolArgs args) body, Map<String, dynamic> a) async {
-    try {
-      return await body(ToolArgs(a));
-    } on ToolArgumentError catch (e) {
-      return ToolResult.failure(ToolResult.codeInvalidArguments, e.message);
-    }
-  }
+  Future<ToolResult> guarded(Future<ToolResult> Function(ToolArgs args) body,
+          Map<String, dynamic> a) =>
+      guardToolCall(a, body);
 }
 
 class GetFocusSummaryTool extends _AnalyticsTool {
@@ -47,7 +43,7 @@ class GetFocusSummaryTool extends _AnalyticsTool {
       };
   @override
   Future<ToolResult> execute(Map<String, dynamic> a) => guarded((args) async {
-        final days = args.optInt('days') ?? 7;
+        final days = args.optIntInRange('days', min: 1, max: 3660) ?? 7;
         final s = await _stats.recent(days: days);
         final topTasks = [...s.perTask]
           ..sort((x, y) => y.focusMinutes.compareTo(x.focusMinutes));
@@ -85,7 +81,7 @@ class GetProductivitySummaryTool extends _AnalyticsTool {
       };
   @override
   Future<ToolResult> execute(Map<String, dynamic> a) => guarded((args) async {
-        final days = args.optInt('days') ?? 7;
+        final days = args.optIntInRange('days', min: 1, max: 3660) ?? 7;
         final tasks = await _tasks.getTasks();
         final completed = tasks.where((t) => t.isCompleted).length;
         final s = await _stats.recent(days: days);
@@ -108,7 +104,8 @@ class GetProductivitySummaryTool extends _AnalyticsTool {
 /// planned-vs-actual work derived from time intervals + focus. The model
 /// INTERPRETS these numbers; it must not invent them.
 class GetProductivityMetricsTool extends _AnalyticsTool {
-  GetProductivityMetricsTool(this._builder, {this.service = const ProductivityMetricsService()});
+  GetProductivityMetricsTool(this._builder,
+      {this.service = const ProductivityMetricsService()});
   final MetricsSampleBuilder _builder;
   final ProductivityMetricsService service;
 
@@ -135,8 +132,9 @@ class GetProductivityMetricsTool extends _AnalyticsTool {
       };
   @override
   Future<ToolResult> execute(Map<String, dynamic> a) => guarded((args) async {
-        final days = args.optInt('days') ?? 14;
-        final availableMinutes = args.optInt('availableMinutes');
+        final days = args.optIntInRange('days', min: 1, max: 3660) ?? 14;
+        final availableMinutes =
+            args.optIntInRange('availableMinutes', min: 0, max: 100000);
         final end = DateTime.now();
         final start = end.subtract(Duration(days: days));
         final samples = await _builder.build(start, end);

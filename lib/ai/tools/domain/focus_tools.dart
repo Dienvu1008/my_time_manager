@@ -2,6 +2,7 @@ import '../../../domain/repositories/focus_repository.dart';
 import '../../../domain/services/focus_statistics_service.dart';
 import '../tool.dart';
 import '../tool_args.dart';
+import '../tool_guard.dart';
 import '../tool_result.dart';
 
 abstract class _FocusTool extends Tool {
@@ -9,14 +10,9 @@ abstract class _FocusTool extends Tool {
   final FocusRepository focus;
   final FocusStatisticsService stats;
 
-  Future<ToolResult> guarded(
-      Future<ToolResult> Function(ToolArgs args) body, Map<String, dynamic> a) async {
-    try {
-      return await body(ToolArgs(a));
-    } on ToolArgumentError catch (e) {
-      return ToolResult.failure(ToolResult.codeInvalidArguments, e.message);
-    }
-  }
+  Future<ToolResult> guarded(Future<ToolResult> Function(ToolArgs args) body,
+          Map<String, dynamic> a) =>
+      guardToolCall(a, body);
 }
 
 class ListFocusSessionsTool extends _FocusTool {
@@ -42,7 +38,7 @@ class ListFocusSessionsTool extends _FocusTool {
   Future<ToolResult> execute(Map<String, dynamic> a) => guarded((args) async {
         final start = args.optDateTime('start');
         final end = args.optDateTime('end');
-        final limit = args.optInt('limit');
+        final limit = args.optIntInRange('limit', min: 0, max: 1000);
         var sessions = (start != null && end != null)
             ? await focus.sessionsBetween(start, end)
             : await focus.allSessions();
@@ -91,7 +87,8 @@ class GetFocusStatisticsTool extends _FocusTool {
         final end = args.optDateTime('end');
         final s = (start != null && end != null)
             ? await stats.statisticsBetween(start, end)
-            : await stats.recent(days: args.optInt('days') ?? 7);
+            : await stats.recent(
+                days: args.optIntInRange('days', min: 1, max: 3660) ?? 7);
         return ToolResult.ok(_statsJson(s));
       }, a);
 }

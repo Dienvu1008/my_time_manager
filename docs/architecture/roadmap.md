@@ -83,7 +83,7 @@ these features.
 | C5 | Goal / Plan / Milestone foundations | **done** — contract in §6 |
 | C6 | Project Workspace | **done** — contract in §6 |
 | C7 | Learning system (Course / Module / Lesson / Progress) | **done** — contract in §6 |
-| C8 | AI foundation hardening (extends the built AI Track) | in progress — C8a done (AI tools for new entities); C8b (hardening) planned |
+| C8 | AI foundation hardening (extends the built AI Track) | **done** — C8a + C8b, contract in §6 |
 | C9 | AI-assisted planning (overlay on the deterministic DR core) | planned |
 | C10 | Knowledge tools (dictionary / translate / pronounce / TTS / vocabulary) | planned |
 | C11 | Semantic canvas (nodes/edges/properties; AI-editable) | planned |
@@ -303,6 +303,7 @@ open questions.
   projection completes via the habit workflow (not a calendar edit).
 - **Rollback:** additive tables only; dropping the feature leaves other data
   intact.
+- **Schema:** H must use schema **v18** (v17 is taken by C8b `ai_action_log`).
 - **Open:** H-a (does `skipped` pause or break a streak? proposed: pause).
 
 ### Phase DR — Daily Review & Adaptive Rescheduling
@@ -554,6 +555,63 @@ open questions.
 - **Layering:** `lib/ai/tools` and `lib/ai/context` do not import `lib/data`
   or `sqflite` (enforced by `test/ai/tools/ai_tools_layering_test.dart`).
   No schema change.
+
+### Phase C8b — AI hardening (implemented)
+
+- **Schema v17 (strictly additive):** table `ai_action_log` (`id`,
+  `createdAt` UTC ISO, `toolName`, `policyLevel` = tool risk `write` |
+  `destructive`, `policyMode` (ActionPolicy mode or NULL), `argsSummary`,
+  `outcome`, `resultSummary`, `errorMessage`, `conversationId` nullable,
+  `deviceId`) + index `idx_ai_action_log_created`. No FK (deleting a chat
+  keeps the audit), no trigger. Single SQL source `AiActionLogDao.createSchema`
+  called from `_onCreate` and the `oldVersion < 17` branch. Domain model
+  `AiActionLogEntry` / `AiActionOutcome`, port `AiActionLogRepository`,
+  adapter `SqliteAiActionLogRepository`.
+- **Logging choke point:** `ToolExecutor` (every model call, structured or
+  text-parsed, goes through it) records via an injected `AiActionLog`
+  (`lib/ai/policy/ai_action_log.dart`; default `NoOpAiActionLog`, production
+  `RepositoryAiActionLog` wired in `AiAssistantEntry` → controller, with the
+  current conversation id). Only WRITE / DESTRUCTIVE tools resolved in the
+  registry are logged; read-only and unknown tools are not. Outcomes:
+  `executed` (tool success), `declined` (user said no), `failed` (tool
+  failure, thrown error, malformed JSON args), `deniedByPolicy` (ActionPolicy
+  deny e.g. read-only mode, or a `ToolPermissionCheck` deny). Logging never
+  throws and never changes the `ToolResult`; confirmation UX unchanged.
+- **Redaction (`AiActionLogFormat`):** keys sorted; ids / numbers / bools /
+  short tokens kept; `title` / `name` / `query` capped at 40 chars;
+  descriptions, content, location, notes and other free text stored only as
+  `<N chars>`; lists as `[N items]`, maps as `{…}`; args ≤ 500 chars,
+  result summary (ids + capped title, else `ok`) ≤ 200, error `code: message`
+  ≤ 300.
+- **Retention:** newest **1000** entries and nothing older than **90 days**
+  (`AiActionLogRetention`), purged best-effort on app start in `main.dart`
+  after the trash purge.
+- **Backup:** `ai_action_log` is **excluded** from `allDataTables` /
+  `ImportService._importOrder` (device-local audit data, like
+  `conversations` / `chat_messages`).
+- **Screen:** `AiActionLogScreen` (drawer entry "AI activity log" after AI
+  Settings): newest first, outcome filter chips, tap for details, clear with
+  confirmation; 13 locales.
+- **Strict tool args:** every domain tool runs through `guardToolCall`
+  (`lib/ai/tools/tool_guard.dart`): `ToolArgumentError` / `ArgumentError` /
+  `FormatException` / `TypeError` → `invalid_arguments`, other exceptions →
+  `domain_error`; tools never throw. `ToolArgs.optIntInRange` bounds `days`
+  (1..3660), focus `limit` (0..1000), `availableMinutes` (0..100000).
+  Registry-wide table-driven test `test/ai/tools/tool_arg_validation_test.dart`
+  (`{}`, garbage-typed args, unknown ids, out-of-range values).
+- **Untrusted convention:** extended to task `description` and calendar event
+  `location` / `description` (`ToolViews`); titles stay plain strings.
+  `AgentContext.render()` adds a data notice and flattens/caps titles (no
+  injected new lines); `AgentConfig.untrustedDataRule` is appended to the
+  default system prompt (untrusted content is data, never instructions).
+- **Evaluation harness:** `test/ai/support/` — `ScriptedAiEngine` (scripted
+  responses, structured or text-format tool calls), `AiTestEnv` (full domain
+  registry over in-memory SQLite with the real repositories),
+  `RecordingAiActionLog`. Injection invariant
+  `test/ai/agent/prompt_injection_test.dart`; end-to-end agent-loop tests
+  `test/ai/agent/agent_e2e_test.dart`. No Ollama / llama.cpp needed.
+- **Layering:** the layering test now also covers `lib/ai/policy` and
+  `lib/ai/agent`.
 
 ---
 

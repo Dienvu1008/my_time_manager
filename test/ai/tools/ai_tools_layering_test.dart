@@ -2,10 +2,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// C8a: the AI tool and context layers reach data ONLY through domain
-/// repositories/services — never lib/data, sqflite or DatabaseManager.
+/// C8a/C8b: the AI tool, context, policy (incl. the action log) and agent
+/// layers reach data ONLY through domain repositories/services — never
+/// lib/data, sqflite or DatabaseManager.
 void main() {
-  test('lib/ai/tools and lib/ai/context do not import the data layer', () {
+  test('lib/ai/{tools,context,policy,agent} do not import the data layer', () {
     final directive = RegExp(r'''^\s*(?:import|export)\s+['"]([^'"]+)['"]''',
         multiLine: true);
     bool banned(String uri) =>
@@ -17,7 +18,12 @@ void main() {
 
     var scanned = 0;
     final offenders = <String>[];
-    for (final root in ['lib/ai/tools', 'lib/ai/context']) {
+    for (final root in [
+      'lib/ai/tools',
+      'lib/ai/context',
+      'lib/ai/policy',
+      'lib/ai/agent',
+    ]) {
       final dir = Directory(root);
       expect(dir.existsSync(), isTrue, reason: '$root not found');
       for (final entity in dir.listSync(recursive: true)) {

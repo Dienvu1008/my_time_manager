@@ -3,6 +3,7 @@ import '../../../domain/repositories/task_repository.dart';
 import '../../../domain/services/task_completion_service.dart';
 import '../tool.dart';
 import '../tool_args.dart';
+import '../tool_guard.dart';
 import '../tool_result.dart';
 import 'tool_views.dart';
 
@@ -13,14 +14,9 @@ abstract class _TaskTool extends Tool {
   final TaskRepository tasks;
   final TaskCompletionService completion;
 
-  Future<ToolResult> guarded(
-      Future<ToolResult> Function(ToolArgs args) body, Map<String, dynamic> a) async {
-    try {
-      return await body(ToolArgs(a));
-    } on ToolArgumentError catch (e) {
-      return ToolResult.failure(ToolResult.codeInvalidArguments, e.message);
-    }
-  }
+  Future<ToolResult> guarded(Future<ToolResult> Function(ToolArgs args) body,
+          Map<String, dynamic> a) =>
+      guardToolCall(a, body);
 }
 
 class ListTasksTool extends _TaskTool {
@@ -157,7 +153,8 @@ class UpdateTaskTool extends _TaskTool {
         }
         final updated = existing.copyWith(
           title: args.optString('title'),
-          isImportant: args.has('isImportant') ? args.optBool('isImportant') : null,
+          isImportant:
+              args.has('isImportant') ? args.optBool('isImportant') : null,
           description: args.optString('description'),
         );
         await tasks.updateTask(updated);
@@ -180,7 +177,10 @@ class CompleteTaskTool extends _TaskTool {
         'type': 'object',
         'properties': {
           'id': {'type': 'string'},
-          'isCompleted': {'type': 'boolean', 'description': 'Defaults to true.'},
+          'isCompleted': {
+            'type': 'boolean',
+            'description': 'Defaults to true.'
+          },
         },
         'required': ['id'],
       };
@@ -234,7 +234,8 @@ class DeleteTaskTool extends _TaskTool {
 }
 
 /// Convenience: build all task tools from the shared dependencies.
-List<Tool> taskTools(TaskRepository tasks, TaskCompletionService completion) => [
+List<Tool> taskTools(TaskRepository tasks, TaskCompletionService completion) =>
+    [
       ListTasksTool(tasks, completion),
       GetTaskTool(tasks, completion),
       CreateTaskTool(tasks, completion),

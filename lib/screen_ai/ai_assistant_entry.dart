@@ -10,8 +10,10 @@ import '../ai/core/ai_engine.dart';
 import '../ai/gateway/ai_engine_factory.dart';
 import '../ai/gateway/provider_selection.dart';
 import '../ai/policy/action_policy.dart';
+import '../ai/policy/ai_action_log.dart';
 import '../ai/tools/domain/domain_tools.dart';
 import '../application/reminders/reminder_coordinator.dart';
+import '../domain/repositories/ai_action_log_repository.dart';
 import '../domain/repositories/calendar_repository.dart';
 import '../domain/repositories/conversation_repository.dart';
 import '../domain/repositories/focus_repository.dart';
@@ -119,6 +121,7 @@ class _AiAssistantEntryState extends State<AiAssistantEntry> {
     final notes = context.read<NoteRepository>();
     final reminderRules = context.read<ReminderRuleRepository>();
     final reminderCoordinator = context.read<ReminderCoordinator>();
+    final actionLogRepo = context.read<AiActionLogRepository?>();
 
     // Best-effort retention: drop chat history older than the configured
     // number of days (null = keep forever). Never blocks opening the screen.
@@ -170,6 +173,9 @@ class _AiAssistantEntryState extends State<AiAssistantEntry> {
         agentConfig: widget.agentConfig,
         timezone: timezone,
         conversations: conversations,
+        actionLog: actionLogRepo == null
+            ? const NoOpAiActionLog()
+            : RepositoryAiActionLog(actionLogRepo),
       );
     });
   }

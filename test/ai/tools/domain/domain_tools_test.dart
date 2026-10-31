@@ -345,7 +345,7 @@ void main() {
     test('get_focus_summary returns top tasks by focus', () async {
       final exec = buildExecutor(focus: focusFixture());
       final r = await exec.execute('get_focus_summary',
-          {'days': 100000}); // wide window to include fixture dates
+          {'days': 3660}); // wide window to include fixture dates
       final top = (r.data as Map)['topTasks'] as List;
       expect(top.first, containsPair('taskTitle', 'Write'));
     });
@@ -355,7 +355,7 @@ void main() {
       await tasks.createTask(Task(title: 'A', isCompleted: true));
       await tasks.createTask(Task(title: 'B'));
       final exec = buildExecutor(tasks: tasks, focus: focusFixture());
-      final r = await exec.execute('get_productivity_summary', {'days': 100000});
+      final r = await exec.execute('get_productivity_summary', {'days': 3660});
       final d = r.data as Map;
       expect((d['tasks'] as Map)['total'], 2);
       expect((d['tasks'] as Map)['completed'], 1);
