@@ -5,6 +5,7 @@ import '../../screen_ai/ai_action_log_screen.dart';
 import '../../screen_ai/ai_assistant_entry.dart';
 import '../../screen_ai/ai_settings_page.dart';
 import '../../screen_goals/goals_list_screen.dart';
+import '../../screen_habits/habits_list_screen.dart';
 import '../../screen_learning/courses_list_screen.dart';
 import '../../screen_projects/projects_list_screen.dart';
 import '../../screen_reminders/upcoming_reminders_screen.dart';
@@ -107,6 +108,19 @@ class MyAppDrawer extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => const CoursesListScreen(),
+                ),
+              );
+            },
+          ),
+          // Thói quen (Phase H2) — route đẩy giống Khóa học.
+          ListTile(
+            leading: const Icon(Icons.repeat),
+            title: Text(localizations.habits),
+            onTap: () {
+              Navigator.of(context).pop(); // đóng drawer
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const HabitsListScreen(),
                 ),
               );
             },

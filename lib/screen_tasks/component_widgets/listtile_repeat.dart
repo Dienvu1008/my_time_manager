@@ -7,16 +7,52 @@ import 'package:my_time_manager/domain/services/repeat_rule.dart';
 ///
 /// Mỗi khi người dùng thay đổi lựa chọn, [onChanged] được gọi với [RepeatRule]
 /// mới, để màn hình cha (bottomsheet) đọc và sinh các time interval lặp lại.
+///
+/// Phase H2 (habits) reuses this tile: [initialRule] pre-fills the state (e.g.
+/// when editing a habit) and [showNone] = false hides the "no repeat" preset.
+/// Defaults keep the original time-interval behavior unchanged.
 class RepeatListTile extends StatefulWidget {
-  const RepeatListTile({super.key, required this.onChanged});
+  const RepeatListTile({
+    super.key,
+    required this.onChanged,
+    this.initialRule,
+    this.showNone = true,
+  });
 
   final ValueChanged<RepeatRule> onChanged;
+
+  /// Rule shown initially (not re-emitted). Null → "no repeat".
+  final RepeatRule? initialRule;
+
+  /// Whether the "no repeat" preset is offered.
+  final bool showNone;
 
   @override
   State<RepeatListTile> createState() => _RepeatListTileState();
 }
 
 class _RepeatListTileState extends State<RepeatListTile> {
+  @override
+  void initState() {
+    super.initState();
+    final r = widget.initialRule;
+    if (r == null || !r.isRepeating) return;
+    _frequency = r.frequency;
+    final isPreset = r.interval == 1 &&
+        r.weekdays.isEmpty &&
+        r.endMode == RepeatEndMode.never;
+    if (isPreset) return;
+    _showCustom = true;
+    _customUnit = r.frequency;
+    _repeatValue = r.interval < 1 ? 1 : r.interval;
+    for (final wd in r.weekdays) {
+      if (_selectedWeekdays.containsKey(wd)) _selectedWeekdays[wd] = true;
+    }
+    _endMode = r.endMode;
+    if (r.endDate != null) _endDate = r.endDate!;
+    _occurrences = r.occurrences < 1 ? 1 : r.occurrences;
+  }
+
   bool _showRepeatOptions = false;
 
   // Trạng thái tổng hợp của quy tắc lặp.
@@ -90,7 +126,8 @@ class _RepeatListTileState extends State<RepeatListTile> {
               setState(() => _showRepeatOptions = !_showRepeatOptions),
         ),
         if (_showRepeatOptions) ...[
-          _presetTile('Không lặp lại', RepeatFrequency.none, custom: false),
+          if (widget.showNone)
+            _presetTile('Không lặp lại', RepeatFrequency.none, custom: false),
           _presetTile('Hằng ngày', RepeatFrequency.daily, custom: false),
           _presetTile('Hằng tuần', RepeatFrequency.weekly, custom: false),
           _presetTile('Hằng tháng', RepeatFrequency.monthly, custom: false),
@@ -242,7 +279,10 @@ class _RepeatListTileState extends State<RepeatListTile> {
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: _endDate,
+                    // Guard for a pre-filled (initialRule) end date in the past.
+                    initialDate: _endDate.isBefore(DateTime.now())
+                        ? DateTime.now()
+                        : _endDate,
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
                   );

@@ -1,6 +1,8 @@
 import 'package:my_time_manager/domain/models/model_calendar_event.dart';
 import 'package:my_time_manager/domain/models/model_goal.dart';
 import 'package:my_time_manager/domain/models/model_goal_link.dart';
+import 'package:my_time_manager/domain/models/model_habit.dart';
+import 'package:my_time_manager/domain/models/model_habit_occurrence.dart';
 import 'package:my_time_manager/domain/models/model_list.dart';
 import 'package:my_time_manager/domain/models/model_milestone.dart';
 import 'package:my_time_manager/domain/models/model_note.dart';
@@ -9,6 +11,7 @@ import 'package:my_time_manager/domain/models/model_project_item.dart';
 import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
 import 'package:my_time_manager/domain/repositories/goal_repository.dart';
+import 'package:my_time_manager/domain/repositories/habit_repository.dart';
 import 'package:my_time_manager/domain/repositories/note_repository.dart';
 import 'package:my_time_manager/domain/repositories/project_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
@@ -359,4 +362,116 @@ class FakeCalendarRepository implements CalendarRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// In-memory [HabitRepository] for widget tests (Phase H2). Mirrors the
+/// SQLite contract: one occurrence per (habit, day) upserted by deterministic
+/// id, archive keeps occurrences, permanent delete cascades them. [calls]
+/// records write calls (e.g. `'record:<id>:2026-03-10:completed'`).
+class FakeHabitRepository implements HabitRepository {
+  final Map<String, Habit> habits = {};
+  final Map<String, HabitOccurrence> occurrences = {};
+  final List<String> calls = [];
+
+  @override
+  Future<List<Habit>> getHabits() async {
+    final list = habits.values.where((h) => !h.isArchived).toList();
+    list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return list;
+  }
+
+  @override
+  Future<List<Habit>> getArchivedHabits() async =>
+      habits.values.where((h) => h.isArchived).toList();
+
+  @override
+  Future<Habit?> getHabit(String id) async => habits[id];
+
+  @override
+  Future<void> createHabit(Habit habit) async {
+    calls.add('create:${habit.id}');
+    habits[habit.id] = habit;
+  }
+
+  @override
+  Future<void> updateHabit(Habit habit) async {
+    calls.add('update:${habit.id}');
+    habits[habit.id] = habit;
+  }
+
+  Habit _withArchive(Habit h, bool archived) => Habit.fromMap({
+        ...h.toMap(),
+        'isArchived': archived ? 1 : 0,
+        'archivedAt': archived ? DateTime.now().toIso8601String() : null,
+      });
+
+  @override
+  Future<void> archiveHabit(String id) async {
+    calls.add('archive:$id');
+    final h = habits[id];
+    if (h != null) habits[id] = _withArchive(h, true);
+  }
+
+  @override
+  Future<void> unarchiveHabit(String id) async {
+    calls.add('unarchive:$id');
+    final h = habits[id];
+    if (h != null) habits[id] = _withArchive(h, false);
+  }
+
+  @override
+  Future<void> deleteHabitPermanently(String id) async {
+    calls.add('delete:$id');
+    habits.remove(id);
+    occurrences.removeWhere((_, o) => o.habitId == id);
+  }
+
+  @override
+  Future<HabitOccurrence> recordOutcome(
+    String habitId,
+    DateTime localDate,
+    HabitOutcome outcome, {
+    double? amount,
+    String? note,
+  }) async {
+    if (!habits.containsKey(habitId)) {
+      throw ArgumentError.value(habitId, 'habitId', 'unknown habit');
+    }
+    calls.add('record:$habitId:${HabitDay.format(localDate)}:${outcome.name}');
+    final o = HabitOccurrence(
+      habitId: habitId,
+      localDate: localDate,
+      outcome: outcome,
+      amount: amount,
+      note: note,
+    );
+    occurrences[o.id] = o;
+    return o;
+  }
+
+  @override
+  Future<void> clearOutcome(String habitId, DateTime localDate) async {
+    calls.add('clear:$habitId:${HabitDay.format(localDate)}');
+    occurrences.remove(HabitOccurrence.idFor(habitId, localDate));
+  }
+
+  @override
+  Future<HabitOccurrence?> getOccurrence(
+          String habitId, DateTime localDate) async =>
+      occurrences[HabitOccurrence.idFor(habitId, localDate)];
+
+  @override
+  Future<List<HabitOccurrence>> occurrencesOf(String habitId,
+      {DateTime? from, DateTime? to}) async {
+    final f = from == null ? null : HabitDay.of(from);
+    final t = to == null ? null : HabitDay.of(to);
+    final list = occurrences.values
+        .where((o) =>
+            o.habitId == habitId &&
+            (f == null || !o.localDate.isBefore(f)) &&
+            (t == null || !o.localDate.isAfter(t)))
+        .toList()
+      ..sort((a, b) => a.localDate.compareTo(b.localDate));
+    return list;
+  }
 }

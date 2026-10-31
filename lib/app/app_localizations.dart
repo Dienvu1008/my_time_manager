@@ -1401,6 +1401,782 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- Habits UI (Phase H2) ---
+
+  String get habits {
+    return {
+      'en': 'Habits',
+      'vi': 'Thói quen',
+      'de': 'Gewohnheiten',
+      'cs': 'Návyky',
+      'es': 'Hábitos',
+      'fr': 'Habitudes',
+      'it': 'Abitudini',
+      'ja': '習慣',
+      'ko': '습관',
+      'no': 'Vaner',
+      'ru': 'Привычки',
+      'sv': 'Vanor',
+      'zh': '习惯',
+    }[locale.languageCode]!;
+  }
+
+  String get newHabit {
+    return {
+      'en': 'New habit',
+      'vi': 'Thói quen mới',
+      'de': 'Neue Gewohnheit',
+      'cs': 'Nový návyk',
+      'es': 'Nuevo hábito',
+      'fr': 'Nouvelle habitude',
+      'it': 'Nuova abitudine',
+      'ja': '新しい習慣',
+      'ko': '새 습관',
+      'no': 'Ny vane',
+      'ru': 'Новая привычка',
+      'sv': 'Ny vana',
+      'zh': '新建习惯',
+    }[locale.languageCode]!;
+  }
+
+  String get editHabit {
+    return {
+      'en': 'Edit habit',
+      'vi': 'Sửa thói quen',
+      'de': 'Gewohnheit bearbeiten',
+      'cs': 'Upravit návyk',
+      'es': 'Editar hábito',
+      'fr': 'Modifier l\'habitude',
+      'it': 'Modifica abitudine',
+      'ja': '習慣を編集',
+      'ko': '습관 편집',
+      'no': 'Rediger vane',
+      'ru': 'Изменить привычку',
+      'sv': 'Redigera vana',
+      'zh': '编辑习惯',
+    }[locale.languageCode]!;
+  }
+
+  String get noHabitsYet {
+    return {
+      'en': 'No habits yet',
+      'vi': 'Chưa có thói quen nào',
+      'de': 'Noch keine Gewohnheiten',
+      'cs': 'Zatím žádné návyky',
+      'es': 'Aún no hay hábitos',
+      'fr': 'Aucune habitude pour l\'instant',
+      'it': 'Ancora nessuna abitudine',
+      'ja': '習慣はまだありません',
+      'ko': '아직 습관이 없습니다',
+      'no': 'Ingen vaner ennå',
+      'ru': 'Привычек пока нет',
+      'sv': 'Inga vanor ännu',
+      'zh': '暂无习惯',
+    }[locale.languageCode]!;
+  }
+
+  String get noHabitsHint {
+    return {
+      'en': 'Build a routine by tracking a habit every day.',
+      'vi': 'Hãy xây dựng nếp sống bằng cách theo dõi thói quen mỗi ngày.',
+      'de': 'Baue eine Routine auf, indem du täglich eine Gewohnheit verfolgst.',
+      'cs': 'Vybudujte si rutinu každodenním sledováním návyku.',
+      'es': 'Crea una rutina registrando un hábito cada día.',
+      'fr': 'Construisez une routine en suivant une habitude chaque jour.',
+      'it': 'Crea una routine monitorando un\'abitudine ogni giorno.',
+      'ja': '毎日習慣を記録してルーティンを作りましょう。',
+      'ko': '매일 습관을 기록하며 루틴을 만들어 보세요.',
+      'no': 'Bygg en rutine ved å følge en vane hver dag.',
+      'ru': 'Сформируйте распорядок, отмечая привычку каждый день.',
+      'sv': 'Bygg en rutin genom att följa en vana varje dag.',
+      'zh': '每天记录习惯，建立日常规律。',
+    }[locale.languageCode]!;
+  }
+
+  String get habitCreateFirst {
+    return {
+      'en': 'Create a habit',
+      'vi': 'Tạo thói quen',
+      'de': 'Gewohnheit erstellen',
+      'cs': 'Vytvořit návyk',
+      'es': 'Crear un hábito',
+      'fr': 'Créer une habitude',
+      'it': 'Crea un\'abitudine',
+      'ja': '習慣を作成',
+      'ko': '습관 만들기',
+      'no': 'Opprett en vane',
+      'ru': 'Создать привычку',
+      'sv': 'Skapa en vana',
+      'zh': '创建习惯',
+    }[locale.languageCode]!;
+  }
+
+  String get habitOutcomeCompleted {
+    return {
+      'en': 'Completed',
+      'vi': 'Hoàn thành',
+      'de': 'Erledigt',
+      'cs': 'Splněno',
+      'es': 'Completado',
+      'fr': 'Terminé',
+      'it': 'Completato',
+      'ja': '完了',
+      'ko': '완료',
+      'no': 'Fullført',
+      'ru': 'Выполнено',
+      'sv': 'Klar',
+      'zh': '已完成',
+    }[locale.languageCode]!;
+  }
+
+  String get habitOutcomePartial {
+    return {
+      'en': 'Partial',
+      'vi': 'Một phần',
+      'de': 'Teilweise',
+      'cs': 'Částečně',
+      'es': 'Parcial',
+      'fr': 'Partiel',
+      'it': 'Parziale',
+      'ja': '一部',
+      'ko': '부분',
+      'no': 'Delvis',
+      'ru': 'Частично',
+      'sv': 'Delvis',
+      'zh': '部分完成',
+    }[locale.languageCode]!;
+  }
+
+  String get habitOutcomeSkipped {
+    return {
+      'en': 'Skipped',
+      'vi': 'Bỏ qua',
+      'de': 'Übersprungen',
+      'cs': 'Přeskočeno',
+      'es': 'Omitido',
+      'fr': 'Ignoré',
+      'it': 'Saltato',
+      'ja': 'スキップ',
+      'ko': '건너뜀',
+      'no': 'Hoppet over',
+      'ru': 'Пропущено',
+      'sv': 'Hoppades över',
+      'zh': '已跳过',
+    }[locale.languageCode]!;
+  }
+
+  String get habitOutcomeMissed {
+    return {
+      'en': 'Missed',
+      'vi': 'Bị lỡ',
+      'de': 'Verpasst',
+      'cs': 'Zmeškáno',
+      'es': 'Fallado',
+      'fr': 'Manqué',
+      'it': 'Mancato',
+      'ja': '未達成',
+      'ko': '놓침',
+      'no': 'Gikk glipp',
+      'ru': 'Не выполнено',
+      'sv': 'Missad',
+      'zh': '未完成',
+    }[locale.languageCode]!;
+  }
+
+  String get habitOutcomePending {
+    return {
+      'en': 'Pending',
+      'vi': 'Đang chờ',
+      'de': 'Ausstehend',
+      'cs': 'Čeká',
+      'es': 'Pendiente',
+      'fr': 'En attente',
+      'it': 'In sospeso',
+      'ja': '保留中',
+      'ko': '대기 중',
+      'no': 'Venter',
+      'ru': 'Ожидает',
+      'sv': 'Väntar',
+      'zh': '待定',
+    }[locale.languageCode]!;
+  }
+
+  String get habitNotScheduledToday {
+    return {
+      'en': 'Not scheduled today',
+      'vi': 'Hôm nay không có lịch',
+      'de': 'Heute nicht geplant',
+      'cs': 'Dnes není naplánováno',
+      'es': 'No programado hoy',
+      'fr': 'Pas prévu aujourd\'hui',
+      'it': 'Non previsto oggi',
+      'ja': '今日は予定なし',
+      'ko': '오늘은 일정 없음',
+      'no': 'Ikke planlagt i dag',
+      'ru': 'Сегодня не запланировано',
+      'sv': 'Inte schemalagd idag',
+      'zh': '今天无安排',
+    }[locale.languageCode]!;
+  }
+
+  String get habitTodayState {
+    return {
+      'en': 'Today: {state}',
+      'vi': 'Hôm nay: {state}',
+      'de': 'Heute: {state}',
+      'cs': 'Dnes: {state}',
+      'es': 'Hoy: {state}',
+      'fr': 'Aujourd\'hui : {state}',
+      'it': 'Oggi: {state}',
+      'ja': '今日: {state}',
+      'ko': '오늘: {state}',
+      'no': 'I dag: {state}',
+      'ru': 'Сегодня: {state}',
+      'sv': 'Idag: {state}',
+      'zh': '今天：{state}',
+    }[locale.languageCode]!;
+  }
+
+  String get habitStreakChip {
+    return {
+      'en': 'Streak {n}',
+      'vi': 'Chuỗi {n}',
+      'de': 'Serie {n}',
+      'cs': 'Série {n}',
+      'es': 'Racha {n}',
+      'fr': 'Série {n}',
+      'it': 'Serie {n}',
+      'ja': '連続 {n}',
+      'ko': '연속 {n}',
+      'no': 'Rekke {n}',
+      'ru': 'Серия {n}',
+      'sv': 'Svit {n}',
+      'zh': '连续 {n}',
+    }[locale.languageCode]!;
+  }
+
+  String get habitMarkComplete {
+    return {
+      'en': 'Mark completed today',
+      'vi': 'Đánh dấu hoàn thành hôm nay',
+      'de': 'Heute als erledigt markieren',
+      'cs': 'Označit dnes jako splněné',
+      'es': 'Marcar como completado hoy',
+      'fr': 'Marquer comme terminé aujourd\'hui',
+      'it': 'Segna come completato oggi',
+      'ja': '今日を完了にする',
+      'ko': '오늘 완료로 표시',
+      'no': 'Merk som fullført i dag',
+      'ru': 'Отметить выполненным сегодня',
+      'sv': 'Markera som klar idag',
+      'zh': '标记今天已完成',
+    }[locale.languageCode]!;
+  }
+
+  String get habitMarkPartial {
+    return {
+      'en': 'Mark partial today',
+      'vi': 'Đánh dấu một phần hôm nay',
+      'de': 'Heute als teilweise markieren',
+      'cs': 'Označit dnes jako částečné',
+      'es': 'Marcar como parcial hoy',
+      'fr': 'Marquer comme partiel aujourd\'hui',
+      'it': 'Segna come parziale oggi',
+      'ja': '今日を一部完了にする',
+      'ko': '오늘 부분 완료로 표시',
+      'no': 'Merk som delvis i dag',
+      'ru': 'Отметить частичное выполнение сегодня',
+      'sv': 'Markera som delvis idag',
+      'zh': '标记今天部分完成',
+    }[locale.languageCode]!;
+  }
+
+  String get habitMarkSkip {
+    return {
+      'en': 'Skip today',
+      'vi': 'Bỏ qua hôm nay',
+      'de': 'Heute überspringen',
+      'cs': 'Dnes přeskočit',
+      'es': 'Omitir hoy',
+      'fr': 'Ignorer aujourd\'hui',
+      'it': 'Salta oggi',
+      'ja': '今日はスキップ',
+      'ko': '오늘 건너뛰기',
+      'no': 'Hopp over i dag',
+      'ru': 'Пропустить сегодня',
+      'sv': 'Hoppa över idag',
+      'zh': '今天跳过',
+    }[locale.languageCode]!;
+  }
+
+  String get habitUndoToday {
+    return {
+      'en': 'Undo today\'s record',
+      'vi': 'Hoàn tác ghi nhận hôm nay',
+      'de': 'Heutigen Eintrag rückgängig machen',
+      'cs': 'Vrátit dnešní záznam',
+      'es': 'Deshacer el registro de hoy',
+      'fr': 'Annuler l\'enregistrement du jour',
+      'it': 'Annulla la registrazione di oggi',
+      'ja': '今日の記録を取り消す',
+      'ko': '오늘 기록 취소',
+      'no': 'Angre dagens registrering',
+      'ru': 'Отменить сегодняшнюю отметку',
+      'sv': 'Ångra dagens registrering',
+      'zh': '撤销今天的记录',
+    }[locale.languageCode]!;
+  }
+
+  String get habitTargetAmount {
+    return {
+      'en': 'Target amount (optional)',
+      'vi': 'Mục tiêu số lượng (tùy chọn)',
+      'de': 'Zielmenge (optional)',
+      'cs': 'Cílové množství (volitelné)',
+      'es': 'Cantidad objetivo (opcional)',
+      'fr': 'Quantité cible (facultatif)',
+      'it': 'Quantità obiettivo (facoltativa)',
+      'ja': '目標量（任意）',
+      'ko': '목표량 (선택)',
+      'no': 'Målmengde (valgfritt)',
+      'ru': 'Целевое количество (необязательно)',
+      'sv': 'Målmängd (valfritt)',
+      'zh': '目标数量（可选）',
+    }[locale.languageCode]!;
+  }
+
+  String get habitTargetInvalid {
+    return {
+      'en': 'Enter a number greater than 0',
+      'vi': 'Nhập một số lớn hơn 0',
+      'de': 'Gib eine Zahl größer als 0 ein',
+      'cs': 'Zadejte číslo větší než 0',
+      'es': 'Introduce un número mayor que 0',
+      'fr': 'Saisissez un nombre supérieur à 0',
+      'it': 'Inserisci un numero maggiore di 0',
+      'ja': '0より大きい数を入力してください',
+      'ko': '0보다 큰 숫자를 입력하세요',
+      'no': 'Skriv inn et tall større enn 0',
+      'ru': 'Введите число больше 0',
+      'sv': 'Ange ett tal större än 0',
+      'zh': '请输入大于 0 的数字',
+    }[locale.languageCode]!;
+  }
+
+  String get habitTargetValue {
+    return {
+      'en': 'Target: {value}',
+      'vi': 'Mục tiêu: {value}',
+      'de': 'Ziel: {value}',
+      'cs': 'Cíl: {value}',
+      'es': 'Objetivo: {value}',
+      'fr': 'Objectif : {value}',
+      'it': 'Obiettivo: {value}',
+      'ja': '目標: {value}',
+      'ko': '목표: {value}',
+      'no': 'Mål: {value}',
+      'ru': 'Цель: {value}',
+      'sv': 'Mål: {value}',
+      'zh': '目标：{value}',
+    }[locale.languageCode]!;
+  }
+
+  String get habitPartialCounts {
+    return {
+      'en': 'Partial counts toward streak',
+      'vi': 'Một phần vẫn tính vào chuỗi',
+      'de': 'Teilweise zählt für die Serie',
+      'cs': 'Částečné se počítá do série',
+      'es': 'Lo parcial cuenta para la racha',
+      'fr': 'Le partiel compte pour la série',
+      'it': 'Il parziale conta per la serie',
+      'ja': '一部完了も連続に数える',
+      'ko': '부분 완료도 연속에 포함',
+      'no': 'Delvis teller mot rekken',
+      'ru': 'Частичное засчитывается в серию',
+      'sv': 'Delvis räknas till sviten',
+      'zh': '部分完成计入连续',
+    }[locale.languageCode]!;
+  }
+
+  String get habitEndBeforeStart {
+    return {
+      'en': 'End date must be on or after the start date',
+      'vi': 'Ngày kết thúc phải từ ngày bắt đầu trở đi',
+      'de': 'Das Enddatum darf nicht vor dem Startdatum liegen',
+      'cs': 'Datum konce nesmí být před datem začátku',
+      'es': 'La fecha de fin no puede ser anterior a la de inicio',
+      'fr': 'La date de fin ne peut pas précéder la date de début',
+      'it': 'La data di fine non può precedere quella di inizio',
+      'ja': '終了日は開始日以降にしてください',
+      'ko': '종료일은 시작일 이후여야 합니다',
+      'no': 'Sluttdato kan ikke være før startdato',
+      'ru': 'Дата окончания не может быть раньше даты начала',
+      'sv': 'Slutdatum får inte vara före startdatum',
+      'zh': '结束日期不能早于开始日期',
+    }[locale.languageCode]!;
+  }
+
+  String get habitReminderTime {
+    return {
+      'en': 'Reminder time',
+      'vi': 'Giờ nhắc',
+      'de': 'Erinnerungszeit',
+      'cs': 'Čas připomenutí',
+      'es': 'Hora del recordatorio',
+      'fr': 'Heure du rappel',
+      'it': 'Orario promemoria',
+      'ja': 'リマインダー時刻',
+      'ko': '알림 시간',
+      'no': 'Påminnelsestid',
+      'ru': 'Время напоминания',
+      'sv': 'Påminnelsetid',
+      'zh': '提醒时间',
+    }[locale.languageCode]!;
+  }
+
+  String get habitClearReminderTime {
+    return {
+      'en': 'Clear reminder time',
+      'vi': 'Xóa giờ nhắc',
+      'de': 'Erinnerungszeit entfernen',
+      'cs': 'Vymazat čas připomenutí',
+      'es': 'Quitar hora del recordatorio',
+      'fr': 'Effacer l\'heure du rappel',
+      'it': 'Rimuovi orario promemoria',
+      'ja': 'リマインダー時刻をクリア',
+      'ko': '알림 시간 지우기',
+      'no': 'Fjern påminnelsestid',
+      'ru': 'Сбросить время напоминания',
+      'sv': 'Rensa påminnelsetid',
+      'zh': '清除提醒时间',
+    }[locale.languageCode]!;
+  }
+
+  String get habitStatistics {
+    return {
+      'en': 'Statistics',
+      'vi': 'Thống kê',
+      'de': 'Statistik',
+      'cs': 'Statistiky',
+      'es': 'Estadísticas',
+      'fr': 'Statistiques',
+      'it': 'Statistiche',
+      'ja': '統計',
+      'ko': '통계',
+      'no': 'Statistikk',
+      'ru': 'Статистика',
+      'sv': 'Statistik',
+      'zh': '统计',
+    }[locale.languageCode]!;
+  }
+
+  String get habitCurrentStreak {
+    return {
+      'en': 'Current streak',
+      'vi': 'Chuỗi hiện tại',
+      'de': 'Aktuelle Serie',
+      'cs': 'Aktuální série',
+      'es': 'Racha actual',
+      'fr': 'Série actuelle',
+      'it': 'Serie attuale',
+      'ja': '現在の連続',
+      'ko': '현재 연속',
+      'no': 'Nåværende rekke',
+      'ru': 'Текущая серия',
+      'sv': 'Nuvarande svit',
+      'zh': '当前连续',
+    }[locale.languageCode]!;
+  }
+
+  String get habitBestStreak {
+    return {
+      'en': 'Best streak',
+      'vi': 'Chuỗi dài nhất',
+      'de': 'Beste Serie',
+      'cs': 'Nejlepší série',
+      'es': 'Mejor racha',
+      'fr': 'Meilleure série',
+      'it': 'Serie migliore',
+      'ja': '最長連続',
+      'ko': '최장 연속',
+      'no': 'Beste rekke',
+      'ru': 'Лучшая серия',
+      'sv': 'Bästa svit',
+      'zh': '最长连续',
+    }[locale.languageCode]!;
+  }
+
+  String get habitCompletionRate {
+    return {
+      'en': 'Completion rate',
+      'vi': 'Tỷ lệ hoàn thành',
+      'de': 'Erfüllungsquote',
+      'cs': 'Míra splnění',
+      'es': 'Tasa de cumplimiento',
+      'fr': 'Taux de réussite',
+      'it': 'Tasso di completamento',
+      'ja': '達成率',
+      'ko': '달성률',
+      'no': 'Fullføringsgrad',
+      'ru': 'Процент выполнения',
+      'sv': 'Slutförandegrad',
+      'zh': '完成率',
+    }[locale.languageCode]!;
+  }
+
+  String get habitRecentHistory {
+    return {
+      'en': 'Last 30 days',
+      'vi': '30 ngày gần đây',
+      'de': 'Letzte 30 Tage',
+      'cs': 'Posledních 30 dní',
+      'es': 'Últimos 30 días',
+      'fr': '30 derniers jours',
+      'it': 'Ultimi 30 giorni',
+      'ja': '過去30日',
+      'ko': '최근 30일',
+      'no': 'Siste 30 dager',
+      'ru': 'Последние 30 дней',
+      'sv': 'Senaste 30 dagarna',
+      'zh': '最近 30 天',
+    }[locale.languageCode]!;
+  }
+
+  String get habitNoHistory {
+    return {
+      'en': 'No scheduled days yet',
+      'vi': 'Chưa có ngày nào theo lịch',
+      'de': 'Noch keine geplanten Tage',
+      'cs': 'Zatím žádné naplánované dny',
+      'es': 'Aún no hay días programados',
+      'fr': 'Aucun jour prévu pour l\'instant',
+      'it': 'Ancora nessun giorno previsto',
+      'ja': '予定日はまだありません',
+      'ko': '아직 예정된 날이 없습니다',
+      'no': 'Ingen planlagte dager ennå',
+      'ru': 'Запланированных дней пока нет',
+      'sv': 'Inga schemalagda dagar ännu',
+      'zh': '暂无计划日',
+    }[locale.languageCode]!;
+  }
+
+  String get habitNotRecorded {
+    return {
+      'en': 'not recorded',
+      'vi': 'chưa ghi nhận',
+      'de': 'nicht erfasst',
+      'cs': 'nezaznamenáno',
+      'es': 'sin registrar',
+      'fr': 'non enregistré',
+      'it': 'non registrato',
+      'ja': '未記録',
+      'ko': '기록 안 됨',
+      'no': 'ikke registrert',
+      'ru': 'не отмечено',
+      'sv': 'ej registrerad',
+      'zh': '未记录',
+    }[locale.languageCode]!;
+  }
+
+  String get habitRecordDay {
+    return {
+      'en': 'Record day',
+      'vi': 'Ghi nhận ngày',
+      'de': 'Tag erfassen',
+      'cs': 'Zaznamenat den',
+      'es': 'Registrar día',
+      'fr': 'Enregistrer le jour',
+      'it': 'Registra giorno',
+      'ja': '日を記録',
+      'ko': '날짜 기록',
+      'no': 'Registrer dag',
+      'ru': 'Отметить день',
+      'sv': 'Registrera dag',
+      'zh': '记录当天',
+    }[locale.languageCode]!;
+  }
+
+  String get habitAmount {
+    return {
+      'en': 'Amount',
+      'vi': 'Số lượng',
+      'de': 'Menge',
+      'cs': 'Množství',
+      'es': 'Cantidad',
+      'fr': 'Quantité',
+      'it': 'Quantità',
+      'ja': '量',
+      'ko': '양',
+      'no': 'Mengde',
+      'ru': 'Количество',
+      'sv': 'Mängd',
+      'zh': '数量',
+    }[locale.languageCode]!;
+  }
+
+  String get habitNote {
+    return {
+      'en': 'Note (optional)',
+      'vi': 'Ghi chú (tùy chọn)',
+      'de': 'Notiz (optional)',
+      'cs': 'Poznámka (volitelné)',
+      'es': 'Nota (opcional)',
+      'fr': 'Note (facultatif)',
+      'it': 'Nota (facoltativa)',
+      'ja': 'メモ（任意）',
+      'ko': '메모 (선택)',
+      'no': 'Notat (valgfritt)',
+      'ru': 'Заметка (необязательно)',
+      'sv': 'Anteckning (valfritt)',
+      'zh': '备注（可选）',
+    }[locale.languageCode]!;
+  }
+
+  String get habitClearRecord {
+    return {
+      'en': 'Clear record',
+      'vi': 'Xóa ghi nhận',
+      'de': 'Eintrag löschen',
+      'cs': 'Smazat záznam',
+      'es': 'Borrar registro',
+      'fr': 'Effacer l\'enregistrement',
+      'it': 'Cancella registrazione',
+      'ja': '記録を消去',
+      'ko': '기록 지우기',
+      'no': 'Fjern registrering',
+      'ru': 'Удалить отметку',
+      'sv': 'Rensa registrering',
+      'zh': '清除记录',
+    }[locale.languageCode]!;
+  }
+
+  String get habitConfirmEditPast {
+    return {
+      'en': 'Change the record for {date}?',
+      'vi': 'Thay đổi ghi nhận của ngày {date}?',
+      'de': 'Eintrag für {date} ändern?',
+      'cs': 'Změnit záznam pro {date}?',
+      'es': '¿Cambiar el registro del {date}?',
+      'fr': 'Modifier l\'enregistrement du {date} ?',
+      'it': 'Modificare la registrazione del {date}?',
+      'ja': '{date} の記録を変更しますか？',
+      'ko': '{date}의 기록을 변경할까요?',
+      'no': 'Endre registreringen for {date}?',
+      'ru': 'Изменить отметку за {date}?',
+      'sv': 'Ändra registreringen för {date}?',
+      'zh': '要更改 {date} 的记录吗？',
+    }[locale.languageCode]!;
+  }
+
+  String get habitConfirmChange {
+    return {
+      'en': 'Change',
+      'vi': 'Thay đổi',
+      'de': 'Ändern',
+      'cs': 'Změnit',
+      'es': 'Cambiar',
+      'fr': 'Modifier',
+      'it': 'Modifica',
+      'ja': '変更',
+      'ko': '변경',
+      'no': 'Endre',
+      'ru': 'Изменить',
+      'sv': 'Ändra',
+      'zh': '更改',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmArchiveHabit {
+    return {
+      'en': 'Archive this habit? Its history is kept and it is no longer scheduled.',
+      'vi': 'Lưu trữ thói quen này? Lịch sử được giữ lại và thói quen sẽ không còn được lên lịch.',
+      'de': 'Diese Gewohnheit archivieren? Der Verlauf bleibt erhalten, sie wird nicht mehr geplant.',
+      'cs': 'Archivovat tento návyk? Historie zůstane zachována a návyk se již nebude plánovat.',
+      'es': '¿Archivar este hábito? Se conserva el historial y deja de programarse.',
+      'fr': 'Archiver cette habitude ? L\'historique est conservé et elle n\'est plus planifiée.',
+      'it': 'Archiviare questa abitudine? La cronologia viene conservata e non sarà più pianificata.',
+      'ja': 'この習慣をアーカイブしますか？履歴は保持され、今後は予定されません。',
+      'ko': '이 습관을 보관할까요? 기록은 유지되며 더 이상 예약되지 않습니다.',
+      'no': 'Arkivere denne vanen? Historikken beholdes, og den planlegges ikke lenger.',
+      'ru': 'Архивировать привычку? История сохранится, но привычка больше не будет планироваться.',
+      'sv': 'Arkivera vanan? Historiken behålls och den schemaläggs inte längre.',
+      'zh': '归档此习惯？历史记录会保留，之后不再安排。',
+    }[locale.languageCode]!;
+  }
+
+  String get habitDeletePermanently {
+    return {
+      'en': 'Delete permanently',
+      'vi': 'Xóa vĩnh viễn',
+      'de': 'Endgültig löschen',
+      'cs': 'Trvale smazat',
+      'es': 'Eliminar permanentemente',
+      'fr': 'Supprimer définitivement',
+      'it': 'Elimina definitivamente',
+      'ja': '完全に削除',
+      'ko': '영구 삭제',
+      'no': 'Slett permanent',
+      'ru': 'Удалить навсегда',
+      'sv': 'Radera permanent',
+      'zh': '永久删除',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmDeleteHabitPermanently {
+    return {
+      'en': 'Permanently delete this habit? Its entire history (all recorded days) will be lost. This cannot be undone.',
+      'vi': 'Xóa vĩnh viễn thói quen này? Toàn bộ lịch sử (mọi ngày đã ghi nhận) sẽ bị mất. Không thể hoàn tác.',
+      'de': 'Diese Gewohnheit endgültig löschen? Der gesamte Verlauf (alle erfassten Tage) geht verloren. Dies kann nicht rückgängig gemacht werden.',
+      'cs': 'Trvale smazat tento návyk? Celá historie (všechny zaznamenané dny) bude ztracena. Tuto akci nelze vrátit.',
+      'es': '¿Eliminar este hábito permanentemente? Se perderá todo su historial (todos los días registrados). No se puede deshacer.',
+      'fr': 'Supprimer définitivement cette habitude ? Tout son historique (tous les jours enregistrés) sera perdu. Action irréversible.',
+      'it': 'Eliminare definitivamente questa abitudine? Tutta la cronologia (tutti i giorni registrati) andrà persa. Operazione irreversibile.',
+      'ja': 'この習慣を完全に削除しますか？すべての履歴（記録した日）が失われます。元に戻せません。',
+      'ko': '이 습관을 영구 삭제할까요? 모든 기록(기록한 모든 날)이 사라집니다. 되돌릴 수 없습니다.',
+      'no': 'Slette denne vanen permanent? Hele historikken (alle registrerte dager) går tapt. Dette kan ikke angres.',
+      'ru': 'Удалить привычку навсегда? Вся история (все отмеченные дни) будет потеряна. Это действие необратимо.',
+      'sv': 'Radera vanan permanent? Hela historiken (alla registrerade dagar) försvinner. Detta kan inte ångras.',
+      'zh': '永久删除此习惯？其全部历史记录（所有已记录的日子）将丢失，且无法撤销。',
+    }[locale.languageCode]!;
+  }
+
+  String get habitNotFound {
+    return {
+      'en': 'Habit not found',
+      'vi': 'Không tìm thấy thói quen',
+      'de': 'Gewohnheit nicht gefunden',
+      'cs': 'Návyk nenalezen',
+      'es': 'Hábito no encontrado',
+      'fr': 'Habitude introuvable',
+      'it': 'Abitudine non trovata',
+      'ja': '習慣が見つかりません',
+      'ko': '습관을 찾을 수 없습니다',
+      'no': 'Fant ikke vanen',
+      'ru': 'Привычка не найдена',
+      'sv': 'Vanan hittades inte',
+      'zh': '未找到习惯',
+    }[locale.languageCode]!;
+  }
+
+  String get habitMoreActions {
+    return {
+      'en': 'More actions',
+      'vi': 'Thao tác khác',
+      'de': 'Weitere Aktionen',
+      'cs': 'Další akce',
+      'es': 'Más acciones',
+      'fr': 'Plus d\'actions',
+      'it': 'Altre azioni',
+      'ja': 'その他の操作',
+      'ko': '추가 작업',
+      'no': 'Flere handlinger',
+      'ru': 'Другие действия',
+      'sv': 'Fler åtgärder',
+      'zh': '更多操作',
+    }[locale.languageCode]!;
+  }
+
   // --- Learning / courses (Core Track C7) ---
 
   String get courses {

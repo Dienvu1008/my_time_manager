@@ -360,6 +360,30 @@ open questions.
     only (no repository link methods yet). Habit links do not count toward
     goal progress; `'habit'` is not in `ProjectEntityType.supported`, so
     `ProjectWorkspaceService` counts habit items in `ignoredItemCount`.
+- **H2 delivered (habit UI, no schema change):**
+  - **Entry point:** drawer item "Habits" / "Thói quen" (next to Goals /
+    Projects / Courses) → `HabitsListScreen` (`lib/screen_habits/`).
+    Archived habits stay reachable from the existing Archive screen.
+  - **`HabitsListScreen`:** active habits with color, current-streak chip and
+    today's derived state (pending / completed / partial / skipped, or "not
+    scheduled today"); quick actions for today when scheduled (Complete /
+    Partial / Skip → `recordOutcome(habitId, today, …)`) plus Undo
+    (`clearOutcome`) when recorded; empty state with CTA; FAB to create.
+  - **`HabitFormScreen`:** title (required), description, color, recurrence
+    via the existing `RepeatListTile` (gained optional `initialRule` /
+    `showNone`; defaults keep time-interval behavior), optional target amount
+    + unit, "partial counts toward streak", start date (required, default
+    today), optional end date (≥ start), reminder time `HH:mm` (stored only;
+    scheduling is H3). `DateField` gained optional `clearable` / `errorText`.
+  - **`HabitDetailScreen`:** header, statistics (current / best streak,
+    completion rate, counts per outcome) and the last 30 resolved days newest
+    first (derived days faded + "not recorded"); tapping a day ≤ today opens a
+    sheet to set completed / partial / skipped / missed (+ amount if target,
+    note) or clear; changing a past day asks for confirmation. Menu: Edit,
+    Archive (confirm), Delete permanently (confirm mentions history loss).
+  - All screens take an injectable clock (`DateTime Function()? now`); strings
+    localized in 13 locales (`habit_labels.dart` for outcome labels / icons).
+  - **Still H3:** calendar projection, habit reminders, goal/project linking UI.
 
 ### Phase DR — Daily Review & Adaptive Rescheduling
 
