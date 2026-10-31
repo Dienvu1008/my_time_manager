@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/domain/models/model_course.dart';
 import 'package:my_time_manager/domain/models/model_goal.dart';
 import 'package:my_time_manager/domain/models/model_goal_link.dart';
+import 'package:my_time_manager/domain/models/model_habit.dart';
+import 'package:my_time_manager/domain/models/model_habit_occurrence.dart';
 import 'package:my_time_manager/domain/models/model_milestone.dart';
 import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/domain/repositories/goal_repository.dart';
+import 'package:my_time_manager/domain/repositories/habit_repository.dart';
 import 'package:my_time_manager/domain/repositories/learning_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/services/goal_progress_service.dart';
@@ -28,17 +31,20 @@ void main() {
   late FakeGoalRepository goals;
   late FakeTaskRepository tasks;
   late FakeLearningRepository learning;
+  late FakeHabitRepository habits;
 
   setUp(() {
     goals = FakeGoalRepository();
     tasks = FakeTaskRepository();
     learning = FakeLearningRepository();
+    habits = FakeHabitRepository();
   });
 
   Widget app(Widget home) => testApp([
         RepositoryProvider<GoalRepository>.value(value: goals),
         RepositoryProvider<TaskRepository>.value(value: tasks),
         RepositoryProvider<LearningRepository>.value(value: learning),
+        RepositoryProvider<HabitRepository>.value(value: habits),
         RepositoryProvider<GoalProgressService>.value(
             value: GoalProgressService(goals, tasks)),
       ], home);
@@ -389,6 +395,48 @@ void main() {
       expect(link.entityId, course.id);
       expect(link.milestoneId, isNull);
       expect(find.text('Course X'), findsOneWidget);
+    });
+
+    testWidgets('link habit (H3): picker of active habits, streak, unlink',
+        (tester) async {
+      final g = seedGoal('G');
+      final today = DateTime.now();
+      await habits.createHabit(Habit(
+          id: 'h1', title: 'Meditate', startDate: today));
+      await habits.recordOutcome('h1', today, HabitOutcome.completed);
+      await habits.createHabit(Habit(id: 'h2', title: 'Old habit'));
+      await habits.archiveHabit('h2');
+      await pump(tester, GoalDetailScreen(goalId: g.id));
+      expect(find.text(
+              'Linked habits are shown for reference and do not count toward goal progress.'),
+          findsOneWidget);
+
+      await tester.tap(find.text('Link habit'));
+      await tester.pumpAndSettle();
+      // Archived habits are not offered.
+      expect(find.text('Old habit'), findsNothing);
+      await tester.tap(find.text('Meditate'));
+      await tester.pumpAndSettle();
+
+      final link = goals.links.values.single;
+      expect(link.entityType, GoalEntityType.habit);
+      expect(link.entityId, 'h1');
+      expect(link.milestoneId, isNull);
+      final row = find.byKey(const ValueKey('goal-habit-h1'));
+      expect(row, findsOneWidget);
+      expect(find.descendant(of: row, matching: find.text('Streak 1')),
+          findsOneWidget);
+      // Habit links do not count toward progress (no tasks → 0%).
+      expect(find.text('0%'), findsOneWidget);
+
+      await tester.tap(find.descendant(
+          of: row, matching: find.byTooltip('Unlink')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Unlink'));
+      await tester.pumpAndSettle();
+      expect(goals.links, isEmpty);
+      expect(row, findsNothing);
+      expect(habits.habits.containsKey('h1'), isTrue);
     });
 
     testWidgets('unlink after confirm removes the link, task remains',

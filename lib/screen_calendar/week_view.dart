@@ -229,6 +229,10 @@ class WeekViewNew<T extends Object?> extends StatefulWidget {
   /// If true this will show week day at bottom position.
   final bool showWeekDayAtBottom;
 
+  /// Optional read-only strip shown between the app bar and the timeline for
+  /// the visible week (Phase H3: habit markers). Receives (first, last) day.
+  final Widget Function(DateTime from, DateTime to)? headerAccessoryBuilder;
+
   /// Main widget for week view.
   const WeekViewNew({
     Key? key,
@@ -278,6 +282,7 @@ class WeekViewNew<T extends Object?> extends StatefulWidget {
     this.showHalfHours = false,
     this.showQuarterHours = false,
     this.emulateVerticalOffsetBy = 0,
+    this.headerAccessoryBuilder,
     this.showWeekDayAtBottom = false,
 
     required this.handleBrightnessChange,
@@ -518,6 +523,9 @@ class WeekViewNewState<T extends Object?> extends State<WeekViewNew<T>> {
                     ),
                   ]
               ),
+              if (widget.headerAccessoryBuilder != null)
+                widget.headerAccessoryBuilder!(
+                    _currentStartDate, _currentEndDate),
               Expanded(
                 child: DecoratedBox(
                   decoration: BoxDecoration(

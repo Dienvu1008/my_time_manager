@@ -223,6 +223,10 @@ class DayViewNew<T extends Object?> extends StatefulWidget {
   /// Emulate vertical line offset from hour line starts.
   final double emulateVerticalOffsetBy;
 
+  /// Optional read-only strip shown between the app bar and the timeline for
+  /// the current day (Phase H3: habit markers). Receives (day, day).
+  final Widget Function(DateTime from, DateTime to)? headerAccessoryBuilder;
+
   /// Main widget for day view.
   const DayViewNew({
     Key? key,
@@ -268,6 +272,7 @@ class DayViewNew<T extends Object?> extends StatefulWidget {
     this.startDuration = const Duration(hours: 0),
     this.onHeaderTitleTap,
     this.emulateVerticalOffsetBy = 0,
+    this.headerAccessoryBuilder,
     required this.handleBrightnessChange,
     required this.handleMaterialVersionChange,
     required this.handleUsingBottomBarChange,
@@ -512,6 +517,8 @@ class DayViewNewState<T extends Object?> extends State<DayViewNew<T>> {
                   ],
                 ),
               ]),
+              if (widget.headerAccessoryBuilder != null)
+                widget.headerAccessoryBuilder!(_currentDate, _currentDate),
               Expanded(
                 child: DecoratedBox(
                   //decoration: BoxDecoration(color: widget.backgroundColor),

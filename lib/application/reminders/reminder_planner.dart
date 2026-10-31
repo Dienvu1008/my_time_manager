@@ -3,6 +3,8 @@
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../domain/models/model_calendar_event.dart';
+import '../../domain/models/model_habit.dart';
+import '../../domain/models/model_habit_occurrence.dart';
 import '../../domain/models/model_reminder_rule.dart';
 import '../../domain/models/model_task.dart';
 import '../../domain/models/model_time_interval.dart';
@@ -32,7 +34,14 @@ class ReminderPlanner {
   final tz.Location location;
   final CalendarOccurrenceExpander? expandOccurrences;
 
-  ReminderPlanner({required this.location, this.expandOccurrences});
+  /// Nội dung thông báo nhắc thói quen (đã bản địa hóa ở tầng app).
+  final String habitReminderBody;
+
+  ReminderPlanner({
+    required this.location,
+    this.expandOccurrences,
+    this.habitReminderBody = ReminderText.habitBody,
+  });
 
   /// Sinh mọi mốc nhắc có `fireAt > now`, sắp theo fireAt (rồi id).
   ///
@@ -158,6 +167,9 @@ class ReminderPlanner {
       if (p != null) add('${ReminderEntityType.task}:${task.id}', p);
     }
 
+    // --- Habit (Phase H3): reminderTime trên các ngày được lên lịch ---
+    _planHabits(inputs, nowUtc, horizon, add);
+
     // Khử trùng cùng fireAt trong một lần xuất hiện, áp giờ yên lặng, lọc.
     final out = <PlannedReminder>[];
     for (final list in groups.values) {
@@ -182,6 +194,59 @@ class ReminderPlanner {
       return c != 0 ? c : a.id.compareTo(b.id);
     });
     return out;
+  }
+
+  /// Nhắc thói quen (Phase H3): mỗi ngày được lên lịch (theo rule HIỆN TẠI,
+  /// giới hạn bởi startDate / endDate / ngày lưu trữ) trong
+  /// `[hôm nay, hôm nay + horizon]` (ngày theo [location]) → một mốc nhắc lúc
+  /// `reminderTime` (wall-clock, phân giải DST bằng [resolveWallClock]).
+  /// Thói quen lưu trữ / không có giờ nhắc → không có. Ngày đã ghi nhận
+  /// (completed / partial / skipped / missed) → bị bỏ. Giờ yên lặng, lọc
+  /// quá khứ và giới hạn pending được áp chung ở [plan] / selection.
+  void _planHabits(
+    ReminderInputs inputs,
+    DateTime nowUtc,
+    Duration horizon,
+    void Function(String group, PlannedReminder p) add,
+  ) {
+    if (inputs.habits.isEmpty) return;
+    final recorded = <String>{
+      for (final o in inputs.habitOccurrences)
+        if (o.outcome != HabitOutcome.pending)
+          '${o.habitId}@${HabitDay.format(o.localDate)}',
+    };
+    final todayWall = wallClockOf(nowUtc, location);
+    final today = DateTime(todayWall.year, todayWall.month, todayWall.day);
+    final last =
+        DateTime(today.year, today.month, today.day + horizon.inDays);
+    for (final h in inputs.habits) {
+      if (h.isArchived) continue;
+      final time = h.reminderTime;
+      if (time == null) continue;
+      final parts = time.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      final title = ReminderText.titleOr(h.title);
+      for (final day in h.scheduledDaysBetween(today, last)) {
+        final dayKey = HabitDay.format(day);
+        if (recorded.contains('${h.id}@$dayKey')) continue;
+        final wall = WallClock(day.year, day.month, day.day, hour, minute);
+        final key = habitReminderKey(h.id, wall);
+        add(
+          '${ReminderEntityType.habit}:${h.id}@$dayKey',
+          PlannedReminder(
+            id: stableReminderId(key),
+            key: key,
+            entityType: ReminderEntityType.habit,
+            entityId: h.id,
+            fireAt: resolveWallClock(location, wall),
+            title: title,
+            body: habitReminderBody,
+            source: ReminderSource.habit,
+          ),
+        );
+      }
+    }
   }
 
   /// [candidate] thắng [existing] khi ưu tiên cao hơn; hòa → legacy.

@@ -82,14 +82,16 @@ void main() {
       final i = ProjectItem.fromMap({
         'id': 'i1',
         'projectId': 'p1',
-        'entityType': 'habit',
+        'entityType': 'document',
         'entityId': 'h1',
         'sortOrder': null,
         'createdAt': null,
       });
-      expect(i.entityType, 'habit');
+      expect(i.entityType, 'document');
       expect(i.sortOrder, 0);
-      expect(ProjectEntityType.supported, isNot(contains('habit')));
+      expect(ProjectEntityType.supported, isNot(contains('document')));
+      // H3: 'habit' is now supported.
+      expect(ProjectEntityType.supported, contains('habit'));
     });
   });
 }

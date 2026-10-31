@@ -22,6 +22,10 @@ import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/services/goal_progress_service.dart';
 import 'package:my_time_manager/domain/services/learning_progress_service.dart';
 import 'package:my_time_manager/domain/services/project_workspace_service.dart';
+import 'package:my_time_manager/domain/models/model_habit.dart';
+import 'package:my_time_manager/domain/models/model_habit_occurrence.dart';
+
+import '../shared/fake_repositories.dart' show FakeHabitRepository;
 
 // In-memory fakes: only the read members used by ProjectWorkspaceService /
 // GoalProgressService are meaningful; everything else falls to noSuchMethod.
@@ -256,10 +260,73 @@ void main() {
   });
 
   test('unknown entityType is ignored and counted', () async {
-    link('habit', 'h1');
+    link('document', 'd1');
     final ws = (await service.workspaceOf(project.id))!;
     expect(ws.isEmpty, isTrue);
     expect(ws.ignoredItemCount, 1);
+  });
+
+  group('habits (H3)', () {
+    late FakeHabitRepository habits;
+    final now = DateTime(2026, 3, 10, 12);
+
+    ProjectWorkspaceService withHabits() => ProjectWorkspaceService(
+          projects: projects,
+          taskLists: lists,
+          tasks: tasks,
+          notes: notes,
+          calendar: calendar,
+          goals: goals,
+          goalProgress: GoalProgressService(goals, tasks),
+          learning: learning,
+          learningProgress: LearningProgressService(learning),
+          habits: habits,
+          now: () => now,
+        );
+
+    setUp(() => habits = FakeHabitRepository());
+
+    test("'habit' is a supported item type", () {
+      expect(ProjectEntityType.supported, contains(ProjectEntityType.habit));
+    });
+
+    test('active linked habit is listed with its current streak', () async {
+      final h = Habit(
+          id: 'h1', title: 'Read', startDate: DateTime(2026, 3, 1));
+      await habits.createHabit(h);
+      for (final d in [8, 9, 10]) {
+        await habits.recordOutcome(
+            'h1', DateTime(2026, 3, d), HabitOutcome.completed);
+      }
+      link(ProjectEntityType.habit, 'h1');
+
+      final ws = (await withHabits().workspaceOf(project.id))!;
+      expect(ws.habits.map((w) => w.habit.id), ['h1']);
+      expect(ws.habits.single.currentStreak, 3);
+      expect(ws.isEmpty, isFalse);
+      expect(ws.ignoredItemCount, 0);
+      // Habits do not affect task counts.
+      expect(ws.totalTasks, 0);
+    });
+
+    test('archived / missing habits are ignored and counted', () async {
+      await habits.createHabit(Habit(id: 'arch', title: 'Old'));
+      await habits.archiveHabit('arch');
+      link(ProjectEntityType.habit, 'arch');
+      link(ProjectEntityType.habit, 'missing');
+
+      final ws = (await withHabits().workspaceOf(project.id))!;
+      expect(ws.habits, isEmpty);
+      expect(ws.isEmpty, isTrue);
+      expect(ws.ignoredItemCount, 2);
+    });
+
+    test('without a HabitRepository habit items are ignored', () async {
+      link(ProjectEntityType.habit, 'h1');
+      final ws = (await service.workspaceOf(project.id))!;
+      expect(ws.habits, isEmpty);
+      expect(ws.ignoredItemCount, 1);
+    });
   });
 
   test('goal progress passthrough', () async {

@@ -187,6 +187,7 @@ void main() {
   test('entity type constants', () {
     expect(GoalEntityType.habit, 'habit');
     expect(ProjectEntityType.habit, 'habit');
-    expect(ProjectEntityType.supported, isNot(contains('habit')));
+    // H3: habits are a supported project item type.
+    expect(ProjectEntityType.supported, contains('habit'));
   });
 }

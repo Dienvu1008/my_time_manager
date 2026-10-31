@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/domain/models/model_calendar_event.dart';
 import 'package:my_time_manager/domain/models/model_course.dart';
 import 'package:my_time_manager/domain/models/model_goal.dart';
+import 'package:my_time_manager/domain/models/model_habit.dart';
+import 'package:my_time_manager/domain/models/model_habit_occurrence.dart';
 import 'package:my_time_manager/domain/models/model_list.dart';
 import 'package:my_time_manager/domain/models/model_note.dart';
 import 'package:my_time_manager/domain/models/model_project.dart';
@@ -11,6 +13,7 @@ import 'package:my_time_manager/domain/models/model_project_item.dart';
 import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
 import 'package:my_time_manager/domain/repositories/goal_repository.dart';
+import 'package:my_time_manager/domain/repositories/habit_repository.dart';
 import 'package:my_time_manager/domain/repositories/learning_repository.dart';
 import 'package:my_time_manager/domain/repositories/note_repository.dart';
 import 'package:my_time_manager/domain/repositories/project_repository.dart';
@@ -242,6 +245,10 @@ void main() {
             ),
           ),
         ],
+        habits: [
+          WorkspaceHabit(
+              habit: Habit(id: 'h', title: 'Daily stretch'), currentStreak: 4),
+        ],
         calendarEvents: [
           CalendarEvent(
             id: 'e',
@@ -283,13 +290,16 @@ void main() {
       await see('Courses');
       await see('Flutter course');
       await see('25%');
+      await see('Habits');
+      await see('Daily stretch');
+      await see('Streak 4');
       await see('Calendar events');
       await see('Kickoff');
       await see('01/05/2026');
       expect(find.text('Nothing linked yet'), findsNothing);
     });
 
-    testWidgets('empty project shows the empty text in all 6 sections',
+    testWidgets('empty project shows the empty text in all 7 sections',
         (tester) async {
       // Use a tall surface so every section is built.
       await tester.binding.setSurfaceSize(const Size(800, 2000));
@@ -299,7 +309,7 @@ void main() {
         workspace: ProjectWorkspace(project: Project(id: 'p', title: 'P')),
       ));
       await tester.pumpAndSettle();
-      expect(find.text('Nothing linked yet'), findsNWidgets(6));
+      expect(find.text('Nothing linked yet'), findsNWidgets(7));
       expect(find.text('Tasks completed: 0/0'), findsOneWidget);
     });
 
@@ -321,8 +331,10 @@ void main() {
     late FakeCalendarRepository calendar;
     late FakeGoalRepository goals;
     late FakeLearningRepository learning;
+    late FakeHabitRepository habits;
 
     setUp(() {
+      habits = FakeHabitRepository();
       projects = FakeProjectRepository();
       taskLists = FakeTaskListRepository();
       tasks = FakeTaskRepository();
@@ -341,6 +353,7 @@ void main() {
           RepositoryProvider<CalendarRepository>.value(value: calendar),
           RepositoryProvider<GoalRepository>.value(value: goals),
           RepositoryProvider<LearningRepository>.value(value: learning),
+          RepositoryProvider<HabitRepository>.value(value: habits),
           RepositoryProvider<ProjectWorkspaceService>.value(
             value: ProjectWorkspaceService(
               projects: projects,
@@ -352,6 +365,7 @@ void main() {
               goalProgress: GoalProgressService(goals, tasks),
               learning: learning,
               learningProgress: LearningProgressService(learning),
+              habits: habits,
             ),
           ),
         ], home);
@@ -402,6 +416,35 @@ void main() {
       expect(projects.items, isEmpty);
       expect(find.text('Meeting note'), findsNothing);
       expect(notes.visible.map((n) => n.id), ['n1']);
+    });
+
+    testWidgets('add a habit (H3): active habits offered, streak shown',
+        (tester) async {
+      final today = DateTime.now();
+      await habits.createHabit(
+          Habit(id: 'h1', title: 'Stretch', startDate: today));
+      await habits.recordOutcome('h1', today, HabitOutcome.completed);
+      await habits.createHabit(Habit(id: 'h2', title: 'Archived habit'));
+      await habits.archiveHabit('h2');
+      await pump(tester, const ProjectWorkspaceScreen(projectId: 'p'));
+      expect(find.text('Stretch'), findsNothing);
+
+      await chooseType(tester, 'Habits');
+      expect(find.text('Archived habit'), findsNothing);
+      await tester.tap(find.text('Stretch'));
+      await tester.pumpAndSettle();
+
+      final item = projects.items.values.single;
+      expect(item.entityType, ProjectEntityType.habit);
+      expect(item.entityId, 'h1');
+      final tile = find.byKey(const ValueKey('project-habit-h1'));
+      expect(tile, findsOneWidget);
+      expect(find.descendant(of: tile, matching: find.text('Streak 1')),
+          findsOneWidget);
+
+      // Already linked → no longer offered.
+      await chooseType(tester, 'Habits');
+      expect(find.text('Nothing to choose'), findsOneWidget);
     });
 
     testWidgets('implicit tasks (via linked list) have no remove action',

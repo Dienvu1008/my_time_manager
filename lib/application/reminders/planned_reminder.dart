@@ -9,6 +9,9 @@ enum ReminderSource {
 
   /// Rule tường minh (bảng reminder_rules).
   rule,
+
+  /// Suy ra từ `Habit.reminderTime` cho các ngày được lên lịch (Phase H3).
+  habit,
 }
 
 /// Mốc nhắc mong muốn do planner sinh ra.

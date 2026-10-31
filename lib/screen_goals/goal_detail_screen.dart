@@ -7,13 +7,17 @@ import '../app/app_localizations.dart';
 import '../domain/models/model_course.dart';
 import '../domain/models/model_goal.dart';
 import '../domain/models/model_goal_link.dart';
+import '../domain/models/model_habit.dart';
 import '../domain/models/model_milestone.dart';
 import '../domain/models/model_project_item.dart';
 import '../domain/models/model_task.dart';
 import '../domain/repositories/goal_repository.dart';
+import '../domain/repositories/habit_repository.dart';
 import '../domain/repositories/learning_repository.dart';
 import '../domain/repositories/task_repository.dart';
 import '../domain/services/goal_progress_service.dart';
+import '../domain/services/habit_statistics_service.dart';
+import '../screen_habits/habit_detail_screen.dart';
 import '../screen_learning/learning_labels.dart';
 import '../screen_projects/project_labels.dart';
 import '../shared/confirm_dialog.dart';
@@ -47,6 +51,8 @@ class _GoalData {
     required this.milestoneProgress,
     required this.tasksById,
     required this.coursesById,
+    this.habitsById = const {},
+    this.habitStreaks = const {},
   });
 
   final Goal goal;
@@ -56,6 +62,20 @@ class _GoalData {
   final Map<String, MilestoneProgress> milestoneProgress;
   final Map<String, Task> tasksById;
   final Map<String, Course> coursesById;
+
+  /// Active (non-archived) habits (Phase H3).
+  final Map<String, Habit> habitsById;
+
+  /// Current streak of each linked active habit.
+  final Map<String, int> habitStreaks;
+
+  /// Habit links whose habit is active (archived / missing → hidden).
+  List<GoalLink> get habitLinks => [
+        for (final link in links)
+          if (link.entityType == GoalEntityType.habit &&
+              habitsById.containsKey(link.entityId))
+            link,
+      ];
 
   /// Liên kết tới thực thể sống thuộc [milestoneId] (null = gắn trực tiếp).
   List<GoalLink> visibleLinks(String? milestoneId) => [
@@ -80,6 +100,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   late final TaskRepository _tasks = context.read<TaskRepository>();
   late final LearningRepository _learning =
       context.read<LearningRepository>();
+  late final HabitRepository _habits = context.read<HabitRepository>();
+  static const _habitStatistics = HabitStatisticsService();
   late Future<_GoalData?> _future;
 
   @override
@@ -100,6 +122,15 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     final progress = await _progress.progressOf(goal.id);
     final tasks = await _tasks.getTasks();
     final courses = await _learning.getCourses();
+    final habits = {for (final h in await _habits.getHabits()) h.id: h};
+    final now = DateTime.now();
+    final streaks = <String, int>{};
+    for (final link in links) {
+      final habit = habits[link.entityId];
+      if (link.entityType != GoalEntityType.habit || habit == null) continue;
+      streaks[habit.id] = _habitStatistics.currentStreak(
+          habit, await _habits.occurrencesOf(habit.id), now);
+    }
     return _GoalData(
       goal: goal,
       milestones: milestones,
@@ -111,6 +142,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       },
       tasksById: {for (final t in tasks) t.id: t},
       coursesById: {for (final c in courses) c.id: c},
+      habitsById: habits,
+      habitStreaks: streaks,
     );
   }
 
@@ -303,6 +336,34 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     if (ok && mounted) await _refresh();
   }
 
+  /// Chọn một thói quen đang hoạt động (chưa gắn) rồi gắn trực tiếp (H3).
+  Future<void> _linkHabit(AppLocalizations l, _GoalData data) async {
+    final load = entityLoader(context, ProjectEntityType.habit);
+    final entry = await Navigator.of(context).push<PickerEntry>(
+      MaterialPageRoute(
+        builder: (_) => EntityPickerScreen(
+          title: l.goalLinkHabit,
+          load: load,
+          excludeIds: {
+            for (final link in data.links)
+              if (link.entityType == GoalEntityType.habit) link.entityId,
+          },
+        ),
+      ),
+    );
+    if (entry == null || !mounted) return;
+    final ok =
+        await _guard(() => _repository.linkHabit(data.goal.id, entry.id));
+    if (ok && mounted) await _refresh();
+  }
+
+  Future<void> _openHabit(String habitId) async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => HabitDetailScreen(habitId: habitId)),
+    );
+    if (mounted) await _refresh();
+  }
+
   Future<void> _unlink(AppLocalizations l, GoalLink link) async {
     if (!await showConfirmDialog(context,
         message: l.confirmUnlink, confirmLabel: l.goalUnlink)) {
@@ -311,6 +372,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     final ok = await _guard(() async {
       if (link.entityType == GoalEntityType.task) {
         await _repository.unlinkTask(link.goalId, link.entityId);
+      } else if (link.entityType == GoalEntityType.habit) {
+        await _repository.unlinkHabit(link.goalId, link.entityId);
       } else {
         await _repository.unlinkCourse(link.goalId, link.entityId);
       }
@@ -441,6 +504,25 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                     ],
                   ),
                 ),
+                // --- Habits (H3): listed, not counted toward progress ---
+                _sectionHeader(theme, l.habits),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(l.goalHabitsNotCounted,
+                      style: theme.textTheme.bodySmall),
+                ),
+                for (final link in data.habitLinks) _habitRow(l, data, link),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => _linkHabit(l, data),
+                      icon: const Icon(Icons.repeat),
+                      label: Text(l.goalLinkHabit),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -506,6 +588,27 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           ),
           for (final link in linked) _linkRow(l, data, link),
         ],
+      ),
+    );
+  }
+
+  Widget _habitRow(AppLocalizations l, _GoalData data, GoalLink link) {
+    final h = data.habitsById[link.entityId]!;
+    final streak = data.habitStreaks[h.id] ?? 0;
+    return ListTile(
+      key: ValueKey('goal-habit-${h.id}'),
+      leading: CircleAvatar(
+        radius: 14,
+        backgroundColor: h.color,
+        child: const ExcludeSemantics(child: Icon(Icons.repeat, size: 16)),
+      ),
+      title: Text(h.title.isEmpty ? l.projectUntitled : h.title),
+      subtitle: Text(l.habitStreakChip.replaceAll('{n}', '$streak')),
+      onTap: () => _openHabit(h.id),
+      trailing: IconButton(
+        icon: const Icon(Icons.link_off),
+        tooltip: l.goalUnlink,
+        onPressed: () => _unlink(l, link),
       ),
     );
   }

@@ -89,7 +89,7 @@ these features.
 | C11 | Semantic canvas (nodes/edges/properties; AI-editable) | planned |
 | C12 | Analytics & planned-vs-actual (reuses AI-P11 deterministic metrics) | planned |
 | **R** | **Reminders & Alarms** (after C3) | **done** — contract in §6 |
-| **H** | **Habit Tracking** (after R) | in progress — H1 data layer done (v18); contract in §6 |
+| **H** | **Habit Tracking** (after R) | **done** — contract in §6 |
 | **DR** | **Daily Review & Adaptive Rescheduling** (after H + C5) | planned — contract in §6 |
 | C16 | Dashboard & user-facing UI | planned (visibility preserved) |
 | C17 | Integrations (Telegram, VS Code where applicable) | planned (visibility preserved) |
@@ -359,7 +359,8 @@ open questions.
   - **Links:** `GoalEntityType.habit` / `ProjectEntityType.habit` constants
     only (no repository link methods yet). Habit links do not count toward
     goal progress; `'habit'` is not in `ProjectEntityType.supported`, so
-    `ProjectWorkspaceService` counts habit items in `ignoredItemCount`.
+    `ProjectWorkspaceService` counts habit items in `ignoredItemCount`
+    (superseded by H3 below: link methods + `'habit'` supported).
 - **H2 delivered (habit UI, no schema change):**
   - **Entry point:** drawer item "Habits" / "Thói quen" (next to Goals /
     Projects / Courses) → `HabitsListScreen` (`lib/screen_habits/`).
@@ -383,7 +384,71 @@ open questions.
     Archive (confirm), Delete permanently (confirm mentions history loss).
   - All screens take an injectable clock (`DateTime Function()? now`); strings
     localized in 13 locales (`habit_labels.dart` for outcome labels / icons).
-  - **Still H3:** calendar projection, habit reminders, goal/project linking UI.
+- **H3 delivered (calendar projection, reminders, goal/project links; no
+  schema change, stays v18):**
+  - **Calendar projection (read model, not a table):**
+    `HabitCalendarProjection` (`lib/domain/services/habit_calendar_projection.dart`,
+    pure) → `HabitCalendarEntry {habitId, title, color, localDate,
+    reminderTime?, outcome, isRecorded, isScheduled}` for every ACTIVE habit's
+    scheduled days (current rule) + recorded days in a local-day range;
+    outcomes come from `HabitStatisticsService.resolveDays` (past unrecorded
+    → missed, today/future → pending). Archived habits excluded. Order:
+    day, all-day (no time) first, `HH:mm`, title, id.
+  - **Calendar UI:** `HabitCalendarStrip` (`lib/screen_habits/`) is a
+    read-only chip row (habit color dot + repeat icon + outcome icon; label
+    `HH:mm · title`, week adds `EEE M/d`) shown between the app bar and the
+    timeline via a new optional `headerAccessoryBuilder` on `DayViewNew` and
+    `WeekViewNew`. **Covered: the main day view (`view_daily.dart`) and week
+    view (`view_weekly.dart`).** Not covered: month view, timeline /
+    task-overview views. Timed habits are shown in the top (all-day) area
+    with their time in the label, not positioned on the hour grid (keeps the
+    event / interval layout untouched). Tapping a chip opens
+    `HabitDetailScreen` (the check-in workflow, `HabitRepository.recordOutcome`
+    / `clearOutcome`); calendar data is never edited; the strip reloads on
+    return. No habits / no `HabitRepository` in scope → renders nothing.
+  - **Reminders via Phase R:** `ReminderInputs.habits` / `habitOccurrences`
+    (`RepositoryReminderInputSource(habits:)` loads active habits with a
+    `reminderTime` + their records from yesterday on). The planner emits one
+    reminder per scheduled day in `[today, today + horizon]` (30 days, days
+    in `tz.local`) at `reminderTime` wall-clock (`resolveWallClock`, R-b DST
+    rules), `entityType 'habit'`, `ReminderSource.habit`, no anchor (quiet
+    hours always shift it, like absolute reminders), past fire times dropped,
+    R-a pending-limit selection shared. **Id scheme:**
+    `stableReminderId('habit:<habitId>@YYYYMMDDTHHMM')` (FNV-1a, same
+    `@<occurrence>` suffix as recurring events; key helper
+    `habitReminderKey`). Suppressed: archived habit, no reminder time, days
+    after `endDate` / archive day, days not scheduled by the current rule,
+    and any day already recorded as completed / partial / skipped / missed
+    (a `pending` row does not suppress). Old ids (time change, deletion) are
+    cancelled by the incremental snapshot diff; launch reset covers restarts.
+    `SqliteHabitRepository(reminderTrigger:)` requests a reconcile after
+    create / update / archive / unarchive / permanent delete and after
+    `recordOutcome` / `clearOutcome` (app wiring passes the
+    `ReminderBridge`; the engine reads through a hook-less instance).
+    Notification: title = habit title, body = localized
+    `habitReminderBody` (13 locales) supplied by `ReminderModule` from the
+    app language (language change → reconcile). The Upcoming reminders
+    screen lists habit reminders (repeat icon, "At <time>").
+  - **Legacy mode:** with "Smart reminder scheduling" off, the bridge's
+    reconcile hook is a no-op and the legacy path only schedules time
+    intervals — **habit reminders are not scheduled** (and reminders off →
+    none).
+  - **Goal links:** `GoalRepository.linkHabit(goalId, habitId)` /
+    `unlinkHabit` (direct link, `goal_links.entityType = 'habit'`, upsert).
+    Goal detail: "Habits" section (active linked habits with current
+    streak; tap → habit detail; unlink with confirm) + "Link habit" picker
+    of active habits excluding linked ones. **Goal progress rules unchanged:
+    habit links are listed, not counted** (note shown in the section).
+  - **Project links:** `'habit'` added to `ProjectEntityType.supported`
+    (so also accepted by the AI `add_project_item` tool).
+    `ProjectWorkspaceService(habits:, habitStatistics:)` exposes
+    `ProjectWorkspace.habits` (`WorkspaceHabit {habit, currentStreak}`);
+    archived / missing habits (or no `HabitRepository`) → ignored and counted
+    in `ignoredItemCount`; habits don't affect task counts.
+    `ProjectWorkspaceScreen` has a "Habits" section; the Add-item chooser
+    offers Habits (picker of active habits, excluding linked).
+  - Strings: `habitReminderBody`, `habitReminderLabel`, `habitOpenCheckIn`,
+    `goalLinkHabit`, `goalHabitsNotCounted` in 13 locales.
 
 ### Phase DR — Daily Review & Adaptive Rescheduling
 

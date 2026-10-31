@@ -78,6 +78,11 @@ class _FakeGoalRepository implements GoalRepository {
       throw UnimplementedError();
   @override
   Future<void> unlinkCourse(String goalId, String courseId) async {}
+  @override
+  Future<GoalLink> linkHabit(String goalId, String habitId) =>
+      throw UnimplementedError();
+  @override
+  Future<void> unlinkHabit(String goalId, String habitId) async {}
 }
 
 /// Fake [TaskRepository]: [getTasks] returns the "visible" (live) tasks.

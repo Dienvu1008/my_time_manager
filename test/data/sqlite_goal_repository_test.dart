@@ -313,6 +313,27 @@ void main() {
       expect(await goals.getLinks(g.id), isEmpty);
     });
 
+    test('linkHabit is a direct upsert; unlinkHabit removes only it (H3)',
+        () async {
+      final g = Goal(title: 'G');
+      await goals.createGoal(g);
+      await goals.linkTask(g.id, 'task1');
+
+      final first = await goals.linkHabit(g.id, 'habit1');
+      final second = await goals.linkHabit(g.id, 'habit1');
+      expect(second.id, first.id);
+      expect(first.entityType, GoalEntityType.habit);
+      expect(first.milestoneId, isNull);
+      final found =
+          await goals.getLinksForEntity(GoalEntityType.habit, 'habit1');
+      expect(found.single.goalId, g.id);
+      expect(await goals.getLinks(g.id), hasLength(2));
+
+      await goals.unlinkHabit(g.id, 'habit1');
+      final rest = await goals.getLinks(g.id);
+      expect(rest.map((l) => l.entityType), [GoalEntityType.task]);
+    });
+
     test('task hard delete removes its links (trigger)', () async {
       final g = Goal(title: 'G');
       await goals.createGoal(g);

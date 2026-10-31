@@ -810,7 +810,8 @@ void main() {
       expect(env.projects.items.single.entityType, 'note');
       _expectFailure(
           await env.run('add_project_item',
-              {'projectId': id, 'entityType': 'habit', 'entityId': 'h'}),
+              // 'habit' is supported since H3; use a still-unknown type.
+              {'projectId': id, 'entityType': 'document', 'entityId': 'd'}),
           ToolResult.codeInvalidArguments);
       _expectFailure(
           await env.run('add_project_item',

@@ -64,6 +64,12 @@ String calendarOverrideKey(String eventId, int minutes,
 String ruleKey(String ruleId, {WallClock? occurrence}) =>
     'rule:$ruleId${_occurrenceSuffix(occurrence)}';
 
+/// Khóa nhắc của thói quen [habitId] vào ngày/giờ wall-clock [at]
+/// (`habit:<habitId>@YYYYMMDDTHHMM`, cùng hậu tố lần xuất hiện như sự kiện
+/// lặp). Id = [stableReminderId] của khóa này (Phase H3).
+String habitReminderKey(String habitId, WallClock at) =>
+    '${ReminderEntityType.habit}:$habitId${_occurrenceSuffix(at)}';
+
 /// Mọi id có thể đã được đặt cho [interval]: mốc hiện tại ∪ mốc phổ biến
 /// (cùng tập với `cancelForTimeInterval`).
 Set<int> legacyCandidateIds(TimeInterval interval) => {

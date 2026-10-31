@@ -77,6 +77,10 @@ class ReminderEntityType {
   static const String timeInterval = 'timeInterval';
   static const String calendarEvent = 'calendarEvent';
   static const String task = 'task';
+
+  /// Thói quen (Phase H3). Không có rule tường minh: nhắc được suy ra từ
+  /// `Habit.reminderTime` + lịch lặp (xem ReminderPlanner).
+  static const String habit = 'habit';
 }
 
 /// Kiểu rule: lệch so với mốc của thực thể ([offset]) hoặc thời điểm tuyệt

@@ -5,6 +5,7 @@ import 'package:my_time_manager/app/app.dart' show AppBloc;
 import 'package:my_time_manager/application/reminders/notification_scheduler.dart';
 import 'package:my_time_manager/application/reminders/reminder_coordinator.dart';
 import 'package:my_time_manager/application/reminders/reminder_inputs.dart';
+import 'package:my_time_manager/domain/models/model_habit.dart';
 import 'package:my_time_manager/domain/models/model_time_interval.dart';
 import 'package:my_time_manager/screen_reminders/upcoming_reminders_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -64,6 +65,25 @@ void main() {
     expect(find.textContaining('15 minutes before'), findsNWidgets(2));
     expect(find.text('Deferred'), findsNothing);
     expect(find.byType(MaterialBanner), findsNothing);
+  });
+
+  testWidgets('habit reminders (H3) are listed with a habit icon',
+      (tester) async {
+    source.inputs = ReminderInputs(habits: [
+      Habit(
+          id: 'h',
+          title: 'Meditate',
+          startDate: DateTime(2026, 4, 1),
+          endDate: DateTime(2026, 4, 30),
+          reminderTime: '20:00'),
+    ]);
+    await open(tester, build());
+
+    expect(find.text('Meditate'), findsOneWidget);
+    final icon = tester.widget<Icon>(find.byIcon(Icons.repeat));
+    expect(icon.semanticLabel, 'Habit reminder');
+    expect(find.textContaining('At '), findsOneWidget);
+    expect(find.textContaining('8:00'), findsOneWidget);
   });
 
   testWidgets('empty state', (tester) async {

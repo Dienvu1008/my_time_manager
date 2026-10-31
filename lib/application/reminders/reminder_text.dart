@@ -29,4 +29,9 @@ class ReminderText {
   /// Nội dung mốc nhắc tuyệt đối.
   static String absoluteBody(int hour, int minute) =>
       'Nhắc lúc ${_two(hour)}:${_two(minute)}';
+
+  /// Nội dung mặc định của nhắc thói quen (Phase H3). Bản production truyền
+  /// chuỗi đã bản địa hóa (`AppLocalizations.habitReminderBody`) qua
+  /// `ReminderCoordinator.habitReminderBody`.
+  static const String habitBody = 'Đến giờ thực hiện thói quen';
 }

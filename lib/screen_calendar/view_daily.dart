@@ -8,6 +8,7 @@ import 'package:my_time_manager/screen_calendar/calendar_zoom_wrapper.dart';
 import 'package:my_time_manager/screen_calendar/mapping.dart';
 import 'package:calendar_widgets/calendar_widgets.dart';
 import '../data/device_calendar/device_calendar_service.dart';
+import '../screen_habits/habit_calendar_strip.dart';
 import '../screen_tasks/component_widgets/page_add_edit_calendar_event.dart';
 import '../screen_tasks/component_widgets/page_add_edit_time_interval.dart';
 import '../utils/constants.dart';
@@ -286,6 +287,9 @@ class DayViewWidget extends StatelessWidget {
       startDuration: Duration(hours: 8),
       showHalfHours: true,
       heightPerMinute: heightPerMinute,
+      // Thói quen (H3): dải chỉ-đọc ở vùng cả-ngày; nhấn → màn ghi nhận.
+      headerAccessoryBuilder: (from, to) =>
+          HabitCalendarStrip(from: from, to: to),
       leftSideHourIndicatorBuilder: _leftSideHourIndicatorBuilder,
       hourIndicatorSettings: HourIndicatorSettings(
         color: Theme.of(context).dividerColor,

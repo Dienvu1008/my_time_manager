@@ -104,4 +104,13 @@ abstract class GoalRepository {
 
   /// Remove the link between a goal and a course.
   Future<void> unlinkCourse(String goalId, String courseId);
+
+  /// Link a habit (Phase H3) directly to a goal (`goal_links` entityType
+  /// `'habit'`, no milestone). Upsert per (goal, habit). Habit links are
+  /// informational: they do NOT count toward goal progress
+  /// (GoalProgressService only counts task links).
+  Future<GoalLink> linkHabit(String goalId, String habitId);
+
+  /// Remove the link between a goal and a habit.
+  Future<void> unlinkHabit(String goalId, String habitId);
 }

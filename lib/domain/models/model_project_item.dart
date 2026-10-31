@@ -19,13 +19,13 @@ class ProjectEntityType {
   /// Khóa học (C7).
   static const String course = 'course';
 
-  /// Thói quen (Phase H1). CỐ Ý chưa nằm trong [supported] (chưa có UI chọn
-  /// thói quen / workspace chưa hiển thị): ProjectWorkspaceService đếm các mục
-  /// 'habit' vào ignoredItemCount. Trigger `delete_project_items_of_habit` dọn
-  /// mục khi xóa cứng thói quen.
+  /// Thói quen (Phase H1; hỗ trợ đầy đủ từ H3): workspace liệt kê thói quen
+  /// đang hoạt động kèm chuỗi hiện tại; thói quen lưu trữ / không còn → đếm
+  /// vào ignoredItemCount. Trigger `delete_project_items_of_habit` dọn mục khi
+  /// xóa cứng thói quen.
   static const String habit = 'habit';
 
-  /// Các loại được hỗ trợ (C6 + 'course' từ C7).
+  /// Các loại được hỗ trợ (C6 + 'course' từ C7 + 'habit' từ H3).
   static const List<String> supported = [
     taskList,
     task,
@@ -33,6 +33,7 @@ class ProjectEntityType {
     goal,
     calendarEvent,
     course,
+    habit,
   ];
 }
 

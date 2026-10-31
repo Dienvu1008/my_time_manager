@@ -11,6 +11,7 @@ import 'quiet_hours.dart';
 import 'reminder_inputs.dart';
 import 'reminder_planner.dart';
 import 'reminder_selection.dart';
+import 'reminder_text.dart';
 import 'wall_clock_resolver.dart';
 
 /// Giới hạn số thông báo chờ trên iOS/macOS.
@@ -152,11 +153,16 @@ class ReminderCoordinator {
     DateTime Function()? now,
     this.config = const ReminderCoordinatorConfig(),
     CalendarOccurrenceExpander? expandOccurrences,
+    String Function()? habitReminderBody,
   })  : _inputs = inputs,
         _scheduler = scheduler,
         _location = location,
         _now = now ?? DateTime.now,
-        _expandOccurrences = expandOccurrences;
+        _expandOccurrences = expandOccurrences,
+        _habitReminderBody = habitReminderBody;
+
+  /// Nội dung (đã bản địa hóa) của nhắc thói quen; đọc lại mỗi lần chạy.
+  final String Function()? _habitReminderBody;
 
   final ValueNotifier<ReminderHealth> health =
       ValueNotifier(const ReminderHealth());
@@ -292,8 +298,11 @@ class ReminderCoordinator {
   }
 
   ReminderSelection _select(ReminderInputs inputs, tz.Location loc) {
-    final planner =
-        ReminderPlanner(location: loc, expandOccurrences: _expandOccurrences);
+    final planner = ReminderPlanner(
+      location: loc,
+      expandOccurrences: _expandOccurrences,
+      habitReminderBody: _habitReminderBody?.call() ?? ReminderText.habitBody,
+    );
     final planned = planner.plan(inputs,
         now: _now(), quietHours: _quietHours, horizon: config.horizon);
     return selectWithinLimit(planned, config.maxPending);

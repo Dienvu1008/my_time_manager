@@ -202,6 +202,14 @@ class FakeGoalRepository implements GoalRepository {
   @override
   Future<void> unlinkCourse(String goalId, String courseId) async =>
       _unlinkEntity(goalId, GoalEntityType.course, courseId);
+
+  @override
+  Future<GoalLink> linkHabit(String goalId, String habitId) =>
+      _link(goalId, GoalEntityType.habit, habitId, null);
+
+  @override
+  Future<void> unlinkHabit(String goalId, String habitId) async =>
+      _unlinkEntity(goalId, GoalEntityType.habit, habitId);
 }
 
 /// In-memory [ProjectRepository] for widget tests (upsert per

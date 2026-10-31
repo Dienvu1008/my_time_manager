@@ -113,4 +113,12 @@ class SqliteGoalRepository implements GoalRepository {
   @override
   Future<void> unlinkCourse(String goalId, String courseId) =>
       _dao.unlinkEntity(goalId, GoalEntityType.course, courseId);
+
+  @override
+  Future<GoalLink> linkHabit(String goalId, String habitId) =>
+      _linkEntity(goalId, GoalEntityType.habit, habitId, null);
+
+  @override
+  Future<void> unlinkHabit(String goalId, String habitId) =>
+      _dao.unlinkEntity(goalId, GoalEntityType.habit, habitId);
 }

@@ -328,6 +328,14 @@ class _WorkspaceView extends StatelessWidget {
             for (final c in ws.courses) _courseTile(context, c),
           ],
         ),
+        // Thói quen (Phase H3) — chuỗi hiện tại suy ra, chỉ đọc.
+        _Section(
+          title: l.habits,
+          emptyText: l.projectSectionEmpty,
+          children: [
+            for (final h in ws.habits) _habitTile(context, h),
+          ],
+        ),
         _Section(
           title: l.projectSectionEvents,
           emptyText: l.projectSectionEmpty,
@@ -366,6 +374,21 @@ class _WorkspaceView extends StatelessWidget {
         ],
       ),
       trailing: _removeButton(ProjectEntityType.goal, g.goal.id),
+    );
+  }
+
+  Widget _habitTile(BuildContext context, WorkspaceHabit h) {
+    return ListTile(
+      key: ValueKey('project-habit-${h.habit.id}'),
+      leading: CircleAvatar(
+        radius: 14,
+        backgroundColor: h.habit.color,
+        child: const ExcludeSemantics(child: Icon(Icons.repeat, size: 16)),
+      ),
+      title: Text(_orUntitled(h.habit.title)),
+      subtitle:
+          Text(l.habitStreakChip.replaceAll('{n}', '${h.currentStreak}')),
+      trailing: _removeButton(ProjectEntityType.habit, h.habit.id),
     );
   }
 

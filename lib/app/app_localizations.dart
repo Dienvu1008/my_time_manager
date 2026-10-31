@@ -2177,6 +2177,99 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- Habits H3: reminders, calendar projection, goal/project links ---
+
+  /// Body of a habit notification (title = habit title).
+  String get habitReminderBody {
+    return {
+      'en': 'Time for your habit',
+      'vi': 'Đến giờ thực hiện thói quen',
+      'de': 'Zeit für deine Gewohnheit',
+      'cs': 'Čas na tvůj návyk',
+      'es': 'Es hora de tu hábito',
+      'fr': 'C\'est l\'heure de votre habitude',
+      'it': 'È ora della tua abitudine',
+      'ja': '習慣の時間です',
+      'ko': '습관을 실천할 시간입니다',
+      'no': 'Tid for vanen din',
+      'ru': 'Время для вашей привычки',
+      'sv': 'Dags för din vana',
+      'zh': '该执行你的习惯了',
+    }[locale.languageCode]!;
+  }
+
+  String get habitReminderLabel {
+    return {
+      'en': 'Habit reminder',
+      'vi': 'Nhắc thói quen',
+      'de': 'Gewohnheitserinnerung',
+      'cs': 'Připomínka návyku',
+      'es': 'Recordatorio de hábito',
+      'fr': 'Rappel d\'habitude',
+      'it': 'Promemoria abitudine',
+      'ja': '習慣のリマインダー',
+      'ko': '습관 알림',
+      'no': 'Vanepåminnelse',
+      'ru': 'Напоминание о привычке',
+      'sv': 'Vanepåminnelse',
+      'zh': '习惯提醒',
+    }[locale.languageCode]!;
+  }
+
+  String get habitOpenCheckIn {
+    return {
+      'en': 'Open habit check-in',
+      'vi': 'Mở ghi nhận thói quen',
+      'de': 'Gewohnheit abhaken öffnen',
+      'cs': 'Otevřít záznam návyku',
+      'es': 'Abrir registro del hábito',
+      'fr': 'Ouvrir le suivi de l\'habitude',
+      'it': 'Apri registrazione abitudine',
+      'ja': '習慣のチェックインを開く',
+      'ko': '습관 체크인 열기',
+      'no': 'Åpne registrering av vane',
+      'ru': 'Открыть отметку привычки',
+      'sv': 'Öppna vaneregistrering',
+      'zh': '打开习惯打卡',
+    }[locale.languageCode]!;
+  }
+
+  String get goalLinkHabit {
+    return {
+      'en': 'Link habit',
+      'vi': 'Gắn thói quen',
+      'de': 'Gewohnheit verknüpfen',
+      'cs': 'Propojit návyk',
+      'es': 'Vincular hábito',
+      'fr': 'Lier une habitude',
+      'it': 'Collega abitudine',
+      'ja': '習慣をリンク',
+      'ko': '습관 연결',
+      'no': 'Koble vane',
+      'ru': 'Привязать привычку',
+      'sv': 'Länka vana',
+      'zh': '关联习惯',
+    }[locale.languageCode]!;
+  }
+
+  String get goalHabitsNotCounted {
+    return {
+      'en': 'Linked habits are shown for reference and do not count toward goal progress.',
+      'vi': 'Thói quen được gắn chỉ để tham khảo, không tính vào tiến độ mục tiêu.',
+      'de': 'Verknüpfte Gewohnheiten dienen nur zur Übersicht und zählen nicht zum Zielfortschritt.',
+      'cs': 'Propojené návyky slouží jen pro přehled a nezapočítávají se do pokroku cíle.',
+      'es': 'Los hábitos vinculados son solo de referencia y no cuentan para el progreso del objetivo.',
+      'fr': 'Les habitudes liées sont indicatives et ne comptent pas dans la progression de l\'objectif.',
+      'it': 'Le abitudini collegate sono solo di riferimento e non contano nel progresso dell\'obiettivo.',
+      'ja': 'リンクした習慣は参考表示のみで、目標の進捗には含まれません。',
+      'ko': '연결된 습관은 참고용이며 목표 진행률에 포함되지 않습니다.',
+      'no': 'Koblede vaner vises som referanse og teller ikke mot målets fremdrift.',
+      'ru': 'Привязанные привычки показаны для справки и не учитываются в прогрессе цели.',
+      'sv': 'Länkade vanor visas som referens och räknas inte in i målets framsteg.',
+      'zh': '关联的习惯仅供参考，不计入目标进度。',
+    }[locale.languageCode]!;
+  }
+
   // --- Learning / courses (Core Track C7) ---
 
   String get courses {

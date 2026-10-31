@@ -6,6 +6,7 @@ import '../app/app_localizations.dart';
 import '../domain/models/model_project_item.dart';
 import '../domain/repositories/calendar_repository.dart';
 import '../domain/repositories/goal_repository.dart';
+import '../domain/repositories/habit_repository.dart';
 import '../domain/repositories/learning_repository.dart';
 import '../domain/repositories/note_repository.dart';
 import '../domain/repositories/task_list_repository.dart';
@@ -61,6 +62,13 @@ Future<List<PickerEntry>> Function() entityLoader(
             for (final c in await repo.getCourses())
               PickerEntry(id: c.id, title: c.title, icon: icon),
           ];
+    case ProjectEntityType.habit:
+      // Chỉ thói quen đang hoạt động (đã lưu trữ không được gắn mới).
+      final repo = context.read<HabitRepository>();
+      return () async => [
+            for (final h in await repo.getHabits())
+              PickerEntry(id: h.id, title: h.title, icon: icon),
+          ];
     default:
       return () async => const <PickerEntry>[];
   }
@@ -81,6 +89,8 @@ IconData entityTypeIcon(String type) {
       return Icons.event_outlined;
     case ProjectEntityType.course:
       return Icons.school_outlined;
+    case ProjectEntityType.habit:
+      return Icons.repeat;
     default:
       return Icons.link;
   }
@@ -101,6 +111,8 @@ String entityTypeLabel(AppLocalizations l, String type) {
       return l.projectSectionEvents;
     case ProjectEntityType.course:
       return l.courses;
+    case ProjectEntityType.habit:
+      return l.habits;
     default:
       return type;
   }

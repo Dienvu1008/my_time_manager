@@ -166,8 +166,11 @@ class App extends StatelessWidget {
           create: (_) => SqliteLearningRepository(),
         ),
         // Thói quen (Phase H1). Thống kê / streak là giá trị suy ra (không lưu).
+        // H3: mọi ghi thói quen / ngày ghi nhận → reconcile nhắc thói quen.
         RepositoryProvider<HabitRepository>(
-          create: (_) => SqliteHabitRepository(),
+          create: (context) => SqliteHabitRepository(
+            reminderTrigger: context.read<ReminderModule>().bridge,
+          ),
         ),
         RepositoryProvider<HabitStatisticsService>(
           create: (context) => HabitStatisticsService(
@@ -188,6 +191,8 @@ class App extends StatelessWidget {
             goalProgress: context.read<GoalProgressService>(),
             learning: context.read<LearningRepository>(),
             learningProgress: context.read<LearningProgressService>(),
+            habits: context.read<HabitRepository>(),
+            habitStatistics: context.read<HabitStatisticsService>(),
           ),
         ),
         // FocusRepository luôn được cung cấp cho toàn app (local-first). Lớp sync
@@ -265,26 +270,27 @@ class App extends StatelessWidget {
     AppState state,
     AuthBloc? authBloc,
   ) {
+    final languageCode = [
+      'cs',
+      'de',
+      'en',
+      'es',
+      'fr',
+      'it',
+      'ja',
+      'ko',
+      'no',
+      'ru',
+      'sv',
+      'vi',
+      'zh'
+    ][state.language.index];
+    // Nội dung nhắc thói quen (H3) theo ngôn ngữ app; đổi ngôn ngữ → reconcile.
+    context.read<ReminderModule>().languageCode = languageCode;
     return MaterialApp(
             // Cho phép cửa sổ nổi Pomodoro (nằm ngoài Navigator) hiện dialog.
             navigatorKey: PomodoroOverlayController.instance.navigatorKey,
-            locale: Locale(
-              [
-                'cs',
-                'de',
-                'en',
-                'es',
-                'fr',
-                'it',
-                'ja',
-                'ko',
-                'no',
-                'ru',
-                'sv',
-                'vi',
-                'zh'
-              ][state.language.index],
-            ),
+            locale: Locale(languageCode),
             localizationsDelegates: const [
               AppLocalizationsDelegate(),
               GlobalMaterialLocalizations.delegate,
