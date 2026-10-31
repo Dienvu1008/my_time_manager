@@ -76,6 +76,9 @@ class ImportService {
   /// Học tập (C7): courses → course_modules → lessons → lesson_progress (cha
   /// trước), đặt sau `notes` và trước `goals`; cả 4 bảng ghi kiểu update-trước
   /// (không REPLACE để không cascade xóa cây con cục bộ).
+  /// Rule nhắc (Phase R): `reminder_rules` đặt CUỐI, sau các bảng đích của nó
+  /// (tasks / timeintervals / calendar_events); ghi kiểu update-trước;
+  /// keepNewest dùng `updateTimeStamp` mặc định.
   static const List<String> _importOrder = [
     'tasklists',
     'tasks',
@@ -95,6 +98,7 @@ class ImportService {
     'goal_links',
     'projects',
     'project_items',
+    'reminder_rules',
   ];
 
   /// Đọc metadata (deviceId/deviceName nguồn, thời điểm export) từ nội dung

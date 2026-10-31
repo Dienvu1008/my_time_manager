@@ -42,6 +42,19 @@ class SqliteTimeIntervalRepository implements TimeIntervalRepository {
   }
 
   @override
+  Future<void> createTimeIntervals(
+    List<TimeInterval> timeIntervals, {
+    void Function(int done)? onProgress,
+  }) async {
+    var done = 0;
+    for (final ti in timeIntervals) {
+      await _dao.insert(ti);
+      onProgress?.call(++done);
+    }
+    await _reminders.scheduleAll(timeIntervals);
+  }
+
+  @override
   Future<void> updateTimeInterval(TimeInterval timeInterval) async {
     await _dao.update(timeInterval);
     await _reminders.schedule(timeInterval);

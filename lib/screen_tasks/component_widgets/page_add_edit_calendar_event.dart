@@ -3,10 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/domain/models/model_calendar_event.dart';
 import 'package:my_time_manager/domain/models/model_list.dart';
+import 'package:my_time_manager/domain/models/model_reminder_rule.dart';
 import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
+import 'package:my_time_manager/domain/repositories/reminder_rule_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
+import 'package:my_time_manager/screen_tasks/component_widgets/listtile_alarm.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_location.dart';
 import 'package:my_time_manager/screen_tasks/component_widgets/listtile_title.dart';
+import 'package:my_time_manager/shared/absolute_reminders_tile.dart';
 import 'package:my_time_manager/utils/constants.dart';
 import 'package:uuid/uuid.dart';
 
@@ -101,6 +105,8 @@ class _AddOrEditCalendarEventPageState
       context.read<CalendarRepository>();
   late final TaskListRepository _taskListRepository =
       context.read<TaskListRepository>();
+  late final ReminderRuleRepository _reminderRuleRepository =
+      context.read<ReminderRuleRepository>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -112,8 +118,25 @@ class _AddOrEditCalendarEventPageState
   late DateTime _end;
   _RecurrencePreset _recurrence = _RecurrencePreset.none;
 
-  /// Số phút nhắc trước; null = dùng mặc định của lịch.
-  int? _reminderMinutes = 10;
+  /// Google cho tối đa 5 override nhắc mỗi sự kiện.
+  static const int _maxOverrides = 5;
+
+  /// true = dùng nhắc mặc định của lịch (không đặt nhắc trên máy).
+  bool _useCalendarDefault = false;
+
+  /// Các mốc nhắc popup (phút trước). Sự kiện mới mặc định [10].
+  List<int> _popupMinutes = [10];
+
+  /// Override không phải popup (vd. email) — giữ nguyên khi lưu.
+  List<EventReminderOverride> _otherOverrides = const [];
+
+  /// Rule nhắc tuyệt đối của sự kiện (bảng reminder_rules).
+  List<WallClock> _absoluteTimes = [];
+  List<ReminderRule> _loadedAbsoluteRules = const [];
+
+  /// Sự kiện mới: true ngay. Sự kiện có sẵn: true sau khi nạp rule xong (để
+  /// không xóa rule nếu nạp lỗi / chưa xong).
+  bool _absoluteLoaded = false;
 
   /// Danh sách được chọn (null = không thuộc danh sách nào).
   String? _selectedTaskListId;
@@ -126,7 +149,24 @@ class _AddOrEditCalendarEventPageState
     if (mounted) setState(() => _availableLists = lists);
   }
 
-  static const List<int> _reminderOptions = [0, 5, 10, 15, 30, 60, 120, 1440];
+  Future<void> _loadAbsoluteRules() async {
+    try {
+      final rules = await _reminderRuleRepository.getRulesFor(
+          ReminderEntityType.calendarEvent, _id);
+      final absolute = rules
+          .where((r) =>
+              r.kind == ReminderRuleKind.absolute && r.absoluteAt != null)
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _loadedAbsoluteRules = absolute;
+        _absoluteTimes = absolute.map((r) => r.absoluteAt!).toList();
+        _absoluteLoaded = true;
+      });
+    } catch (e) {
+      debugPrint('Không nạp được rule nhắc của sự kiện $_id: $e');
+    }
+  }
 
   @override
   void initState() {
@@ -144,15 +184,21 @@ class _AddOrEditCalendarEventPageState
       _start = e.start.effective;
       _end = e.end.effective;
       _recurrence = _RecurrencePreset.fromRecurrence(e.recurrence);
-      if (e.reminders.useDefault) {
-        _reminderMinutes = null;
-      } else if (e.reminders.overrides.isNotEmpty) {
-        _reminderMinutes = e.reminders.overrides.first.minutes;
-      } else {
-        _reminderMinutes = null;
-      }
+      _useCalendarDefault = e.reminders.useDefault;
+      final overrides = e.reminders.overrides;
+      _popupMinutes = overrides
+          .where((o) => o.method == ReminderMethod.popup)
+          .map((o) => o.minutes)
+          .toSet()
+          .toList()
+        ..sort();
+      _otherOverrides = overrides
+          .where((o) => o.method != ReminderMethod.popup)
+          .toList(growable: false);
+      _loadAbsoluteRules();
     } else {
       _id = const Uuid().v4();
+      _absoluteLoaded = true;
       final initialStart = widget.initialStart;
       if (initialStart != null) {
         // Tạo từ ô giờ trống trên lịch -> dùng giờ đã nhấn.
@@ -175,8 +221,8 @@ class _AddOrEditCalendarEventPageState
     super.dispose();
   }
 
-  void _showError(String message) {
-    showDialog(
+  Future<void> _showError(String message) {
+    return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppLocalizations.of(context)!.notification),
@@ -282,15 +328,14 @@ class _AddOrEditCalendarEventPageState
       end = EventDateTime(dateTime: _end);
     }
 
-    final reminders = _reminderMinutes == null
+    final reminders = _useCalendarDefault
         ? const EventReminders(useDefault: true)
         : EventReminders(
             useDefault: false,
             overrides: [
-              EventReminderOverride(
-                method: ReminderMethod.popup,
-                minutes: _reminderMinutes!,
-              ),
+              for (final m in (_popupMinutes.toSet().toList()..sort()))
+                EventReminderOverride(method: ReminderMethod.popup, minutes: m),
+              ..._otherOverrides,
             ],
           );
 
@@ -330,6 +375,38 @@ class _AddOrEditCalendarEventPageState
     _isEditing
         ? await _calendarRepository.updateCalendarEvent(event)
         : await _calendarRepository.createCalendarEvent(event);
+
+    // Rule nhắc tuyệt đối (chỉ khi đã nạp xong, để không xóa nhầm). Giữ id /
+    // priority của rule cũ có cùng thời điểm.
+    if (_absoluteLoaded) {
+      final byTime = {
+        for (final r in _loadedAbsoluteRules) r.absoluteAt!: r,
+      };
+      final rules = [
+        for (final at in _absoluteTimes)
+          byTime[at] ??
+              ReminderRule.absolute(
+                entityType: ReminderEntityType.calendarEvent,
+                entityId: _id,
+                at: at,
+              ),
+      ];
+      try {
+        await _reminderRuleRepository.replaceRulesFor(
+          ReminderEntityType.calendarEvent,
+          _id,
+          rules,
+          kind: ReminderRuleKind.absolute,
+        );
+      } catch (e) {
+        // Sự kiện đã lưu: báo lỗi rồi vẫn đóng trang (lưu lại sẽ tạo trùng).
+        debugPrint('Không lưu được rule nhắc của sự kiện $_id: $e');
+        if (!mounted) return;
+        final l = AppLocalizations.of(context);
+        await _showError(l?.reminderRulesSaveFailed ??
+            'Đã lưu sự kiện nhưng không lưu được các nhắc theo thời điểm cụ thể.');
+      }
+    }
 
     if (!mounted) return;
     Navigator.pop(context, event);
@@ -453,26 +530,28 @@ class _AddOrEditCalendarEventPageState
                       .toList(),
                 ),
               ),
-              ListTile(
-                leading: const Icon(Icons.notifications_outlined),
-                title: const Text('Nhắc trước'),
-                trailing: DropdownButton<int?>(
-                  value: _reminderMinutes,
-                  onChanged: (v) => setState(() => _reminderMinutes = v),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('Mặc định'),
-                    ),
-                    ..._reminderOptions.map(
-                      (m) => DropdownMenuItem<int?>(
-                        value: m,
-                        child: Text(_reminderLabel(m)),
-                      ),
-                    ),
-                  ],
+              if (localizations != null)
+                SwitchListTile(
+                  secondary: const ExcludeSemantics(
+                      child: Icon(Icons.notifications_outlined)),
+                  title: Text(localizations.useCalendarDefault),
+                  subtitle: Text(localizations.useCalendarDefaultSubtitle),
+                  value: _useCalendarDefault,
+                  onChanged: (v) => setState(() => _useCalendarDefault = v),
                 ),
-              ),
+              if (!_useCalendarDefault)
+                AlarmListTile(
+                  initial: _popupMinutes,
+                  maxCount: _maxOverrides - _otherOverrides.length,
+                  onChanged: (minutes) => _popupMinutes = minutes,
+                ),
+              if (_absoluteLoaded)
+                AbsoluteRemindersTile(
+                  // Dựng lại khi rule nạp xong (initial chỉ đọc một lần).
+                  key: ValueKey(_loadedAbsoluteRules),
+                  initial: _absoluteTimes,
+                  onChanged: (times) => _absoluteTimes = times,
+                ),
               LocationListTile(locationController: _locationController),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -492,14 +571,6 @@ class _AddOrEditCalendarEventPageState
         ),
       ),
     );
-  }
-
-  String _reminderLabel(int minutes) {
-    if (minutes == 0) return 'Lúc bắt đầu';
-    if (minutes < 60) return '$minutes phút trước';
-    if (minutes == 60) return '1 giờ trước';
-    if (minutes < 1440) return '${minutes ~/ 60} giờ trước';
-    return '${minutes ~/ 1440} ngày trước';
   }
 
   Widget _dateTimeTile({required bool isStart}) {

@@ -5,6 +5,7 @@ import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/utils/constants.dart';
 
 import 'calendar_sync_settings_card.dart';
+import 'reminder_settings_card.dart';
 import '../home/component_widgets/button_color_image.dart';
 import '../home/component_widgets/button_color_seed.dart';
 import '../home/component_widgets/button_language.dart';
@@ -374,37 +375,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               // --- Cài đặt nhắc (thông báo) ---
-              Card(
-                child: Column(
-                  children: <Widget>[
-                    ListTile(
-                      title: Text(
-                        'Nhắc',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    BlocBuilder<AppBloc, AppState>(
-                      buildWhen: (prev, curr) =>
-                          prev.remindersEnabled != curr.remindersEnabled,
-                      builder: (context, state) {
-                        return SwitchListTile(
-                          secondary:
-                              const Icon(Icons.notifications_active_outlined),
-                          title: const Text('Bật nhắc bằng thông báo'),
-                          subtitle: const Text(
-                              'Gửi thông báo trước khi công việc bắt đầu theo '
-                              'các mốc bạn đặt. Tắt để hủy toàn bộ nhắc.'),
-                          value: state.remindersEnabled,
-                          onChanged: (value) => context
-                              .read<AppBloc>()
-                              .add(ToggleRemindersEnabled(value)),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              const ReminderSettingsCard(),
               // --- Đồng bộ Google Calendar ---
               const CalendarSyncSettingsCard(),
             ],

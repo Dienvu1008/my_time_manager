@@ -6,6 +6,7 @@ import '../../screen_ai/ai_settings_page.dart';
 import '../../screen_goals/goals_list_screen.dart';
 import '../../screen_learning/courses_list_screen.dart';
 import '../../screen_projects/projects_list_screen.dart';
+import '../../screen_reminders/upcoming_reminders_screen.dart';
 import '../../utils/constants.dart';
 import '../../utils/utils.dart';
 
@@ -105,6 +106,19 @@ class MyAppDrawer extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => const CoursesListScreen(),
+                ),
+              );
+            },
+          ),
+          // Nhắc sắp tới (Phase R) — route đẩy giống Khóa học.
+          ListTile(
+            leading: const Icon(Icons.alarm_outlined),
+            title: Text(localizations.reminders),
+            onTap: () {
+              Navigator.of(context).pop(); // đóng drawer
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const UpcomingRemindersScreen(),
                 ),
               );
             },

@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_localizations.dart';
+import '../../application/reminders/reminder_ids.dart';
+import '../../screen_reminders/reminder_labels.dart';
+
 /// Danh sách listtile chọn các mốc nhắc (số phút TRƯỚC thời điểm bắt đầu).
 ///
 /// Đẩy giá trị ra ngoài qua [onChanged] (danh sách số phút, ví dụ [15, 1440]).
-/// Có thể nhận [initial] để hiển thị lại khi sửa.
+/// Có thể nhận [initial] để hiển thị lại khi sửa. Nhấn vào một mốc để thay
+/// bằng mốc khác. [maxCount] (nếu có) giới hạn số mốc: đạt giới hạn thì không
+/// thêm được nữa.
 class AlarmListTile extends StatefulWidget {
-  const AlarmListTile({super.key, this.initial, this.onChanged});
+  const AlarmListTile({super.key, this.initial, this.onChanged, this.maxCount});
 
   final List<int>? initial;
   final ValueChanged<List<int>>? onChanged;
+  final int? maxCount;
 
   @override
   State<AlarmListTile> createState() => _AlarmListTileState();
@@ -17,19 +24,8 @@ class AlarmListTile extends StatefulWidget {
 class _AlarmListTileState extends State<AlarmListTile> {
   late List<int> _minutes;
 
-  /// Các mốc nhắc dựng sẵn: nhãn -> số phút trước.
-  static const Map<String, int> _presets = {
-    'Đúng giờ': 0,
-    '5 phút trước': 5,
-    '10 phút trước': 10,
-    '15 phút trước': 15,
-    '30 phút trước': 30,
-    '1 giờ trước': 60,
-    '2 giờ trước': 120,
-    '1 ngày trước': 1440,
-    '2 ngày trước': 2880,
-    '1 tuần trước': 10080,
-  };
+  /// Giá trị trả về từ bảng chọn khi người dùng chọn "Tùy chỉnh".
+  static const int _custom = -1;
 
   @override
   void initState() {
@@ -37,107 +33,125 @@ class _AlarmListTileState extends State<AlarmListTile> {
     _minutes = List<int>.from(widget.initial ?? const <int>[]);
   }
 
-  String _labelFor(int minutes) {
-    for (final entry in _presets.entries) {
-      if (entry.value == minutes) return entry.key;
-    }
-    if (minutes % 1440 == 0) return '${minutes ~/ 1440} ngày trước';
-    if (minutes % 60 == 0) return '${minutes ~/ 60} giờ trước';
-    return '$minutes phút trước';
-  }
+  bool get _canAdd =>
+      widget.maxCount == null || _minutes.length < widget.maxCount!;
 
   void _notify() => widget.onChanged?.call(List<int>.from(_minutes));
 
-  Future<void> _addReminder() async {
+  /// Mở bảng chọn mốc. [replacing] = mốc đang sửa (null = thêm mới). Trả về
+  /// số phút được chọn (đã qua hộp thoại tùy chỉnh nếu cần), hoặc null.
+  Future<int?> _pick({int? replacing}) async {
+    final l = AppLocalizations.of(context)!;
     final chosen = await showModalBottomSheet<int>(
       context: context,
       builder: (ctx) => SafeArea(
         child: ListView(
           shrinkWrap: true,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Chọn thời điểm nhắc',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                  replacing == null ? l.reminderPickTitle : l.reminderEdit,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
-            for (final entry in _presets.entries)
+            for (final m in kCommonReminderMinutes)
               ListTile(
-                title: Text(entry.key),
-                enabled: !_minutes.contains(entry.value),
-                onTap: () => Navigator.pop(ctx, entry.value),
+                title: Text(reminderOffsetLabel(l, m)),
+                enabled: m == replacing || !_minutes.contains(m),
+                selected: m == replacing,
+                onTap: () => Navigator.pop(ctx, m),
               ),
             ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Tùy chỉnh (phút trước)...'),
-              onTap: () => Navigator.pop(ctx, -1),
+              leading: const ExcludeSemantics(child: Icon(Icons.edit_outlined)),
+              title: Text(l.reminderCustomMinutes),
+              onTap: () => Navigator.pop(ctx, _custom),
             ),
           ],
         ),
       ),
     );
-    if (chosen == null) return;
-    if (chosen == -1) {
-      await _addCustom();
-      return;
-    }
-    if (!_minutes.contains(chosen)) {
-      setState(() => _minutes.add(chosen));
-      _notify();
-    }
+    if (chosen == _custom) return _askCustom();
+    return chosen;
   }
 
-  Future<void> _addCustom() async {
+  Future<int?> _askCustom() async {
+    final l = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final value = await showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Số phút trước'),
+        title: Text(l.reminderCustomMinutesTitle),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(hintText: 'Ví dụ: 45'),
+          decoration: InputDecoration(hintText: l.reminderCustomMinutesHint),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
+            child: Text(l.reminderCancel),
           ),
           TextButton(
             onPressed: () {
               final n = int.tryParse(controller.text.trim());
               Navigator.pop(ctx, (n != null && n >= 0) ? n : null);
             },
-            child: const Text('Thêm'),
+            child: Text(l.reminderConfirmAdd),
           ),
         ],
       ),
     );
-    if (value != null && !_minutes.contains(value)) {
+    return value;
+  }
+
+  Future<void> _addReminder() async {
+    if (!_canAdd) return;
+    final value = await _pick();
+    if (value != null && !_minutes.contains(value) && _canAdd) {
       setState(() => _minutes.add(value));
       _notify();
     }
   }
 
+  Future<void> _editReminder(int current) async {
+    final value = await _pick(replacing: current);
+    // Bỏ qua nếu không chọn, không đổi, hoặc trùng mốc khác.
+    if (value == null || value == current || _minutes.contains(value)) return;
+    final index = _minutes.indexOf(current);
+    if (index < 0) return;
+    setState(() => _minutes[index] = value);
+    _notify();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final sorted = List<int>.from(_minutes)..sort();
+    final canAdd = _canAdd;
     return Column(
       children: [
         ListTile(
-          leading: const Icon(Icons.notifications_active_outlined),
-          title: const Text('Nhắc'),
+          leading: const ExcludeSemantics(
+              child: Icon(Icons.notifications_active_outlined)),
+          title: Text(l.reminders),
           subtitle: sorted.isEmpty
-              ? const Text('Chưa đặt nhắc')
-              : Text(sorted.map(_labelFor).join(', ')),
-          trailing: const Icon(Icons.add),
-          onTap: _addReminder,
+              ? Text(l.reminderNone)
+              : Text(sorted.map((m) => reminderOffsetLabel(l, m)).join(', ')),
+          trailing: IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: l.reminderAdd,
+            onPressed: canAdd ? _addReminder : null,
+          ),
+          onTap: canAdd ? _addReminder : null,
         ),
         for (final minutes in sorted)
           ListTile(
             dense: true,
-            title: Text(_labelFor(minutes)),
+            title: Text(reminderOffsetLabel(l, minutes)),
+            onTap: () => _editReminder(minutes),
             trailing: IconButton(
               icon: const Icon(Icons.delete_outline),
+              tooltip: l.reminderDelete,
               onPressed: () {
                 setState(() => _minutes.remove(minutes));
                 _notify();

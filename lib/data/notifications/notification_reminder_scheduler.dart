@@ -1,6 +1,6 @@
-import '../domain/models/model_time_interval.dart';
-import '../screen_focus_timer/data/notification_service.dart';
-import 'reminder_scheduler.dart';
+import '../../application/reminder_scheduler.dart';
+import '../../domain/models/model_time_interval.dart';
+import '../../screen_focus_timer/data/notification_service.dart';
 
 /// [ReminderScheduler] thật dùng trong production: ủy thác cho
 /// [NotificationService] (flutter_local_notifications + timezone).
@@ -13,6 +13,13 @@ class NotificationReminderScheduler implements ReminderScheduler {
   @override
   Future<void> schedule(TimeInterval interval) =>
       NotificationService.instance.scheduleForTimeInterval(interval);
+
+  @override
+  Future<void> scheduleAll(List<TimeInterval> intervals) async {
+    for (final ti in intervals) {
+      await NotificationService.instance.scheduleForTimeInterval(ti);
+    }
+  }
 
   @override
   Future<void> cancel(TimeInterval interval) =>

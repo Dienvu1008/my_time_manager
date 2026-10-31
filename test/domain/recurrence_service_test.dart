@@ -13,6 +13,19 @@ class _FakeTimeIntervalRepository implements TimeIntervalRepository {
   Future<void> createTimeInterval(TimeInterval timeInterval) async =>
       created.add(timeInterval);
 
+  /// Number of batch calls (reminders scheduled once per batch).
+  int batches = 0;
+
+  @override
+  Future<void> createTimeIntervals(List<TimeInterval> timeIntervals,
+      {void Function(int done)? onProgress}) async {
+    batches++;
+    for (final ti in timeIntervals) {
+      created.add(ti);
+      onProgress?.call(created.length);
+    }
+  }
+
   // --- Unused by these tests ---
   @override
   Future<void> updateTimeInterval(TimeInterval timeInterval) async {}
@@ -95,6 +108,7 @@ void main() {
 
     expect(count, 4);
     expect(repo.created, hasLength(4));
+    expect(repo.batches, 1, reason: 'occurrences are created in one batch');
     final ids = repo.created.map((e) => e.id).toSet();
     expect(ids, hasLength(4), reason: 'each occurrence must have a unique id');
     // Occurrences fall on consecutive days starting from the base date.

@@ -7,7 +7,14 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../application/reminders/notification_scheduler.dart'
+    show ReminderPermission;
+import '../../application/reminders/reminder_ids.dart';
+import '../../application/reminders/reminder_text.dart';
 import '../../domain/models/model_time_interval.dart';
+
+export '../../application/reminders/reminder_ids.dart'
+    show kCommonReminderMinutes;
 
 /// Dịch vụ thông báo khi hết giờ, xử lý khác nhau theo nền tảng:
 ///
@@ -238,11 +245,105 @@ class NotificationService {
     }
   }
 
+  // ------------------------------------------------------------------
+  // PRIMITIVES cho ReminderCoordinator (Phase R) — dùng qua
+  // LocalNotificationScheduler. Không kiểm tra _remindersEnabled (bridge
+  // quản lý bật/tắt) và KHÔNG mở màn Cài đặt báo thức chính xác. Khác các
+  // hàm legacy, schedule/cancel ở đây KHÔNG nuốt lỗi: coordinator tự bắt,
+  // đếm lỗi và giữ snapshot để thử lại (D8).
+  // ------------------------------------------------------------------
+
+  /// Lên lịch một nhắc với [id] cố định tại thời điểm tuyệt đối [fireAtUtc].
+  /// Bỏ qua nếu đã ở quá khứ hoặc không phải mobile. Dùng báo thức chính xác
+  /// khi Android cho phép, ngược lại dùng chế độ không chính xác.
+  Future<void> scheduleReminderAt({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime fireAtUtc,
+  }) async {
+    if (!_isMobile) return;
+    final when = tz.TZDateTime.from(fireAtUtc, tz.local);
+    if (when.isBefore(tz.TZDateTime.now(tz.local))) return;
+    // Android: chỉ dùng exact khi chắc chắn được phép (lỗi -> inexact).
+    final exact = !Platform.isAndroid || await _probeExactAlarms() == true;
+    await _plugin.zonedSchedule(
+      id,
+      title,
+      body,
+      when,
+      _reminderDetails(),
+      androidScheduleMode: exact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  /// Hủy một nhắc theo id (ném lỗi nếu plugin lỗi).
+  Future<void> cancelReminder(int id) async {
+    if (!_isMobile) return;
+    await _plugin.cancel(id);
+  }
+
+  /// Hủy toàn bộ thông báo đã đặt (ném lỗi nếu plugin lỗi).
+  Future<void> cancelAllReminders() async {
+    if (!_isMobile) return;
+    await _plugin.cancelAll();
+  }
+
+  /// true nếu được đặt báo thức chính xác (Android 12+ cần quyền
+  /// SCHEDULE_EXACT_ALARM). Nền tảng khác hoặc lỗi -> true (không áp dụng).
+  Future<bool> canScheduleExactReminders() async {
+    if (!_isMobile || !Platform.isAndroid) return true;
+    return await _probeExactAlarms() ?? true;
+  }
+
+  /// Android `canScheduleExactNotifications()`; null nếu không xác định / lỗi.
+  Future<bool?> _probeExactAlarms() async {
+    try {
+      return await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.canScheduleExactNotifications();
+    } catch (e) {
+      debugPrint('canScheduleExactNotifications lỗi: $e');
+      return null;
+    }
+  }
+
+  /// Trạng thái quyền hiển thị thông báo. Desktop/web hoặc lỗi ->
+  /// [ReminderPermission.notApplicable].
+  Future<ReminderPermission> reminderPermissionStatus() async {
+    if (!_isMobile) return ReminderPermission.notApplicable;
+    try {
+      bool? enabled;
+      if (Platform.isAndroid) {
+        enabled = await _plugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>()
+            ?.areNotificationsEnabled();
+      } else if (Platform.isIOS) {
+        final options = await _plugin
+            .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin>()
+            ?.checkPermissions();
+        enabled = options?.isEnabled;
+      }
+      if (enabled == null) return ReminderPermission.notApplicable;
+      return enabled ? ReminderPermission.granted : ReminderPermission.denied;
+    } catch (e) {
+      debugPrint('reminderPermissionStatus lỗi: $e');
+      return ReminderPermission.notApplicable;
+    }
+  }
+
   /// Sinh notificationId ổn định (deterministic) từ id của interval và số phút
   /// nhắc. Cùng interval + cùng mốc luôn ra cùng id -> ghi đè/hủy chính xác.
   int _notificationId(String intervalId, int minutesBefore) {
     // 31-bit dương để nằm trong phạm vi int của Android.
-    return ('$intervalId#$minutesBefore').hashCode & 0x7fffffff;
+    return legacyIntervalReminderId(intervalId, minutesBefore);
   }
 
   /// Lên lịch tất cả các mốc nhắc cho một [timeInterval].
@@ -284,21 +385,8 @@ class NotificationService {
     }
   }
 
-  String _reminderBody(int minutes, DateTime start) {
-    String lead;
-    if (minutes == 0) {
-      lead = 'Bắt đầu bây giờ';
-    } else if (minutes % 1440 == 0) {
-      lead = 'Còn ${minutes ~/ 1440} ngày';
-    } else if (minutes % 60 == 0) {
-      lead = 'Còn ${minutes ~/ 60} giờ';
-    } else {
-      lead = 'Còn $minutes phút';
-    }
-    final hh = start.hour.toString().padLeft(2, '0');
-    final mm = start.minute.toString().padLeft(2, '0');
-    return '$lead (bắt đầu lúc $hh:$mm)';
-  }
+  String _reminderBody(int minutes, DateTime start) =>
+      ReminderText.offsetBody(minutes, start.hour, start.minute);
 
   /// Hủy tất cả các mốc nhắc của một [timeInterval] (dùng khi sửa/xóa).
   Future<void> cancelForTimeInterval(TimeInterval timeInterval) async {
@@ -322,17 +410,3 @@ class NotificationService {
     }
   }
 }
-
-/// Các mốc nhắc phổ biến (phút trước) — dùng để dọn thông báo cũ khi hủy.
-const List<int> kCommonReminderMinutes = [
-  0,
-  5,
-  10,
-  15,
-  30,
-  60,
-  120,
-  1440,
-  2880,
-  10080,
-];

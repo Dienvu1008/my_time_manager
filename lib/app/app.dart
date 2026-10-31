@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:appflowy_editor/appflowy_editor.dart'
     show AppFlowyEditorLocalizations;
 import 'package:flutter/material.dart';
@@ -11,7 +13,12 @@ import 'package:my_time_manager/auth/view/auth_gate.dart';
 import 'package:my_time_manager/data/repositories/sqlite_task_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_task_list_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_time_interval_repository.dart';
-import 'package:my_time_manager/application/notification_reminder_scheduler.dart';
+import 'package:my_time_manager/data/repositories/sqlite_reminder_rule_repository.dart';
+import 'package:my_time_manager/domain/repositories/reminder_rule_repository.dart';
+import 'package:my_time_manager/application/reminders/quiet_hours.dart';
+import 'package:my_time_manager/application/reminders/reminder_coordinator.dart';
+import 'package:my_time_manager/application/reminders/reminder_settings.dart';
+import 'package:my_time_manager/app/reminder_module.dart';
 import 'package:my_time_manager/data/repositories/sqlite_calendar_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_note_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_conversation_repository.dart';
@@ -47,7 +54,6 @@ import 'package:my_time_manager/screen_focus_timer/view/pomodoro_floating_overla
 import 'package:my_time_manager/screen_focus_timer/view/pomodoro_overlay_controller.dart';
 import 'package:my_time_manager/domain/repositories/focus_repository.dart';
 import 'package:my_time_manager/screen_focus_timer/data/focus_sync_service.dart';
-import 'package:my_time_manager/screen_focus_timer/data/notification_service.dart';
 import 'package:my_time_manager/utils/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -76,8 +82,23 @@ class App extends StatelessWidget {
         // Domain repositories for the task slice. Provided app-wide (like
         // FocusRepository) so every screen — and, in the future, AI tools —
         // depends on the domain interface instead of DatabaseManager/SQLite.
+        // Nhắc nhở (Phase R): coordinator + bridge (cờ tính năng / legacy).
+        // Đứng đầu để các repository bên dưới nhận bridge làm hook nhắc.
+        RepositoryProvider<ReminderModule>(
+          create: (_) => ReminderModule.production(),
+        ),
+        RepositoryProvider<ReminderCoordinator>(
+          create: (context) => context.read<ReminderModule>().coordinator,
+        ),
+        RepositoryProvider<ReminderRuleRepository>(
+          create: (context) => SqliteReminderRuleRepository(
+            reminderTrigger: context.read<ReminderModule>().bridge,
+          ),
+        ),
         RepositoryProvider<TaskRepository>(
-          create: (_) => SqliteTaskRepository(),
+          create: (context) => SqliteTaskRepository(
+            reminderTrigger: context.read<ReminderModule>().bridge,
+          ),
         ),
         RepositoryProvider<TaskListRepository>(
           create: (_) => SqliteTaskListRepository(),
@@ -87,8 +108,8 @@ class App extends StatelessWidget {
               TaskCompletionService(context.read<TaskRepository>()),
         ),
         RepositoryProvider<TimeIntervalRepository>(
-          create: (_) => SqliteTimeIntervalRepository(
-            reminderScheduler: const NotificationReminderScheduler(),
+          create: (context) => SqliteTimeIntervalRepository(
+            reminderScheduler: context.read<ReminderModule>().bridge,
           ),
         ),
         RepositoryProvider<RecurrenceService>(
@@ -100,7 +121,9 @@ class App extends StatelessWidget {
               context.read<TimeIntervalRepository>()),
         ),
         RepositoryProvider<CalendarRepository>(
-          create: (_) => SqliteCalendarRepository(),
+          create: (context) => SqliteCalendarRepository(
+            reminderTrigger: context.read<ReminderModule>().bridge,
+          ),
         ),
         RepositoryProvider<NoteRepository>(
           create: (_) => SqliteNoteRepository(),
@@ -181,7 +204,7 @@ class App extends StatelessWidget {
   Widget _buildWithoutAuth() {
     return BlocProvider(
       create: (context) => AppBloc(
-        timeIntervalRepository: context.read<TimeIntervalRepository>(),
+        reminderControl: context.read<ReminderModule>().bridge,
       ),
       child: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) => _buildMaterialApp(context, state, null),
@@ -201,7 +224,7 @@ class App extends StatelessWidget {
         ),
         child: BlocProvider(
           create: (context) => AppBloc(
-            timeIntervalRepository: context.read<TimeIntervalRepository>(),
+            reminderControl: context.read<ReminderModule>().bridge,
           ),
           child: BlocBuilder<AppBloc, AppState>(
             // Khi bypassAuth bật: truyền null cho _buildMaterialApp để vào thẳng
@@ -397,20 +420,19 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   static const remindersEnabledKey = 'remindersEnabled';
   static const transparentBottomBarKey = 'transparentBottomBar';
   static const taskCardStyleKey = 'taskCardStyle';
+  static const reminderCoordinatorEnabledKey = 'reminderCoordinatorEnabled';
+  static const quietHoursEnabledKey = 'quietHoursEnabled';
+  static const quietHoursStartKey = 'quietHoursStart';
+  static const quietHoursEndKey = 'quietHoursEnd';
 
   late SharedPreferences sharedPreferences;
 
-  /// Used only for the reminders side effect of [ToggleRemindersEnabled]
-  /// (rescheduling all reminders). Injected so AppBloc does not depend on
-  /// DatabaseManager directly.
-  final TimeIntervalRepository _timeIntervalRepository;
+  /// Applies reminder settings to the reminder engine (Phase R: ReminderBridge
+  /// -> ReminderCoordinator or legacy path). Each apply is a reset reconcile.
+  final ReminderControl _reminderControl;
 
-  AppBloc({TimeIntervalRepository? timeIntervalRepository})
-      : _timeIntervalRepository =
-            timeIntervalRepository ??
-            SqliteTimeIntervalRepository(
-              reminderScheduler: const NotificationReminderScheduler(),
-            ),
+  AppBloc({ReminderControl? reminderControl})
+      : _reminderControl = reminderControl ?? const NoOpReminderControl(),
         super(AppState(
             useMaterial3: true,
             useBottomBar: true,
@@ -509,9 +531,16 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       add(ToggleShowCalendarZoomButtons(
           sharedPreferences.getBool(showCalendarZoomButtonsKey) ?? true));
 
-      // Nạp cài đặt bật nhắc bằng thông báo (mặc định true).
-      add(ToggleRemindersEnabled(
-          sharedPreferences.getBool(remindersEnabledKey) ?? true));
+      // Nạp toàn bộ cài đặt nhắc trong MỘT sự kiện -> đúng một lần reset
+      // reconcile lúc khởi động (Phase R, D10).
+      add(LoadReminderSettings(
+        enabled: sharedPreferences.getBool(remindersEnabledKey) ?? true,
+        coordinatorEnabled:
+            sharedPreferences.getBool(reminderCoordinatorEnabledKey) ?? true,
+        quietEnabled: sharedPreferences.getBool(quietHoursEnabledKey) ?? false,
+        quietStart: sharedPreferences.getInt(quietHoursStartKey) ?? 1320,
+        quietEnd: sharedPreferences.getInt(quietHoursEndKey) ?? 420,
+      ));
 
       // Nạp cài đặt bottom bar trong suốt (mặc định false).
       add(ToggleTransparentBottomBar(
@@ -656,10 +685,38 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     on<ToggleRemindersEnabled>((event, emit) {
       sharedPreferences.setBool(remindersEnabledKey, event.enabled);
       emit(state.copyWith(remindersEnabled: event.enabled));
-      // Đồng bộ với hệ thống thông báo: tắt -> hủy hết; bật -> lên lịch lại
-      // toàn bộ interval từ DB. Bọc trong service/DB (an toàn nếu lỗi).
-      NotificationService.instance.setEnabled(event.enabled);
-      _timeIntervalRepository.rescheduleAllReminders();
+      // Bridge đồng bộ với NotificationService (legacyToggle) và lên lịch
+      // lại / hủy toàn bộ.
+      unawaited(_reminderControl.apply(state.reminderSettings));
+    });
+
+    on<LoadReminderSettings>((event, emit) {
+      emit(state.copyWith(
+        remindersEnabled: event.enabled,
+        reminderCoordinatorEnabled: event.coordinatorEnabled,
+        quietHoursEnabled: event.quietEnabled,
+        quietHoursStartMinutes: event.quietStart,
+        quietHoursEndMinutes: event.quietEnd,
+      ));
+      unawaited(_reminderControl.apply(state.reminderSettings));
+    });
+
+    on<ToggleReminderCoordinator>((event, emit) {
+      sharedPreferences.setBool(reminderCoordinatorEnabledKey, event.enabled);
+      emit(state.copyWith(reminderCoordinatorEnabled: event.enabled));
+      unawaited(_reminderControl.apply(state.reminderSettings));
+    });
+
+    on<ChangeQuietHours>((event, emit) {
+      sharedPreferences.setBool(quietHoursEnabledKey, event.enabled);
+      sharedPreferences.setInt(quietHoursStartKey, event.startMinutes);
+      sharedPreferences.setInt(quietHoursEndKey, event.endMinutes);
+      emit(state.copyWith(
+        quietHoursEnabled: event.enabled,
+        quietHoursStartMinutes: event.startMinutes,
+        quietHoursEndMinutes: event.endMinutes,
+      ));
+      unawaited(_reminderControl.apply(state.reminderSettings));
     });
 
     on<ToggleTransparentBottomBar>((event, emit) {
@@ -782,6 +839,43 @@ class ToggleRemindersEnabled extends AppEvent {
   ToggleRemindersEnabled(this.enabled);
 }
 
+/// Nạp toàn bộ cài đặt nhắc lúc khởi động (một lần reset reconcile).
+class LoadReminderSettings extends AppEvent {
+  final bool enabled;
+  final bool coordinatorEnabled;
+  final bool quietEnabled;
+  final int quietStart;
+  final int quietEnd;
+
+  LoadReminderSettings({
+    required this.enabled,
+    required this.coordinatorEnabled,
+    required this.quietEnabled,
+    required this.quietStart,
+    required this.quietEnd,
+  });
+}
+
+/// Bật/tắt cờ tính năng "lên lịch nhắc thông minh" (coordinator vs legacy).
+class ToggleReminderCoordinator extends AppEvent {
+  final bool enabled;
+
+  ToggleReminderCoordinator(this.enabled);
+}
+
+/// Thay đổi giờ yên lặng (phút trong ngày, có thể vắt qua nửa đêm).
+class ChangeQuietHours extends AppEvent {
+  final bool enabled;
+  final int startMinutes;
+  final int endMinutes;
+
+  ChangeQuietHours({
+    required this.enabled,
+    required this.startMinutes,
+    required this.endMinutes,
+  });
+}
+
 /// Bật/tắt (hoặc nạp) cài đặt hiển thị bottom bar ở chế độ trong suốt.
 class ToggleTransparentBottomBar extends AppEvent {
   final bool enabled;
@@ -821,6 +915,25 @@ class AppState {
 
   /// Bật nhắc bằng thông báo cho các khoảng thời gian đã đặt mốc nhắc.
   final bool remindersEnabled;
+
+  /// Cờ tính năng Phase R: true = ReminderCoordinator, false = đường legacy.
+  final bool reminderCoordinatorEnabled;
+
+  /// Giờ yên lặng: bật/tắt và khoảng [start, end) tính theo phút trong ngày.
+  final bool quietHoursEnabled;
+  final int quietHoursStartMinutes;
+  final int quietHoursEndMinutes;
+
+  /// Cài đặt nhắc gửi tới engine (ReminderControl.apply).
+  ReminderSettings get reminderSettings => ReminderSettings(
+        enabled: remindersEnabled,
+        coordinatorEnabled: reminderCoordinatorEnabled,
+        quietHours: QuietHours(
+          enabled: quietHoursEnabled,
+          startMinutes: quietHoursStartMinutes,
+          endMinutes: quietHoursEndMinutes,
+        ),
+      );
 
   /// Hiển thị bottom navigation bar ở chế độ trong suốt (nền trong, không đổ
   /// bóng) thay vì nền đặc mặc định.
@@ -866,6 +979,10 @@ class AppState {
     this.keepPomodoroRunningInBackground = false,
     this.showCalendarZoomButtons = true,
     this.remindersEnabled = true,
+    this.reminderCoordinatorEnabled = true,
+    this.quietHoursEnabled = false,
+    this.quietHoursStartMinutes = 1320,
+    this.quietHoursEndMinutes = 420,
     this.transparentBottomBar = false,
     this.taskCardStyle = TaskCardStyle.filled,
   });
@@ -889,6 +1006,10 @@ class AppState {
     bool? keepPomodoroRunningInBackground,
     bool? showCalendarZoomButtons,
     bool? remindersEnabled,
+    bool? reminderCoordinatorEnabled,
+    bool? quietHoursEnabled,
+    int? quietHoursStartMinutes,
+    int? quietHoursEndMinutes,
     bool? transparentBottomBar,
     TaskCardStyle? taskCardStyle,
   }) {
@@ -918,6 +1039,12 @@ class AppState {
       showCalendarZoomButtons:
           showCalendarZoomButtons ?? this.showCalendarZoomButtons,
       remindersEnabled: remindersEnabled ?? this.remindersEnabled,
+      reminderCoordinatorEnabled:
+          reminderCoordinatorEnabled ?? this.reminderCoordinatorEnabled,
+      quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
+      quietHoursStartMinutes:
+          quietHoursStartMinutes ?? this.quietHoursStartMinutes,
+      quietHoursEndMinutes: quietHoursEndMinutes ?? this.quietHoursEndMinutes,
       transparentBottomBar: transparentBottomBar ?? this.transparentBottomBar,
       taskCardStyle: taskCardStyle ?? this.taskCardStyle,
     );

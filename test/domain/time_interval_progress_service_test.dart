@@ -16,6 +16,9 @@ class _FakeTimeIntervalRepository implements TimeIntervalRepository {
   @override
   Future<void> createTimeInterval(TimeInterval timeInterval) async {}
   @override
+  Future<void> createTimeIntervals(List<TimeInterval> timeIntervals,
+      {void Function(int done)? onProgress}) async {}
+  @override
   Future<void> deleteTimeInterval(String id) async {}
   @override
   Future<void> rescheduleAllReminders() async {}

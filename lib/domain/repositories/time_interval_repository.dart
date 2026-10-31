@@ -7,9 +7,10 @@ import '../models/model_time_interval.dart';
 /// this interface, never on [DatabaseManager] / SQLite directly.
 ///
 /// NOTE on side effects: creating/updating a time interval schedules its
-/// notification reminders, and deleting one cancels them. That behaviour lives
-/// inside the existing persistence layer and is preserved exactly by the SQLite
-/// implementation (TimeIntervalDao + ReminderScheduler). Callers should not
+/// notification reminders, and deleting one cancels them. These side effects
+/// are coordinated by the injected ReminderScheduler (in the app: the
+/// ReminderBridge, which forwards to the ReminderCoordinator or, with the
+/// feature flag off, to the legacy notification path). Callers should not
 /// assume these are pure data operations.
 abstract class TimeIntervalRepository {
   /// All time intervals.
@@ -29,6 +30,14 @@ abstract class TimeIntervalRepository {
 
   /// Create a time interval (also schedules its reminders).
   Future<void> createTimeInterval(TimeInterval timeInterval);
+
+  /// Create many time intervals (e.g. the occurrences of a repeating one),
+  /// then schedule their reminders in one batch. [onProgress] is invoked
+  /// after each insert with the number created so far.
+  Future<void> createTimeIntervals(
+    List<TimeInterval> timeIntervals, {
+    void Function(int done)? onProgress,
+  });
 
   /// Update a time interval (also reschedules its reminders).
   Future<void> updateTimeInterval(TimeInterval timeInterval);

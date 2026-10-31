@@ -88,7 +88,7 @@ these features.
 | C10 | Knowledge tools (dictionary / translate / pronounce / TTS / vocabulary) | planned |
 | C11 | Semantic canvas (nodes/edges/properties; AI-editable) | planned |
 | C12 | Analytics & planned-vs-actual (reuses AI-P11 deterministic metrics) | planned |
-| **R** | **Reminders & Alarms** (after C3) | planned — contract in §6 |
+| **R** | **Reminders & Alarms** (after C3) | **done** — contract in §6 |
 | **H** | **Habit Tracking** (after R) | planned — contract in §6 |
 | **DR** | **Daily Review & Adaptive Rescheduling** (after H + C5) | planned — contract in §6 |
 | C16 | Dashboard & user-facing UI | planned (visibility preserved) |
@@ -146,13 +146,13 @@ Nothing removed; nothing renumbered inside either track.
   `lib/data/models/` (one still has a live UI consumer; they are not on the
   domain-leak surface) — retiring them is deferred to a separate legacy-cleanup
   step.
-- **Notification side effect still in persistence.**
-  `ARCHITECTURE_REFACTOR_REPORT.md` says the UI/Bloc/Controller layer no longer
-  calls `DatabaseManager` directly — true — but `DatabaseManager` itself still
-  calls `NotificationService` from `insertTimeInterval` / `updateTimeInterval` /
-  `deleteTimeInterval`. "No notification side effects in low-level persistence"
-  is therefore **not yet satisfied**. This is resolved in **Core Track Phase R**
-  by moving the side effect to the application layer.
+- **Notification side effect in persistence — resolved.** `DatabaseManager`
+  used to call `NotificationService` from `insertTimeInterval` /
+  `updateTimeInterval` / `deleteTimeInterval`. C3 removed that call (the
+  repository calls the application-level `ReminderScheduler` port instead), and
+  Phase R puts the `ReminderCoordinator` behind that port (plus a reconcile
+  trigger on the calendar / task / reminder-rule repositories). "No
+  notification side effects in low-level persistence" is now satisfied.
 - **Dead code:** `lib/home/data_controller.dart` (`DataController` /
   `NewDataController`) is unused (all call sites commented out) and contains a
   latent inconsistency bug in `update(event, updated)` (persists the old
@@ -166,8 +166,68 @@ The approved decisions (reminder Q-R1/R2/R3, habit Q-H1/H2/H3, daily-review
 Q-DR1/DR2/DR3, and Q-WORKFLOW) are **settled** and reflected below; they are not
 open questions.
 
-### Phase R — Reminders & Alarms
+### Phase R — Reminders & Alarms (contract, implemented)
 
+- **Scope delivered:**
+  - **Schema v16 (strictly additive):** table `reminder_rules` (`id`,
+    `entityType` free TEXT, `entityId`, `kind` offset/absolute,
+    `offsetMinutes`, `absoluteAt` wall-clock TEXT `YYYY-MM-DDTHH:MM`,
+    `enabled`, `priority`, `createdAt`, `updateTimeStamp`, `deviceId`; no FK,
+    no REPLACE), index `idx_reminder_rules_entity (entityType, entityId)`, and
+    AFTER DELETE triggers removing the rules of a hard-deleted timeinterval /
+    calendar event / task. `ReminderRuleDao.createSchema` is the single SQL
+    source for `_onCreate` and `_onUpgrade` `oldVersion < 16`. Model
+    `ReminderRule` + `WallClock`, `ReminderRuleRepository` +
+    `SqliteReminderRuleRepository` (`replaceRulesFor` per entity + kind).
+  - **Legacy adapters (Q-R3):** `TimeInterval.reminderMinutesBefore` and
+    `CalendarEvent` popup overrides stay the source of offset reminders
+    (`useDefault` → no local reminder; email overrides ignored); explicit
+    rules are merged in.
+  - **Deterministic ids:** legacy interval offsets keep
+    `('<intervalId>#<m>').hashCode & 0x7fffffff` (old and new paths overwrite
+    each other); every other reminder uses FNV-1a 32-bit over a stable key
+    (`calendarEvent:<id>#<m>`, `rule:<ruleId>`, `@<occurrence>` for recurring
+    events).
+  - **Stateless reconciliation (Q-R1):** reset reconcile on launch / settings
+    change (`cancelAll` + schedule the selected set); incremental reconcile
+    after repository mutations (cancel `(snapshot ∪ alsoCancel) − selected`,
+    schedule new or changed payloads). The snapshot lives in memory only; runs
+    are serialized and coalesced. Applying twice makes zero calls the second
+    time. Residual: a row hard-deleted by an SQL cascade mid-session keeps its
+    notification until the next launch reset.
+  - **Wall-clock / R-b:** anchors and absolute rules are resolved from local
+    wall fields in `tz.local`; recurring calendar events are expanded over a
+    30-day horizon.
+  - **R-a:** the planner sorts by fire time, then priority, then id, and keeps
+    the first N (iOS/macOS 64, Android 400, others 64); the rest are reported
+    as deferred and scheduled by later reconciles.
+  - **Quiet hours:** a fire time inside `[start, end)` (may cross midnight)
+    moves to the next `end`, DST-safe; an offset reminder whose shifted time
+    falls after its anchor is suppressed. Absolute reminders always shift.
+  - **Policies:** past fire times dropped; completed intervals, cancelled /
+    trashed / archived events, completed or missing tasks, disabled rules and
+    unknown entity types suppressed. Permission denied → still scheduled,
+    `health.permission = denied`, non-blocking banner; scheduler errors are
+    counted, never thrown. Exact alarms are used only when already allowed;
+    permission requests are user-initiated.
+  - **Layering:** `NotificationScheduler` port in
+    `lib/application/reminders/`; `lib/domain` / `lib/application` import no
+    `flutter_local_notifications` / `flutter_timezone` /
+    `notification_service.dart` (enforced by a test). Platform adapters live in
+    `lib/data/notifications/`; wiring in `lib/app/reminder_module.dart`.
+  - **Feature flag:** setting "Smart reminder scheduling"
+    (`reminderCoordinatorEnabled`, default on). Off → the pre-R direct
+    interval scheduling (`NotificationReminderScheduler`); legacy fields are
+    untouched either way.
+  - **UI entry points:** drawer "Reminders" → Upcoming reminders screen
+    (read model with deferred / quiet-hours chips and permission banner);
+    Settings reminders card (existing switch + quiet hours + flag + link);
+    `AlarmListTile` with edit / max count / localized labels; the calendar
+    event page has "Use calendar default", multi-offset popup overrides (max 5
+    incl. preserved non-popup overrides) and specific-time reminders saved as
+    `absolute` rules.
+  - **Backup / import:** `reminder_rules` appended to `allDataTables` and
+    `ImportService._importOrder`, imported update-first-then-insert.
 - **Objective:** reliable, non-duplicated reminders for tasks, intervals, and
   (via H) habits; per-item preferences + quiet hours; survives restart and
   schedule edits.
@@ -206,8 +266,11 @@ open questions.
   existing `TimeInterval` reminder behavior preserved.
 - **Rollback:** additive-only; feature flag to fall back to current direct
   scheduling; legacy fields intact.
-- **Open:** R-a (iOS pending-notification limit drop policy); R-b
-  (nonexistent/ambiguous local times under DST).
+- **Settled:** R-a — over the platform pending limit, keep the nearest in
+  time, then higher priority, then lower id; the rest are deferred to later
+  reconciles. R-b — a nonexistent local time (DST gap) resolves to the
+  transition instant (first instant whose wall time is ≥ the request); an
+  ambiguous one (DST overlap) resolves to its first occurrence.
 
 ### Phase H — Habit Tracking
 
@@ -475,20 +538,17 @@ open questions.
   the deterministic authoritative core, and the AI workflow becomes the optional
   overlay that feeds proposals into DR's validator rather than writing around it.
   No deprecation.
-- **Reminders:** two reminder representations exist today
-  (`TimeInterval.reminderMinutesBefore`, `CalendarEvent.EventReminders`); only
-  the former is wired to `NotificationService`. Phase R introduces `ReminderRule`
-  as the single application-level abstraction with adapters over both, with no
-  duplicated reminder state and no legacy deletion.
+- **Reminders:** the `ReminderCoordinator` derives every local notification
+  from `TimeInterval.reminderMinutesBefore`, `CalendarEvent` popup overrides
+  and the explicit `reminder_rules` table (Phase R); legacy fields are not
+  duplicated or migrated. Habit reminders (H) plug in as a new `entityType`
+  (`'habit'` is reserved) without a schema change. Notification text is still
+  Vietnamese-only (legacy residual).
 
 ---
 
 ## 8. Remaining open questions (not settled by prior approvals)
 
-- **R-a:** iOS pending-local-notification limit — drop policy when desired
-  reminders exceed it (proposed: keep nearest-in-time + highest-priority).
-- **R-b:** nonexistent/ambiguous wall-clock times under DST (proposed:
-  nonexistent → next valid instant; ambiguous → first occurrence).
 - **H-a:** does `skipped` pause or break a streak (proposed: pause)?
 - **DR-a:** atomicity when applying a multi-item accepted batch and one fails
   (proposed: per-item transactional + report partial result).

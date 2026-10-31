@@ -13,6 +13,10 @@ abstract class ReminderScheduler {
   /// interval không có mốc nhắc hoặc platform không hỗ trợ.
   Future<void> schedule(TimeInterval interval);
 
+  /// Như [schedule] cho nhiều interval vừa tạo cùng lúc (vd. chuỗi lặp lại);
+  /// implementation có thể gộp thành một lần đồng bộ duy nhất.
+  Future<void> scheduleAll(List<TimeInterval> intervals);
+
   /// Hủy mọi mốc nhắc đã đặt cho [interval]. No-op nếu không có.
   Future<void> cancel(TimeInterval interval);
 
@@ -27,6 +31,8 @@ class NoOpReminderScheduler implements ReminderScheduler {
   const NoOpReminderScheduler();
   @override
   Future<void> schedule(TimeInterval interval) async {}
+  @override
+  Future<void> scheduleAll(List<TimeInterval> intervals) async {}
   @override
   Future<void> cancel(TimeInterval interval) async {}
   @override

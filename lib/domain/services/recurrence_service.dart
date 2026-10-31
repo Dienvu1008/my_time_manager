@@ -49,7 +49,7 @@ class RecurrenceService {
       endOffset = e.difference(s);
     }
 
-    var count = 0;
+    final occurrences = <TimeInterval>[];
     for (final date in startDates) {
       final newStart = DateTime(
         date.year,
@@ -68,11 +68,13 @@ class RecurrenceService {
       );
       // Fresh id per occurrence so they do not overwrite each other.
       occurrence.id = _uuid.v4();
-
-      await _timeIntervals.createTimeInterval(occurrence);
-      count++;
-      onProgress?.call(count, total);
+      occurrences.add(occurrence);
     }
-    return count;
+
+    // One batch: reminders are scheduled once for all occurrences instead of
+    // one full reminder sync per occurrence.
+    await _timeIntervals.createTimeIntervals(occurrences,
+        onProgress: (done) => onProgress?.call(done, total));
+    return occurrences.length;
   }
 }

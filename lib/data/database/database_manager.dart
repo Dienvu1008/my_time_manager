@@ -15,6 +15,7 @@ import 'daos/conversation_dao.dart';
 import 'daos/goal_dao.dart';
 import 'daos/project_dao.dart';
 import 'daos/learning_dao.dart';
+import 'daos/reminder_rule_dao.dart';
 import 'device_id_helper.dart' as device_id;
 
 class DatabaseManager {
@@ -85,7 +86,7 @@ class DatabaseManager {
 
   /// The current schema version. Kept in one place so the production opener and
   /// the test seam cannot drift apart.
-  static const int _schemaVersion = 15;
+  static const int _schemaVersion = 16;
 
   Future<Database> _initDatabase() async {
     final databasePath = await getDatabasesPath();
@@ -139,6 +140,10 @@ class DatabaseManager {
       //     (Học tập: Khóa học / Chương / Bài học / Tiến độ bài), các index và
       //     2 trigger delete_goal_links_of_course / delete_project_items_of_course.
       //     Hoàn toàn bổ sung: không đổi cột của bảng cũ nào.
+      // v16: thêm bảng reminder_rules (rule nhắc tường minh: offset / thời
+      //     điểm tuyệt đối), index idx_reminder_rules_entity và 3 trigger
+      //     delete_reminder_rules_of_* (xóa cứng timeinterval / calendar event
+      //     / task → xóa rule). Hoàn toàn bổ sung: không đổi cột của bảng cũ.
       version: _schemaVersion,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
@@ -175,6 +180,7 @@ class DatabaseManager {
     'goal_links',
     'projects',
     'project_items',
+    'reminder_rules',
   ];
 
   /// Đặt deviceId hiện tại (gọi một lần khi app khởi động). Uỷ thác cho
@@ -320,6 +326,12 @@ class DatabaseManager {
       // (v14) được trigger tham chiếu đều đã tồn tại ở đây.
       await LearningDao.createSchema(db);
     }
+    if (oldVersion < 16) {
+      // Thêm bảng reminder_rules + index + 3 trigger dọn rule khi xóa cứng
+      // thực thể. Không đụng tới bảng/cột cũ nào. timeintervals / tasks (tạo
+      // lại ở v9) và calendar_events (v11) đều đã tồn tại ở đây.
+      await ReminderRuleDao.createSchema(db);
+    }
   }
 
   /// Tạo các trigger đồng bộ/xóa timeintervals theo tasks (dùng cho cả onCreate
@@ -378,6 +390,9 @@ class DatabaseManager {
     // Học tập (v15). Phải sau Goal/Project (trigger xóa goal_links /
     // project_items).
     await LearningDao.createSchema(db);
+    // Rule nhắc (v16). Phải sau TimeInterval/CalendarEvent/Task (trigger trên
+    // các bảng đó).
+    await ReminderRuleDao.createSchema(db);
 
 
     // Run the CREATE {tasks} TABLE statement on the database.
@@ -662,6 +677,8 @@ class DatabaseManager {
   /// `courses` / `course_modules` / `lessons` / `lesson_progress` (C7) cũng
   /// vậy: ghi đè một khóa học / chương / bài bằng REPLACE sẽ cascade xóa cây
   /// con cục bộ của nó.
+  /// `reminder_rules` (Phase R) không có bảng con nhưng cũng ghi update-trước
+  /// (insert không bao giờ REPLACE).
   static const Set<String> _updateFirstImportTables = {
     'goals',
     'milestones',
@@ -672,6 +689,7 @@ class DatabaseManager {
     'course_modules',
     'lessons',
     'lesson_progress',
+    'reminder_rules',
   };
 
   /// Ghi một hàng import đã lọc cột vào [table] qua [exec] (db hoặc txn).

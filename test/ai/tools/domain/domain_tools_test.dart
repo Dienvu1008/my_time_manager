@@ -93,6 +93,13 @@ class _FakeTimeRepo implements TimeIntervalRepository {
   @override
   Future<void> createTimeInterval(TimeInterval t) async => store[t.id] = t;
   @override
+  Future<void> createTimeIntervals(List<TimeInterval> ts,
+      {void Function(int done)? onProgress}) async {
+    for (final t in ts) {
+      store[t.id] = t;
+    }
+  }
+  @override
   Future<void> updateTimeInterval(TimeInterval t) async => store[t.id] = t;
   @override
   Future<TimeInterval> getTimeInterval(String id) async =>

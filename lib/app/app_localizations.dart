@@ -2952,6 +2952,819 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- Reminders (Phase R) ---
+  // Các chuỗi chứa '{n}' / '{time}' là template: nơi gọi dùng replaceAll.
+
+  String get reminders {
+    return {
+      'en': 'Reminders',
+      'vi': 'Nhắc',
+      'de': 'Erinnerungen',
+      'cs': 'Připomínky',
+      'es': 'Recordatorios',
+      'fr': 'Rappels',
+      'it': 'Promemoria',
+      'ja': 'リマインダー',
+      'ko': '알림',
+      'no': 'Påminnelser',
+      'ru': 'Напоминания',
+      'sv': 'Påminnelser',
+      'zh': '提醒',
+    }[locale.languageCode]!;
+  }
+
+  String get upcomingReminders {
+    return {
+      'en': 'Upcoming reminders',
+      'vi': 'Nhắc sắp tới',
+      'de': 'Anstehende Erinnerungen',
+      'cs': 'Nadcházející připomínky',
+      'es': 'Próximos recordatorios',
+      'fr': 'Rappels à venir',
+      'it': 'Promemoria imminenti',
+      'ja': '今後のリマインダー',
+      'ko': '예정된 알림',
+      'no': 'Kommende påminnelser',
+      'ru': 'Предстоящие напоминания',
+      'sv': 'Kommande påminnelser',
+      'zh': '即将到来的提醒',
+    }[locale.languageCode]!;
+  }
+
+  String get noUpcomingReminders {
+    return {
+      'en': 'No upcoming reminders',
+      'vi': 'Không có nhắc sắp tới',
+      'de': 'Keine anstehenden Erinnerungen',
+      'cs': 'Žádné nadcházející připomínky',
+      'es': 'No hay próximos recordatorios',
+      'fr': 'Aucun rappel à venir',
+      'it': 'Nessun promemoria imminente',
+      'ja': '今後のリマインダーはありません',
+      'ko': '예정된 알림이 없습니다',
+      'no': 'Ingen kommende påminnelser',
+      'ru': 'Нет предстоящих напоминаний',
+      'sv': 'Inga kommande påminnelser',
+      'zh': '没有即将到来的提醒',
+    }[locale.languageCode]!;
+  }
+
+  String get noUpcomingRemindersHint {
+    return {
+      'en': 'Add reminders to time intervals or calendar events.',
+      'vi': 'Thêm mốc nhắc cho khoảng thời gian hoặc sự kiện lịch.',
+      'de': 'Füge Zeitintervallen oder Kalenderereignissen Erinnerungen hinzu.',
+      'cs': 'Přidejte připomínky k časovým intervalům nebo událostem v kalendáři.',
+      'es': 'Añade recordatorios a intervalos de tiempo o eventos del calendario.',
+      'fr': 'Ajoutez des rappels aux plages horaires ou aux événements du calendrier.',
+      'it': 'Aggiungi promemoria a intervalli di tempo o eventi del calendario.',
+      'ja': '時間枠またはカレンダーの予定にリマインダーを追加してください。',
+      'ko': '시간 구간이나 캘린더 일정에 알림을 추가하세요.',
+      'no': 'Legg til påminnelser på tidsintervaller eller kalenderhendelser.',
+      'ru': 'Добавьте напоминания к интервалам времени или событиям календаря.',
+      'sv': 'Lägg till påminnelser på tidsintervall eller kalenderhändelser.',
+      'zh': '为时间段或日历事件添加提醒。',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderDeferred {
+    return {
+      'en': 'Deferred',
+      'vi': 'Đang hoãn',
+      'de': 'Zurückgestellt',
+      'cs': 'Odloženo',
+      'es': 'Aplazado',
+      'fr': 'Différé',
+      'it': 'Rinviato',
+      'ja': '保留中',
+      'ko': '보류됨',
+      'no': 'Utsatt',
+      'ru': 'Отложено',
+      'sv': 'Uppskjuten',
+      'zh': '已推迟',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderShiftedQuietHours {
+    return {
+      'en': 'Moved by quiet hours',
+      'vi': 'Dời do giờ yên lặng',
+      'de': 'Durch Ruhezeit verschoben',
+      'cs': 'Posunuto tichými hodinami',
+      'es': 'Movido por horas de silencio',
+      'fr': 'Décalé par les heures calmes',
+      'it': 'Spostato per le ore di silenzio',
+      'ja': 'おやすみ時間により移動',
+      'ko': '방해 금지 시간으로 이동됨',
+      'no': 'Flyttet av stilletid',
+      'ru': 'Перенесено из-за тихих часов',
+      'sv': 'Flyttad av tysta timmar',
+      'zh': '因免打扰时段而推迟',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderHighPriority {
+    return {
+      'en': 'High priority',
+      'vi': 'Ưu tiên cao',
+      'de': 'Hohe Priorität',
+      'cs': 'Vysoká priorita',
+      'es': 'Prioridad alta',
+      'fr': 'Priorité élevée',
+      'it': 'Priorità alta',
+      'ja': '高優先度',
+      'ko': '높은 우선순위',
+      'no': 'Høy prioritet',
+      'ru': 'Высокий приоритет',
+      'sv': 'Hög prioritet',
+      'zh': '高优先级',
+    }[locale.languageCode]!;
+  }
+
+  String get notificationsDenied {
+    return {
+      'en':
+          'Notifications are turned off for this app, so reminders will not appear.',
+      'vi': 'Thông báo đang bị tắt cho ứng dụng nên nhắc sẽ không hiển thị.',
+      'de':
+          'Benachrichtigungen sind für diese App deaktiviert, daher werden keine Erinnerungen angezeigt.',
+      'cs':
+          'Oznámení jsou pro tuto aplikaci vypnutá, takže se připomínky nezobrazí.',
+      'es':
+          'Las notificaciones están desactivadas para esta app, así que los recordatorios no aparecerán.',
+      'fr':
+          'Les notifications sont désactivées pour cette app, les rappels ne s\'afficheront donc pas.',
+      'it':
+          'Le notifiche sono disattivate per questa app, quindi i promemoria non verranno mostrati.',
+      'ja': 'このアプリの通知がオフのため、リマインダーは表示されません。',
+      'ko': '이 앱의 알림이 꺼져 있어 알림이 표시되지 않습니다.',
+      'no': 'Varsler er slått av for denne appen, så påminnelser vises ikke.',
+      'ru':
+          'Уведомления для этого приложения отключены, поэтому напоминания не появятся.',
+      'sv':
+          'Aviseringar är avstängda för den här appen, så påminnelser visas inte.',
+      'zh': '此应用的通知已关闭，提醒将不会显示。',
+    }[locale.languageCode]!;
+  }
+
+  String get exactAlarmsDenied {
+    return {
+      'en':
+          'Exact alarms are not allowed for this app, so reminders may arrive late.',
+      'vi':
+          'Ứng dụng chưa được phép đặt báo thức chính xác nên nhắc có thể đến muộn.',
+      'de':
+          'Exakte Alarme sind für diese App nicht erlaubt, daher können Erinnerungen verspätet kommen.',
+      'cs':
+          'Přesné budíky nejsou pro tuto aplikaci povoleny, připomínky proto mohou přijít později.',
+      'es':
+          'Las alarmas exactas no están permitidas para esta app, así que los recordatorios pueden llegar tarde.',
+      'fr':
+          'Les alarmes exactes ne sont pas autorisées pour cette app, les rappels peuvent donc arriver en retard.',
+      'it':
+          'Le sveglie esatte non sono consentite per questa app, quindi i promemoria potrebbero arrivare in ritardo.',
+      'ja': 'このアプリは正確なアラームが許可されていないため、リマインダーが遅れる場合があります。',
+      'ko': '이 앱에 정확한 알람이 허용되지 않아 알림이 늦게 올 수 있습니다.',
+      'no':
+          'Nøyaktige alarmer er ikke tillatt for denne appen, så påminnelser kan komme for sent.',
+      'ru':
+          'Точные будильники для этого приложения не разрешены, поэтому напоминания могут приходить с опозданием.',
+      'sv':
+          'Exakta alarm är inte tillåtna för den här appen, så påminnelser kan komma sent.',
+      'zh': '此应用未获准使用精确闹钟，提醒可能会延迟。',
+    }[locale.languageCode]!;
+  }
+
+  String get remindersOffInfo {
+    return {
+      'en': 'Reminders are turned off in Settings.',
+      'vi': 'Nhắc đang tắt trong Cài đặt.',
+      'de': 'Erinnerungen sind in den Einstellungen deaktiviert.',
+      'cs': 'Připomínky jsou v Nastavení vypnuté.',
+      'es': 'Los recordatorios están desactivados en Ajustes.',
+      'fr': 'Les rappels sont désactivés dans les Paramètres.',
+      'it': 'I promemoria sono disattivati nelle Impostazioni.',
+      'ja': 'リマインダーは設定でオフになっています。',
+      'ko': '설정에서 알림이 꺼져 있습니다.',
+      'no': 'Påminnelser er slått av i Innstillinger.',
+      'ru': 'Напоминания отключены в настройках.',
+      'sv': 'Påminnelser är avstängda i Inställningar.',
+      'zh': '提醒已在设置中关闭。',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderRulesSaveFailed {
+    return {
+      'en': 'The event was saved, but its specific-time reminders could not be saved.',
+      'vi': 'Đã lưu sự kiện nhưng không lưu được các nhắc theo thời điểm cụ thể.',
+      'de':
+          'Der Termin wurde gespeichert, aber seine Erinnerungen zu festen Zeiten konnten nicht gespeichert werden.',
+      'cs':
+          'Událost byla uložena, ale její připomínky v konkrétní čas se nepodařilo uložit.',
+      'es':
+          'El evento se guardó, pero no se pudieron guardar sus recordatorios a una hora concreta.',
+      'fr':
+          'L\'événement a été enregistré, mais ses rappels à heure précise n\'ont pas pu l\'être.',
+      'it':
+          'L\'evento è stato salvato, ma non è stato possibile salvare i promemoria a orario specifico.',
+      'ja': '予定は保存されましたが、指定時刻のリマインダーを保存できませんでした。',
+      'ko': '일정은 저장되었지만 특정 시간 알림을 저장하지 못했습니다.',
+      'no':
+          'Hendelsen ble lagret, men påminnelsene på bestemte tidspunkt kunne ikke lagres.',
+      'ru':
+          'Событие сохранено, но напоминания на определённое время сохранить не удалось.',
+      'sv':
+          'Händelsen sparades, men dess påminnelser vid en viss tid kunde inte sparas.',
+      'zh': '事件已保存，但无法保存其指定时间的提醒。',
+    }[locale.languageCode]!;
+  }
+
+  String get allowNotifications {
+    return {
+      'en': 'Allow',
+      'vi': 'Cho phép',
+      'de': 'Erlauben',
+      'cs': 'Povolit',
+      'es': 'Permitir',
+      'fr': 'Autoriser',
+      'it': 'Consenti',
+      'ja': '許可',
+      'ko': '허용',
+      'no': 'Tillat',
+      'ru': 'Разрешить',
+      'sv': 'Tillåt',
+      'zh': '允许',
+    }[locale.languageCode]!;
+  }
+
+  String get quietHours {
+    return {
+      'en': 'Quiet hours',
+      'vi': 'Giờ yên lặng',
+      'de': 'Ruhezeit',
+      'cs': 'Tiché hodiny',
+      'es': 'Horas de silencio',
+      'fr': 'Heures calmes',
+      'it': 'Ore di silenzio',
+      'ja': 'おやすみ時間',
+      'ko': '방해 금지 시간',
+      'no': 'Stilletid',
+      'ru': 'Тихие часы',
+      'sv': 'Tysta timmar',
+      'zh': '免打扰时段',
+    }[locale.languageCode]!;
+  }
+
+  String get quietHoursSubtitle {
+    return {
+      'en': 'Reminders in this window are moved to its end',
+      'vi': 'Nhắc rơi vào khoảng này được dời tới lúc kết thúc',
+      'de': 'Erinnerungen in diesem Zeitraum werden an dessen Ende verschoben',
+      'cs': 'Připomínky v tomto období se posunou na jeho konec',
+      'es': 'Los recordatorios en este periodo se mueven a su final',
+      'fr': 'Les rappels dans cette plage sont décalés à sa fin',
+      'it': 'I promemoria in questa fascia vengono spostati alla sua fine',
+      'ja': 'この時間帯のリマインダーは終了時刻に移動します',
+      'ko': '이 시간대의 알림은 종료 시각으로 이동됩니다',
+      'no': 'Påminnelser i dette tidsrommet flyttes til slutten',
+      'ru': 'Напоминания в этот период переносятся на его окончание',
+      'sv': 'Påminnelser under denna period flyttas till dess slut',
+      'zh': '此时段内的提醒将推迟到结束时间',
+    }[locale.languageCode]!;
+  }
+
+  String get quietHoursStart {
+    return {
+      'en': 'Starts',
+      'vi': 'Bắt đầu',
+      'de': 'Beginn',
+      'cs': 'Začátek',
+      'es': 'Inicio',
+      'fr': 'Début',
+      'it': 'Inizio',
+      'ja': '開始',
+      'ko': '시작',
+      'no': 'Start',
+      'ru': 'Начало',
+      'sv': 'Start',
+      'zh': '开始',
+    }[locale.languageCode]!;
+  }
+
+  String get quietHoursEnd {
+    return {
+      'en': 'Ends',
+      'vi': 'Kết thúc',
+      'de': 'Ende',
+      'cs': 'Konec',
+      'es': 'Fin',
+      'fr': 'Fin',
+      'it': 'Fine',
+      'ja': '終了',
+      'ko': '종료',
+      'no': 'Slutt',
+      'ru': 'Конец',
+      'sv': 'Slut',
+      'zh': '结束',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderEngine {
+    return {
+      'en': 'Smart reminder scheduling',
+      'vi': 'Lên lịch nhắc thông minh',
+      'de': 'Intelligente Erinnerungsplanung',
+      'cs': 'Chytré plánování připomínek',
+      'es': 'Programación inteligente de recordatorios',
+      'fr': 'Planification intelligente des rappels',
+      'it': 'Pianificazione intelligente dei promemoria',
+      'ja': 'スマートなリマインダー予約',
+      'ko': '스마트 알림 예약',
+      'no': 'Smart planlegging av påminnelser',
+      'ru': 'Умное планирование напоминаний',
+      'sv': 'Smart schemaläggning av påminnelser',
+      'zh': '智能提醒调度',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderEngineSubtitle {
+    return {
+      'en':
+          'Also schedules calendar event and specific-time reminders, nearest first within the system limit',
+      'vi':
+          'Lên lịch cả nhắc của sự kiện lịch và nhắc theo thời điểm, ưu tiên mốc gần nhất trong giới hạn của hệ thống',
+      'de':
+          'Plant auch Erinnerungen für Kalenderereignisse und feste Zeitpunkte, die nächsten zuerst innerhalb des Systemlimits',
+      'cs':
+          'Plánuje i připomínky událostí kalendáře a pevných časů, nejbližší nejdříve v rámci limitu systému',
+      'es':
+          'También programa recordatorios de eventos y de hora concreta, los más próximos primero dentro del límite del sistema',
+      'fr':
+          'Planifie aussi les rappels d\'événements et à heure précise, les plus proches d\'abord dans la limite du système',
+      'it':
+          'Pianifica anche i promemoria degli eventi e a orario specifico, i più vicini prima entro il limite di sistema',
+      'ja': 'カレンダーの予定や指定時刻のリマインダーも、システム上限内で近い順に予約します',
+      'ko': '캘린더 일정과 지정 시각 알림도 시스템 한도 내에서 가까운 순으로 예약합니다',
+      'no':
+          'Planlegger også påminnelser for kalenderhendelser og faste tidspunkt, nærmeste først innenfor systemgrensen',
+      'ru':
+          'Планирует также напоминания о событиях календаря и на точное время, ближайшие первыми в пределах лимита системы',
+      'sv':
+          'Schemalägger även påminnelser för kalenderhändelser och fasta tider, närmaste först inom systemets gräns',
+      'zh': '同时调度日历事件和指定时间的提醒，在系统限制内优先最近的',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderLegacyModeInfo {
+    return {
+      'en': 'Classic mode: only time-interval reminders are scheduled.',
+      'vi': 'Chế độ cổ điển: chỉ lên lịch nhắc cho các khoảng thời gian.',
+      'de': 'Klassischer Modus: Nur Erinnerungen für Zeitintervalle werden geplant.',
+      'cs': 'Klasický režim: plánují se jen připomínky časových intervalů.',
+      'es': 'Modo clásico: solo se programan recordatorios de intervalos de tiempo.',
+      'fr': 'Mode classique : seuls les rappels des plages horaires sont planifiés.',
+      'it':
+          'Modalità classica: vengono pianificati solo i promemoria degli intervalli di tempo.',
+      'ja': 'クラシックモード：時間枠のリマインダーのみ予約されます。',
+      'ko': '클래식 모드: 시간 구간 알림만 예약됩니다.',
+      'no': 'Klassisk modus: bare påminnelser for tidsintervaller planlegges.',
+      'ru': 'Классический режим: планируются только напоминания интервалов времени.',
+      'sv': 'Klassiskt läge: endast påminnelser för tidsintervall schemaläggs.',
+      'zh': '经典模式：仅调度时间段的提醒。',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderAdd {
+    return {
+      'en': 'Add reminder',
+      'vi': 'Thêm nhắc',
+      'de': 'Erinnerung hinzufügen',
+      'cs': 'Přidat připomínku',
+      'es': 'Añadir recordatorio',
+      'fr': 'Ajouter un rappel',
+      'it': 'Aggiungi promemoria',
+      'ja': 'リマインダーを追加',
+      'ko': '알림 추가',
+      'no': 'Legg til påminnelse',
+      'ru': 'Добавить напоминание',
+      'sv': 'Lägg till påminnelse',
+      'zh': '添加提醒',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderEdit {
+    return {
+      'en': 'Edit reminder',
+      'vi': 'Sửa nhắc',
+      'de': 'Erinnerung bearbeiten',
+      'cs': 'Upravit připomínku',
+      'es': 'Editar recordatorio',
+      'fr': 'Modifier le rappel',
+      'it': 'Modifica promemoria',
+      'ja': 'リマインダーを編集',
+      'ko': '알림 편집',
+      'no': 'Rediger påminnelse',
+      'ru': 'Изменить напоминание',
+      'sv': 'Redigera påminnelse',
+      'zh': '编辑提醒',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderDelete {
+    return {
+      'en': 'Delete reminder',
+      'vi': 'Xóa nhắc',
+      'de': 'Erinnerung löschen',
+      'cs': 'Smazat připomínku',
+      'es': 'Eliminar recordatorio',
+      'fr': 'Supprimer le rappel',
+      'it': 'Elimina promemoria',
+      'ja': 'リマインダーを削除',
+      'ko': '알림 삭제',
+      'no': 'Slett påminnelse',
+      'ru': 'Удалить напоминание',
+      'sv': 'Ta bort påminnelse',
+      'zh': '删除提醒',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderNone {
+    return {
+      'en': 'No reminders set',
+      'vi': 'Chưa đặt nhắc',
+      'de': 'Keine Erinnerungen festgelegt',
+      'cs': 'Nejsou nastaveny žádné připomínky',
+      'es': 'Sin recordatorios',
+      'fr': 'Aucun rappel défini',
+      'it': 'Nessun promemoria impostato',
+      'ja': 'リマインダー未設定',
+      'ko': '설정된 알림 없음',
+      'no': 'Ingen påminnelser satt',
+      'ru': 'Напоминания не заданы',
+      'sv': 'Inga påminnelser angivna',
+      'zh': '未设置提醒',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderPickTitle {
+    return {
+      'en': 'Choose when to remind',
+      'vi': 'Chọn thời điểm nhắc',
+      'de': 'Erinnerungszeitpunkt wählen',
+      'cs': 'Vyberte čas připomínky',
+      'es': 'Elige cuándo recordar',
+      'fr': 'Choisir quand rappeler',
+      'it': 'Scegli quando ricordare',
+      'ja': '通知タイミングを選択',
+      'ko': '알림 시점 선택',
+      'no': 'Velg når du vil bli påminnet',
+      'ru': 'Выберите время напоминания',
+      'sv': 'Välj när du vill påminnas',
+      'zh': '选择提醒时间',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderCustomMinutes {
+    return {
+      'en': 'Custom (minutes before)...',
+      'vi': 'Tùy chỉnh (phút trước)...',
+      'de': 'Benutzerdefiniert (Minuten vorher)...',
+      'cs': 'Vlastní (minut předem)...',
+      'es': 'Personalizado (minutos antes)...',
+      'fr': 'Personnalisé (minutes avant)...',
+      'it': 'Personalizzato (minuti prima)...',
+      'ja': 'カスタム（何分前）...',
+      'ko': '사용자 지정(분 전)...',
+      'no': 'Egendefinert (minutter før)...',
+      'ru': 'Своё значение (минут до)...',
+      'sv': 'Anpassad (minuter före)...',
+      'zh': '自定义（提前分钟数）...',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderCustomMinutesTitle {
+    return {
+      'en': 'Minutes before',
+      'vi': 'Số phút trước',
+      'de': 'Minuten vorher',
+      'cs': 'Minut předem',
+      'es': 'Minutos antes',
+      'fr': 'Minutes avant',
+      'it': 'Minuti prima',
+      'ja': '何分前',
+      'ko': '몇 분 전',
+      'no': 'Minutter før',
+      'ru': 'Минут до',
+      'sv': 'Minuter före',
+      'zh': '提前分钟数',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderCustomMinutesHint {
+    return {
+      'en': 'e.g. 45',
+      'vi': 'Ví dụ: 45',
+      'de': 'z. B. 45',
+      'cs': 'např. 45',
+      'es': 'p. ej. 45',
+      'fr': 'ex. : 45',
+      'it': 'es. 45',
+      'ja': '例: 45',
+      'ko': '예: 45',
+      'no': 'f.eks. 45',
+      'ru': 'например, 45',
+      'sv': 't.ex. 45',
+      'zh': '例如：45',
+    }[locale.languageCode]!;
+  }
+
+  /// "Thêm" (nút xác nhận trong hộp thoại nhắc).
+  String get reminderConfirmAdd {
+    return {
+      'en': 'Add',
+      'vi': 'Thêm',
+      'de': 'Hinzufügen',
+      'cs': 'Přidat',
+      'es': 'Añadir',
+      'fr': 'Ajouter',
+      'it': 'Aggiungi',
+      'ja': '追加',
+      'ko': '추가',
+      'no': 'Legg til',
+      'ru': 'Добавить',
+      'sv': 'Lägg till',
+      'zh': '添加',
+    }[locale.languageCode]!;
+  }
+
+  /// "Hủy" (khác [cancel] = 'Hủy bỏ'; giữ nguyên chữ của hộp thoại nhắc cũ).
+  String get reminderCancel {
+    return {
+      'en': 'Cancel',
+      'vi': 'Hủy',
+      'de': 'Abbrechen',
+      'cs': 'Zrušit',
+      'es': 'Cancelar',
+      'fr': 'Annuler',
+      'it': 'Annulla',
+      'ja': 'キャンセル',
+      'ko': '취소',
+      'no': 'Avbryt',
+      'ru': 'Отмена',
+      'sv': 'Avbryt',
+      'zh': '取消',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderAtStart {
+    return {
+      'en': 'At start time',
+      'vi': 'Đúng giờ',
+      'de': 'Zur Startzeit',
+      'cs': 'V čase začátku',
+      'es': 'A la hora de inicio',
+      'fr': 'À l\'heure de début',
+      'it': 'All\'ora di inizio',
+      'ja': '開始時刻',
+      'ko': '시작 시각',
+      'no': 'Ved starttid',
+      'ru': 'Во время начала',
+      'sv': 'Vid starttid',
+      'zh': '开始时',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderOneMinuteBefore {
+    return {
+      'en': '1 minute before',
+      'vi': '1 phút trước',
+      'de': '1 Minute vorher',
+      'cs': '1 minutu předem',
+      'es': '1 minuto antes',
+      'fr': '1 minute avant',
+      'it': '1 minuto prima',
+      'ja': '1分前',
+      'ko': '1분 전',
+      'no': '1 minutt før',
+      'ru': 'За 1 минуту',
+      'sv': '1 minut före',
+      'zh': '提前1分钟',
+    }[locale.languageCode]!;
+  }
+
+  /// Template: '{n}' = số phút.
+  String get reminderMinutesBefore {
+    return {
+      'en': '{n} minutes before',
+      'vi': '{n} phút trước',
+      'de': '{n} Minuten vorher',
+      'cs': '{n} min předem',
+      'es': '{n} minutos antes',
+      'fr': '{n} minutes avant',
+      'it': '{n} minuti prima',
+      'ja': '{n}分前',
+      'ko': '{n}분 전',
+      'no': '{n} minutter før',
+      'ru': 'За {n} мин',
+      'sv': '{n} minuter före',
+      'zh': '提前{n}分钟',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderOneHourBefore {
+    return {
+      'en': '1 hour before',
+      'vi': '1 giờ trước',
+      'de': '1 Stunde vorher',
+      'cs': '1 hodinu předem',
+      'es': '1 hora antes',
+      'fr': '1 heure avant',
+      'it': '1 ora prima',
+      'ja': '1時間前',
+      'ko': '1시간 전',
+      'no': '1 time før',
+      'ru': 'За 1 час',
+      'sv': '1 timme före',
+      'zh': '提前1小时',
+    }[locale.languageCode]!;
+  }
+
+  /// Template: '{n}' = số giờ.
+  String get reminderHoursBefore {
+    return {
+      'en': '{n} hours before',
+      'vi': '{n} giờ trước',
+      'de': '{n} Stunden vorher',
+      'cs': '{n} h předem',
+      'es': '{n} horas antes',
+      'fr': '{n} heures avant',
+      'it': '{n} ore prima',
+      'ja': '{n}時間前',
+      'ko': '{n}시간 전',
+      'no': '{n} timer før',
+      'ru': 'За {n} ч',
+      'sv': '{n} timmar före',
+      'zh': '提前{n}小时',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderOneDayBefore {
+    return {
+      'en': '1 day before',
+      'vi': '1 ngày trước',
+      'de': '1 Tag vorher',
+      'cs': '1 den předem',
+      'es': '1 día antes',
+      'fr': '1 jour avant',
+      'it': '1 giorno prima',
+      'ja': '1日前',
+      'ko': '1일 전',
+      'no': '1 dag før',
+      'ru': 'За 1 день',
+      'sv': '1 dag före',
+      'zh': '提前1天',
+    }[locale.languageCode]!;
+  }
+
+  /// Template: '{n}' = số ngày.
+  String get reminderDaysBefore {
+    return {
+      'en': '{n} days before',
+      'vi': '{n} ngày trước',
+      'de': '{n} Tage vorher',
+      'cs': '{n} d předem',
+      'es': '{n} días antes',
+      'fr': '{n} jours avant',
+      'it': '{n} giorni prima',
+      'ja': '{n}日前',
+      'ko': '{n}일 전',
+      'no': '{n} dager før',
+      'ru': 'За {n} дн.',
+      'sv': '{n} dagar före',
+      'zh': '提前{n}天',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderOneWeekBefore {
+    return {
+      'en': '1 week before',
+      'vi': '1 tuần trước',
+      'de': '1 Woche vorher',
+      'cs': '1 týden předem',
+      'es': '1 semana antes',
+      'fr': '1 semaine avant',
+      'it': '1 settimana prima',
+      'ja': '1週間前',
+      'ko': '1주 전',
+      'no': '1 uke før',
+      'ru': 'За 1 неделю',
+      'sv': '1 vecka före',
+      'zh': '提前1周',
+    }[locale.languageCode]!;
+  }
+
+  /// Template: '{n}' = số tuần.
+  String get reminderWeeksBefore {
+    return {
+      'en': '{n} weeks before',
+      'vi': '{n} tuần trước',
+      'de': '{n} Wochen vorher',
+      'cs': '{n} týd. předem',
+      'es': '{n} semanas antes',
+      'fr': '{n} semaines avant',
+      'it': '{n} settimane prima',
+      'ja': '{n}週間前',
+      'ko': '{n}주 전',
+      'no': '{n} uker før',
+      'ru': 'За {n} нед.',
+      'sv': '{n} veckor före',
+      'zh': '提前{n}周',
+    }[locale.languageCode]!;
+  }
+
+  String get reminderAtSpecificTime {
+    return {
+      'en': 'At a specific time…',
+      'vi': 'Vào thời điểm cụ thể…',
+      'de': 'Zu einem bestimmten Zeitpunkt…',
+      'cs': 'V určitý čas…',
+      'es': 'A una hora concreta…',
+      'fr': 'À une heure précise…',
+      'it': 'A un orario specifico…',
+      'ja': '指定した日時…',
+      'ko': '특정 시각…',
+      'no': 'På et bestemt tidspunkt…',
+      'ru': 'В определённое время…',
+      'sv': 'Vid en viss tidpunkt…',
+      'zh': '在指定时间…',
+    }[locale.languageCode]!;
+  }
+
+  /// Template: '{time}' = ngày giờ đã định dạng.
+  String get reminderAbsoluteAt {
+    return {
+      'en': 'At {time}',
+      'vi': 'Lúc {time}',
+      'de': 'Um {time}',
+      'cs': 'V {time}',
+      'es': 'A las {time}',
+      'fr': 'À {time}',
+      'it': 'Alle {time}',
+      'ja': '{time}に',
+      'ko': '{time}에',
+      'no': 'Kl. {time}',
+      'ru': 'В {time}',
+      'sv': 'Kl. {time}',
+      'zh': '于 {time}',
+    }[locale.languageCode]!;
+  }
+
+  String get useCalendarDefault {
+    return {
+      'en': 'Use calendar default',
+      'vi': 'Dùng mặc định của lịch',
+      'de': 'Kalenderstandard verwenden',
+      'cs': 'Použít výchozí nastavení kalendáře',
+      'es': 'Usar el predeterminado del calendario',
+      'fr': 'Utiliser le réglage par défaut du calendrier',
+      'it': 'Usa il predefinito del calendario',
+      'ja': 'カレンダーの既定を使用',
+      'ko': '캘린더 기본값 사용',
+      'no': 'Bruk kalenderens standard',
+      'ru': 'Использовать настройки календаря',
+      'sv': 'Använd kalenderns standard',
+      'zh': '使用日历默认设置',
+    }[locale.languageCode]!;
+  }
+
+  String get useCalendarDefaultSubtitle {
+    return {
+      'en':
+          'The calendar provider sends its default alerts; no reminder is set on this device',
+      'vi':
+          'Nhà cung cấp lịch tự gửi nhắc mặc định; không đặt nhắc trên thiết bị này',
+      'de':
+          'Der Kalenderanbieter sendet seine Standardhinweise; auf diesem Gerät wird keine Erinnerung gesetzt',
+      'cs':
+          'Poskytovatel kalendáře posílá svá výchozí upozornění; na tomto zařízení se připomínka nenastaví',
+      'es':
+          'El proveedor del calendario envía sus avisos predeterminados; no se configura ningún recordatorio en este dispositivo',
+      'fr':
+          'Le fournisseur du calendrier envoie ses alertes par défaut ; aucun rappel n\'est défini sur cet appareil',
+      'it':
+          'Il provider del calendario invia i suoi avvisi predefiniti; nessun promemoria su questo dispositivo',
+      'ja': 'カレンダー提供元が既定の通知を送ります。この端末ではリマインダーを設定しません',
+      'ko': '캘린더 제공자가 기본 알림을 보냅니다. 이 기기에는 알림이 설정되지 않습니다',
+      'no':
+          'Kalenderleverandøren sender sine standardvarsler; ingen påminnelse settes på denne enheten',
+      'ru':
+          'Поставщик календаря отправляет свои уведомления по умолчанию; на этом устройстве напоминание не ставится',
+      'sv':
+          'Kalenderleverantören skickar sina standardaviseringar; ingen påminnelse ställs in på den här enheten',
+      'zh': '由日历服务商发送默认提醒；本设备不设置提醒',
+    }[locale.languageCode]!;
+  }
+
   String get brightness {
     return {
       'en': 'Brightness',
