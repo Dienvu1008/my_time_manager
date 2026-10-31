@@ -89,7 +89,7 @@ these features.
 | C11 | Semantic canvas (nodes/edges/properties; AI-editable) | planned |
 | C12 | Analytics & planned-vs-actual (reuses AI-P11 deterministic metrics) | planned |
 | **R** | **Reminders & Alarms** (after C3) | **done** — contract in §6 |
-| **H** | **Habit Tracking** (after R) | planned — contract in §6 |
+| **H** | **Habit Tracking** (after R) | in progress — H1 data layer done (v18); contract in §6 |
 | **DR** | **Daily Review & Adaptive Rescheduling** (after H + C5) | planned — contract in §6 |
 | C16 | Dashboard & user-facing UI | planned (visibility preserved) |
 | C17 | Integrations (Telegram, VS Code where applicable) | planned (visibility preserved) |
@@ -304,7 +304,62 @@ open questions.
 - **Rollback:** additive tables only; dropping the feature leaves other data
   intact.
 - **Schema:** H must use schema **v18** (v17 is taken by C8b `ai_action_log`).
-- **Open:** H-a (does `skipped` pause or break a streak? proposed: pause).
+- **H-a (approved):** `skipped` **pauses** a streak (no add, no break).
+- **H1 delivered (data layer + statistics, no UI):**
+  - **Schema v18 (strictly additive):** `habits` (title, description, color,
+    `recurrence` = `RepeatRule` JSON, `targetAmount` REAL, `unit`,
+    `partialCountsTowardStreak`, `startDate` / `endDate` local day
+    `yyyy-MM-dd`, `reminderTime` `HH:mm` (for H3), `isArchived`, `archivedAt`,
+    `createdAt`, `updateTimeStamp`, `deviceId`; no soft-delete columns) and
+    `habit_occurrences` (`habitId` FK → habits `ON DELETE CASCADE`,
+    `localDate`, `outcome` TEXT with `CHECK` in the five states, `amount`,
+    `note`, `recordedAt`, `deviceId`) + UNIQUE index
+    `idx_habit_occurrences_habit_date (habitId, localDate)`; triggers
+    `delete_goal_links_of_habit` / `delete_project_items_of_habit`.
+    `HabitDao.createSchema` is the single SQL source for `_onCreate` and the
+    `oldVersion < 18` branch.
+  - **Domain:** `Habit`, `HabitOccurrence` + `HabitOutcome` (unknown stored
+    value → `pending`, i.e. unresolved), `HabitDay` local-day helpers;
+    `RepeatRule` gained JSON (`toMap/toJson/fromMap/fromJson`, tolerant), value
+    equality and DST-safe day queries (`matchesPattern`, `occurrencesBetween`,
+    `occursOn`) with the same semantics as `generateStartDates` but no
+    1000-occurrence cap. `HabitRepository` + `SqliteHabitRepository`:
+    CRUD, `archiveHabit` / `unarchiveHabit` (default removal, history kept),
+    `deleteHabitPermanently` (explicit hard delete), `recordOutcome` (upsert,
+    update-first-then-insert, never REPLACE), `clearOutcome`,
+    `getOccurrence`, `occurrencesOf(habitId, {from, to})`. Occurrence id is
+    deterministic `'<habitId>:<yyyy-MM-dd>'` so the same day recorded on two
+    devices merges by id on import. DI: `HabitRepository`,
+    `HabitStatisticsService` in `app.dart`.
+  - **Derivation (`HabitStatisticsService`, pure, nothing written):** only
+    user-recorded rows are stored. A recorded completed / partial / skipped /
+    missed row is used as-is on any day (also days the current rule no longer
+    schedules). An unrecorded scheduled day — or one recorded as `pending` /
+    unknown — is derived: before today → `missed`, today or later →
+    `pending`. Scheduled days come from the **current** rule anchored at
+    `startDate`, bounded by `endDate` and the archive day. A rule change never
+    rewrites rows; derived (unrecorded) days follow the current rule, also for
+    past days (documented choice).
+  - **Streaks:** completed adds; partial adds iff
+    `partialCountsTowardStreak`, otherwise pauses; skipped pauses; missed
+    breaks; pending (today/future) pauses, so today's pending never breaks the
+    current streak; unrecorded non-scheduled days are ignored; only days ≤
+    today are walked. `currentStreak` = run ending today, `bestStreak` =
+    longest run in history.
+  - **Completion rate** over a window (≤ today): (completed + partial if the
+    flag is set) / (completed + partial + missed); skipped and pending are
+    excluded; 0 resolved → 0. Plus per-outcome counts (all 5 keys),
+    scheduled-day count and the list of resolved days for a range (for H2/H3).
+  - **Archive / backup:** `ArchivedItemType.habit` (`supportsTrash = false`:
+    no "move to trash" on the archive screen; the archive query skips the
+    `isDeleted` filter for it; label localized in 13 locales). `habits`,
+    `habit_occurrences` appended to `allDataTables` and
+    `ImportService._importOrder` (parents first), both update-first-then-insert;
+    keep-newest uses `updateTimeStamp` / `recordedAt`.
+  - **Links:** `GoalEntityType.habit` / `ProjectEntityType.habit` constants
+    only (no repository link methods yet). Habit links do not count toward
+    goal progress; `'habit'` is not in `ProjectEntityType.supported`, so
+    `ProjectWorkspaceService` counts habit items in `ignoredItemCount`.
 
 ### Phase DR — Daily Review & Adaptive Rescheduling
 
@@ -634,7 +689,7 @@ open questions.
 
 ## 8. Remaining open questions (not settled by prior approvals)
 
-- **H-a:** does `skipped` pause or break a streak (proposed: pause)?
+- ~~**H-a:** does `skipped` pause or break a streak?~~ Settled: pause (H1).
 - **DR-a:** atomicity when applying a multi-item accepted batch and one fails
   (proposed: per-item transactional + report partial result).
 - **DR-b:** definition of a "user-fixed" appointment that must never auto-move

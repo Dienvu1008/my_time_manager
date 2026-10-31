@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Kiểu lặp của một time interval.
 enum RepeatFrequency {
   none,
@@ -195,6 +197,176 @@ class RepeatRule {
     if (result.isEmpty) result.add(base);
     return result;
   }
+
+  // ------------------------------------------------------------------
+  // SERIALIZATION (Phase H1 — habit recurrence is stored as JSON)
+  // ------------------------------------------------------------------
+
+  /// JSON-able map. `weekdays` is sorted, `endDate` is a local day
+  /// `yyyy-MM-dd` (wall-clock, no time zone).
+  Map<String, dynamic> toMap() => {
+        'frequency': frequency.name,
+        'interval': interval,
+        'weekdays': weekdays.toList()..sort(),
+        'endMode': endMode.name,
+        'endDate': endDate == null ? null : _formatDay(endDate!),
+        'occurrences': occurrences,
+      };
+
+  String toJson() => jsonEncode(toMap());
+
+  /// Tolerant reader: unknown / missing values fall back to the defaults, so a
+  /// rule written by a newer build never breaks an older one.
+  factory RepeatRule.fromMap(Map<String, dynamic> map) {
+    T pick<T extends Enum>(List<T> values, Object? raw, T fallback) {
+      for (final v in values) {
+        if (v.name == raw) return v;
+      }
+      return fallback;
+    }
+
+    final rawWeekdays = map['weekdays'];
+    final weekdays = <int>{
+      if (rawWeekdays is List)
+        for (final w in rawWeekdays)
+          if (w is int && w >= 1 && w <= 7) w,
+    };
+    final rawInterval = map['interval'];
+    final rawOcc = map['occurrences'];
+    final rawEnd = map['endDate'];
+    return RepeatRule(
+      frequency:
+          pick(RepeatFrequency.values, map['frequency'], RepeatFrequency.none),
+      interval: rawInterval is int && rawInterval >= 1 ? rawInterval : 1,
+      weekdays: weekdays,
+      endMode: pick(RepeatEndMode.values, map['endMode'], RepeatEndMode.never),
+      endDate: rawEnd == null ? null : DateTime.tryParse(rawEnd.toString()),
+      occurrences: rawOcc is int && rawOcc >= 1 ? rawOcc : 1,
+    );
+  }
+
+  /// Parse [toJson] output; null / corrupt JSON → [RepeatRule.none].
+  static RepeatRule fromJson(String? raw) {
+    if (raw == null || raw.isEmpty) return RepeatRule.none;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return RepeatRule.fromMap(decoded.cast<String, dynamic>());
+      }
+    } catch (_) {}
+    return RepeatRule.none;
+  }
+
+  // ------------------------------------------------------------------
+  // DAY-BASED QUERIES (Phase H1). Pure calendar arithmetic on local days
+  // (DST-safe: never adds Durations). Same semantics as
+  // [generateStartDates] (weekly weeks start Monday, monthly clamps to the
+  // last valid day, yearly uses DateTime normalization) but WITHOUT the
+  // 1000-occurrence cap, which a long-running daily habit would hit.
+  // ------------------------------------------------------------------
+
+  /// True if [day] matches the repeat pattern anchored at [anchor], ignoring
+  /// end conditions (onDate / afterOccurrences / [hardEndDate]).
+  bool matchesPattern(DateTime anchor, DateTime day) {
+    final a = _day(anchor);
+    final d = _day(day);
+    if (d.isBefore(a)) return false;
+    final step = interval < 1 ? 1 : interval;
+    switch (frequency) {
+      case RepeatFrequency.none:
+        return d == a;
+      case RepeatFrequency.daily:
+        return dayDiff(a, d) % step == 0;
+      case RepeatFrequency.weekly:
+        final days = weekdays.isNotEmpty ? weekdays : {a.weekday};
+        if (!days.contains(d.weekday)) return false;
+        final mondayA = DateTime(a.year, a.month, a.day - (a.weekday - 1));
+        final mondayD = DateTime(d.year, d.month, d.day - (d.weekday - 1));
+        return (dayDiff(mondayA, mondayD) ~/ 7) % step == 0;
+      case RepeatFrequency.monthly:
+        final months = (d.year - a.year) * 12 + d.month - a.month;
+        if (months % step != 0) return false;
+        final lastDay = DateTime(d.year, d.month + 1, 0).day;
+        return d.day == (a.day <= lastDay ? a.day : lastDay);
+      case RepeatFrequency.yearly:
+        final years = d.year - a.year;
+        if (years % step != 0) return false;
+        return _day(DateTime(d.year, a.month, a.day)) == d;
+    }
+  }
+
+  /// All local days in `[from, to]` (inclusive, date-only) on which the rule
+  /// anchored at [anchor] occurs, applying every end condition. Walks forward
+  /// from [anchor] one calendar day at a time (needed for afterOccurrences).
+  List<DateTime> occurrencesBetween(
+      DateTime anchor, DateTime from, DateTime to) {
+    final a = _day(anchor);
+    var last = _day(to);
+    if (last.isAfter(hardEndDate)) last = _day(hardEndDate);
+    if (endMode == RepeatEndMode.onDate && endDate != null) {
+      final end = _day(endDate!);
+      if (end.isBefore(last)) last = end;
+    }
+    final first = _day(from);
+    final maxCount = occurrences < 1 ? 1 : occurrences;
+    final result = <DateTime>[];
+    var count = 0;
+    for (var d = a; !d.isAfter(last); d = DateTime(d.year, d.month, d.day + 1)) {
+      if (!matchesPattern(a, d)) continue;
+      count++;
+      if (endMode == RepeatEndMode.afterOccurrences && count > maxCount) break;
+      if (!d.isBefore(first)) result.add(d);
+      if (frequency == RepeatFrequency.none) break;
+    }
+    return result;
+  }
+
+  /// True if the rule anchored at [anchor] occurs on [day].
+  bool occursOn(DateTime anchor, DateTime day) =>
+      occurrencesBetween(anchor, day, day).isNotEmpty;
+
+  /// Whole calendar days from [a] to [b] (local days, DST-safe).
+  static int dayDiff(DateTime a, DateTime b) =>
+      DateTime.utc(b.year, b.month, b.day)
+          .difference(DateTime.utc(a.year, a.month, a.day))
+          .inDays;
+
+  static DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  static String _formatDay(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! RepeatRule) return false;
+    final sameEnd = (endDate == null && other.endDate == null) ||
+        (endDate != null &&
+            other.endDate != null &&
+            _day(endDate!) == _day(other.endDate!));
+    return other.frequency == frequency &&
+        other.interval == interval &&
+        other.weekdays.length == weekdays.length &&
+        other.weekdays.containsAll(weekdays) &&
+        other.endMode == endMode &&
+        sameEnd &&
+        other.occurrences == occurrences;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        frequency,
+        interval,
+        Object.hashAllUnordered(weekdays),
+        endMode,
+        endDate == null ? null : _day(endDate!),
+        occurrences,
+      );
+
+  @override
+  String toString() => 'RepeatRule(${toJson()})';
 
   /// Cộng thêm [months] tháng vào [date], xử lý tràn ngày (ví dụ 31/1 + 1 tháng
   /// -> 28/2) bằng cách kẹp về ngày cuối cùng hợp lệ của tháng đích.

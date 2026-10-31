@@ -15,6 +15,11 @@ class GoalEntityType {
 
   static const String task = 'task';
   static const String course = 'course';
+
+  /// Thói quen (Phase H1): liên kết chỉ mang tính thông tin — KHÔNG tính vào
+  /// tiến độ mục tiêu. Trigger `delete_goal_links_of_habit` dọn liên kết khi
+  /// xóa cứng thói quen.
+  static const String habit = 'habit';
 }
 
 /// Liên kết một thực thể ([entityType] + [entityId]) với một [Goal], tuỳ chọn

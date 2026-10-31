@@ -79,6 +79,10 @@ class ImportService {
   /// Rule nhắc (Phase R): `reminder_rules` đặt CUỐI, sau các bảng đích của nó
   /// (tasks / timeintervals / calendar_events); ghi kiểu update-trước;
   /// keepNewest dùng `updateTimeStamp` mặc định.
+  /// Thói quen (Phase H1): `habits` → `habit_occurrences` (cha trước), đặt
+  /// cuối; cả hai ghi kiểu update-trước (REPLACE một habit sẽ cascade xóa lịch
+  /// sử). Id của occurrence là tất định (`<habitId>:<yyyy-MM-dd>`) nên cùng
+  /// một ngày ghi trên hai máy gộp theo id (xung đột → theo chính sách).
   static const List<String> _importOrder = [
     'tasklists',
     'tasks',
@@ -99,6 +103,8 @@ class ImportService {
     'projects',
     'project_items',
     'reminder_rules',
+    'habits',
+    'habit_occurrences',
   ];
 
   /// Đọc metadata (deviceId/deviceName nguồn, thời điểm export) từ nội dung
@@ -255,6 +261,7 @@ class ImportService {
   /// - focus_sessions không có updateTimeStamp -> dùng endTime.
   /// - goal_links không có updateTimeStamp -> dùng createdAt.
   /// - project_items không có updateTimeStamp -> dùng createdAt.
+  /// - habit_occurrences không có updateTimeStamp -> dùng recordedAt.
   /// - notes dùng updatedAt; calendar_events dùng updated.
   DateTime? _updatedAt(String table, Map<String, dynamic> row) {
     final raw = switch (table) {
@@ -263,6 +270,7 @@ class ImportService {
       'calendar_events' => row['updated'],
       'goal_links' => row['createdAt'],
       'project_items' => row['createdAt'],
+      'habit_occurrences' => row['recordedAt'],
       _ => row['updateTimeStamp'],
     };
     if (raw == null) return null;

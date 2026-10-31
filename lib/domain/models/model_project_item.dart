@@ -19,6 +19,12 @@ class ProjectEntityType {
   /// Khóa học (C7).
   static const String course = 'course';
 
+  /// Thói quen (Phase H1). CỐ Ý chưa nằm trong [supported] (chưa có UI chọn
+  /// thói quen / workspace chưa hiển thị): ProjectWorkspaceService đếm các mục
+  /// 'habit' vào ignoredItemCount. Trigger `delete_project_items_of_habit` dọn
+  /// mục khi xóa cứng thói quen.
+  static const String habit = 'habit';
+
   /// Các loại được hỗ trợ (C6 + 'course' từ C7).
   static const List<String> supported = [
     taskList,

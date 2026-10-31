@@ -182,6 +182,8 @@ class BackupService {
       'goal_links': 'Liên kết mục tiêu',
       'projects': 'Dự án',
       'project_items': 'Mục trong dự án',
+      'habits': 'Thói quen',
+      'habit_occurrences': 'Kết quả thói quen',
     };
 
     for (final table in DatabaseManager.allDataTables) {

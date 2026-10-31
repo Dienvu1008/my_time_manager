@@ -27,6 +27,9 @@ import 'package:my_time_manager/data/repositories/sqlite_archive_repository.dart
 import 'package:my_time_manager/data/repositories/sqlite_event_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_focus_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_goal_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_habit_repository.dart';
+import 'package:my_time_manager/domain/repositories/habit_repository.dart';
+import 'package:my_time_manager/domain/services/habit_statistics_service.dart';
 import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
@@ -161,6 +164,14 @@ class App extends StatelessWidget {
         // Học tập (Core Track C7). Tiến độ chương/khóa học là giá trị suy ra (không lưu).
         RepositoryProvider<LearningRepository>(
           create: (_) => SqliteLearningRepository(),
+        ),
+        // Thói quen (Phase H1). Thống kê / streak là giá trị suy ra (không lưu).
+        RepositoryProvider<HabitRepository>(
+          create: (_) => SqliteHabitRepository(),
+        ),
+        RepositoryProvider<HabitStatisticsService>(
+          create: (context) => HabitStatisticsService(
+              repository: context.read<HabitRepository>()),
         ),
         RepositoryProvider<LearningProgressService>(
           create: (context) =>

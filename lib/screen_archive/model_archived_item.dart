@@ -5,7 +5,8 @@ enum ArchivedItemType {
   calendarEvent,
   goal,
   project,
-  course;
+  course,
+  habit;
 
   /// Nhãn hiển thị tiếng Việt.
   String get label {
@@ -22,6 +23,8 @@ enum ArchivedItemType {
         return 'Dự án';
       case ArchivedItemType.course:
         return 'Khóa học';
+      case ArchivedItemType.habit:
+        return 'Thói quen';
     }
   }
 
@@ -40,8 +43,15 @@ enum ArchivedItemType {
         return 'projects';
       case ArchivedItemType.course:
         return 'courses';
+      case ArchivedItemType.habit:
+        return 'habits';
     }
   }
+
+  /// False for types without soft-delete (habits, Phase H1): their table has
+  /// no `isDeleted` column and archive is their default removal, so the
+  /// archive screen offers no "move to trash" for them.
+  bool get supportsTrash => this != ArchivedItemType.habit;
 }
 
 /// Một mục đã được lưu trữ — chỉ giữ những thông tin cần để hiển thị và thao tác

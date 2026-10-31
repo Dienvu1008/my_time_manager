@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../app/app_localizations.dart';
 import '../domain/repositories/archive_repository.dart';
 import 'model_archived_item.dart';
 
@@ -51,7 +52,18 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
         return Icons.workspaces_outlined;
       case ArchivedItemType.course:
         return Icons.school_outlined;
+      case ArchivedItemType.habit:
+        return Icons.repeat;
     }
+  }
+
+  /// Type label. Habits (Phase H1) use the localized label; the older types
+  /// keep their existing (Vietnamese) enum label.
+  String _labelFor(ArchivedItemType type) {
+    if (type == ArchivedItemType.habit) {
+      return AppLocalizations.of(context)?.archivedItemTypeHabit ?? type.label;
+    }
+    return type.label;
   }
 
   Future<void> _unarchive(ArchivedItem item) async {
@@ -157,7 +169,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 subtitle: Text(
-                    '${item.type.label} · Đã lưu trữ ${_formatDate(item.archivedAt)}'),
+                    '${_labelFor(item.type)} · Đã lưu trữ ${_formatDate(item.archivedAt)}'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -166,11 +178,13 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                       tooltip: 'Bỏ lưu trữ',
                       onPressed: () => _unarchive(item),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Chuyển vào thùng rác',
-                      onPressed: () => _moveToTrash(item),
-                    ),
+                    // Habits have no trash (archive is their removal).
+                    if (item.type.supportsTrash)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Chuyển vào thùng rác',
+                        onPressed: () => _moveToTrash(item),
+                      ),
                   ],
                 ),
               );

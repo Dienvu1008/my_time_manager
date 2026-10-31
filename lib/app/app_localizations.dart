@@ -1380,6 +1380,27 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- Habits (Phase H1) ---
+
+  /// Archive item type label for a habit.
+  String get archivedItemTypeHabit {
+    return {
+      'en': 'Habit',
+      'vi': 'Thói quen',
+      'de': 'Gewohnheit',
+      'cs': 'Návyk',
+      'es': 'Hábito',
+      'fr': 'Habitude',
+      'it': 'Abitudine',
+      'ja': '習慣',
+      'ko': '습관',
+      'no': 'Vane',
+      'ru': 'Привычка',
+      'sv': 'Vana',
+      'zh': '习惯',
+    }[locale.languageCode]!;
+  }
+
   // --- Learning / courses (Core Track C7) ---
 
   String get courses {
