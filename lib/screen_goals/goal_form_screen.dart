@@ -44,26 +44,38 @@ class _GoalFormScreenState extends State<GoalFormScreen> {
     final title = _title.text.trim();
     final description = _description.text.trim();
     final existing = widget.goal;
-    if (existing == null) {
-      await _repository.createGoal(Goal(
-        title: title,
-        description: description,
-        color: _color,
-        status: _status,
-        targetDate: _targetDate,
-      ));
-    } else {
-      await _repository.updateGoal(existing.copyWith(
-        title: title,
-        description: description,
-        color: _color,
-        status: _status,
-        targetDate: _targetDate,
-        clearTargetDate: _targetDate == null,
-        updateTimeStamp: DateTime.now(),
-      ));
+    var saved = false;
+    try {
+      if (existing == null) {
+        await _repository.createGoal(Goal(
+          title: title,
+          description: description,
+          color: _color,
+          status: _status,
+          targetDate: _targetDate,
+        ));
+      } else {
+        await _repository.updateGoal(existing.copyWith(
+          title: title,
+          description: description,
+          color: _color,
+          status: _status,
+          targetDate: _targetDate,
+          clearTargetDate: _targetDate == null,
+          updateTimeStamp: DateTime.now(),
+        ));
+      }
+      saved = true;
+    } catch (e) {
+      if (mounted) {
+        final l = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${l.error}: $e')));
+      }
+    } finally {
+      if (mounted && !saved) setState(() => _saving = false);
     }
-    if (!mounted) return;
+    if (!saved || !mounted) return;
     Navigator.pop(context, true);
   }
 

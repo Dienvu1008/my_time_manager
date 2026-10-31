@@ -18,6 +18,12 @@ import '../screen_learning/fake_learning_repository.dart';
 import '../shared/fake_repositories.dart';
 import '../shared/test_harness.dart';
 
+/// [FakeGoalRepository] whose goal writes throw.
+class _FailingGoalRepository extends FakeGoalRepository {
+  @override
+  Future<void> createGoal(Goal goal) async => throw Exception('boom');
+}
+
 void main() {
   late FakeGoalRepository goals;
   late FakeTaskRepository tasks;
@@ -118,6 +124,24 @@ void main() {
       expect(find.text('result: true'), findsOneWidget);
     });
 
+    testWidgets('save failure shows an error SnackBar and re-enables Save',
+        (tester) async {
+      goals = _FailingGoalRepository();
+      await pump(tester, launcher(const GoalFormScreen()));
+      await open(tester);
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Title'), 'Run a marathon');
+      await tester.tap(find.byTooltip('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Error: Exception: boom'), findsOneWidget);
+      expect(find.text('New goal'), findsOneWidget); // still on the form
+      expect(find.text('result: true'), findsNothing);
+      final save = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.check));
+      expect(save.onPressed, isNotNull);
+    });
+
     testWidgets('empty title shows validation and creates nothing',
         (tester) async {
       await pump(tester, launcher(const GoalFormScreen()));
@@ -206,6 +230,29 @@ void main() {
       expect(ms.single.title, 'First step');
       expect(ms.single.sortOrder, 0);
       expect(find.text('First step'), findsOneWidget);
+    });
+
+    testWidgets('new milestone after a gap gets max(sortOrder)+1 and is last',
+        (tester) async {
+      final g = seedGoal('G');
+      // Gap left by a deleted milestone at sortOrder 0.
+      seedMilestone(g, 'Beta', sortOrder: 1);
+      seedMilestone(g, 'Gamma', sortOrder: 2);
+      await pump(tester, GoalDetailScreen(goalId: g.id));
+
+      await tester.tap(find.text('Add milestone'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(TextFormField)),
+          'Alpha');
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      final ms = await goals.getMilestones(g.id);
+      expect([for (final m in ms) m.title], ['Beta', 'Gamma', 'Alpha']);
+      expect(ms.last.sortOrder, 3);
     });
 
     testWidgets('toggling the checkbox completes the milestone',
@@ -379,6 +426,25 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(goals.goals[g.id]!.isDeleted, isTrue);
+      expect(find.text('result: true'), findsOneWidget);
+    });
+
+    testWidgets('archive after confirm archives and pops', (tester) async {
+      final g = seedGoal('G');
+      await pump(tester, launcher(GoalDetailScreen(goalId: g.id)));
+      await open(tester);
+
+      await tester.tap(find.descendant(
+          of: find.byType(AppBar), matching: find.byIcon(Icons.more_vert)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+          of: find.byType(AlertDialog), matching: find.text('Archive')));
+      await tester.pumpAndSettle();
+
+      expect(goals.goals[g.id]!.isArchived, isTrue);
+      expect(goals.goals[g.id]!.isDeleted, isFalse);
       expect(find.text('result: true'), findsOneWidget);
     });
 

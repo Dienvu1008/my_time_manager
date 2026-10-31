@@ -53,29 +53,41 @@ class _ProjectFormScreenState extends State<ProjectFormScreen> {
     final title = _title.text.trim();
     final description = _description.text.trim();
     final existing = widget.project;
-    if (existing == null) {
-      await _repository.createProject(Project(
-        title: title,
-        description: description,
-        color: _color,
-        status: _status,
-        startDate: start,
-        targetDate: target,
-      ));
-    } else {
-      await _repository.updateProject(existing.copyWith(
-        title: title,
-        description: description,
-        color: _color,
-        status: _status,
-        startDate: start,
-        clearStartDate: start == null,
-        targetDate: target,
-        clearTargetDate: target == null,
-        updateTimeStamp: DateTime.now(),
-      ));
+    var saved = false;
+    try {
+      if (existing == null) {
+        await _repository.createProject(Project(
+          title: title,
+          description: description,
+          color: _color,
+          status: _status,
+          startDate: start,
+          targetDate: target,
+        ));
+      } else {
+        await _repository.updateProject(existing.copyWith(
+          title: title,
+          description: description,
+          color: _color,
+          status: _status,
+          startDate: start,
+          clearStartDate: start == null,
+          targetDate: target,
+          clearTargetDate: target == null,
+          updateTimeStamp: DateTime.now(),
+        ));
+      }
+      saved = true;
+    } catch (e) {
+      if (mounted) {
+        final l = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${l.error}: $e')));
+      }
+    } finally {
+      if (mounted && !saved) setState(() => _saving = false);
     }
-    if (!mounted) return;
+    if (!saved || !mounted) return;
     Navigator.pop(context, true);
   }
 

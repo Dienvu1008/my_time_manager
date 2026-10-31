@@ -1,3 +1,5 @@
+import 'dart:math' show max;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -117,6 +119,21 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     await _future;
   }
 
+  /// Chạy [action]; nếu lỗi thì hiện SnackBar và trả về false.
+  Future<bool> _guard(Future<void> Function() action) async {
+    try {
+      await action();
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final l = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${l.error}: $e')));
+      }
+      return false;
+    }
+  }
+
   // ---------------- Goal actions ----------------
 
   Future<void> _editGoal(Goal goal) async {
@@ -127,21 +144,22 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   }
 
   Future<void> _onGoalAction(AppLocalizations l, _GoalAction action) async {
+    final bool ok;
     switch (action) {
       case _GoalAction.archive:
         if (!await showConfirmDialog(context,
             message: l.confirmArchiveGoal, confirmLabel: l.archive)) {
           return;
         }
-        await _repository.archiveGoal(widget.goalId);
+        ok = await _guard(() => _repository.archiveGoal(widget.goalId));
       case _GoalAction.trash:
         if (!await showConfirmDialog(context,
             message: l.confirmTrashGoal, confirmLabel: l.moveToTrash)) {
           return;
         }
-        await _repository.softDeleteGoal(widget.goalId);
+        ok = await _guard(() => _repository.softDeleteGoal(widget.goalId));
     }
-    if (!mounted) return;
+    if (!ok || !mounted) return;
     Navigator.of(context).pop(true);
   }
 
@@ -162,47 +180,59 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   Future<void> _addMilestone(AppLocalizations l, _GoalData data) async {
     final result = await _showMilestoneDialog(l, null);
     if (result == null) return;
-    await _repository.createMilestone(Milestone(
-      goalId: data.goal.id,
-      title: result.$1,
-      dueDate: result.$2,
-      sortOrder: data.milestones.length,
-    ));
+    // max(sortOrder) + 1: sau khi xóa để lại khoảng trống, count có thể trùng
+    // sortOrder của cột mốc cuối.
+    final nextOrder = data.milestones.isEmpty
+        ? 0
+        : data.milestones.map((m) => m.sortOrder).reduce(max) + 1;
+    if (!await _guard(() => _repository.createMilestone(Milestone(
+          goalId: data.goal.id,
+          title: result.$1,
+          dueDate: result.$2,
+          sortOrder: nextOrder,
+        )))) {
+      return;
+    }
     if (mounted) await _refresh();
   }
 
   Future<void> _toggleMilestone(Milestone m, bool? value) async {
-    await _repository.setMilestoneCompleted(m.id, value ?? false);
+    if (!await _guard(
+        () => _repository.setMilestoneCompleted(m.id, value ?? false))) {
+      return;
+    }
     if (mounted) await _refresh();
   }
 
   Future<void> _onMilestoneAction(AppLocalizations l, _GoalData data,
       Milestone milestone, _MilestoneAction action) async {
+    final bool ok;
     switch (action) {
       case _MilestoneAction.edit:
         final result = await _showMilestoneDialog(l, milestone);
         if (result == null) return;
-        await _repository.updateMilestone(milestone.copyWith(
-          title: result.$1,
-          dueDate: result.$2,
-          clearDueDate: result.$2 == null,
-          updateTimeStamp: DateTime.now(),
-        ));
+        ok = await _guard(() => _repository.updateMilestone(milestone.copyWith(
+              title: result.$1,
+              dueDate: result.$2,
+              clearDueDate: result.$2 == null,
+              updateTimeStamp: DateTime.now(),
+            )));
       case _MilestoneAction.moveUp:
       case _MilestoneAction.moveDown:
         final ids = [for (final m in data.milestones) m.id];
         if (!_swap(ids, milestone.id, action == _MilestoneAction.moveUp)) {
           return;
         }
-        await _repository.reorderMilestones(data.goal.id, ids);
+        ok = await _guard(
+            () => _repository.reorderMilestones(data.goal.id, ids));
       case _MilestoneAction.delete:
         if (!await showConfirmDialog(context,
             message: l.confirmDeleteMilestone, confirmLabel: l.delete)) {
           return;
         }
-        await _repository.deleteMilestone(milestone.id);
+        ok = await _guard(() => _repository.deleteMilestone(milestone.id));
     }
-    if (mounted) await _refresh();
+    if (ok && mounted) await _refresh();
   }
 
   /// Đổi chỗ [id] với phần tử liền trước / liền sau. false nếu không đổi được.
@@ -261,13 +291,16 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       if (choice == null) return;
       target = choice.id;
     }
-    if (isTask) {
-      await _repository.linkTask(data.goal.id, entry.id, milestoneId: target);
-    } else {
-      await _repository.linkCourse(data.goal.id, entry.id,
-          milestoneId: target);
-    }
-    if (mounted) await _refresh();
+    final ok = await _guard(() async {
+      if (isTask) {
+        await _repository.linkTask(data.goal.id, entry.id,
+            milestoneId: target);
+      } else {
+        await _repository.linkCourse(data.goal.id, entry.id,
+            milestoneId: target);
+      }
+    });
+    if (ok && mounted) await _refresh();
   }
 
   Future<void> _unlink(AppLocalizations l, GoalLink link) async {
@@ -275,12 +308,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         message: l.confirmUnlink, confirmLabel: l.goalUnlink)) {
       return;
     }
-    if (link.entityType == GoalEntityType.task) {
-      await _repository.unlinkTask(link.goalId, link.entityId);
-    } else {
-      await _repository.unlinkCourse(link.goalId, link.entityId);
-    }
-    if (mounted) await _refresh();
+    final ok = await _guard(() async {
+      if (link.entityType == GoalEntityType.task) {
+        await _repository.unlinkTask(link.goalId, link.entityId);
+      } else {
+        await _repository.unlinkCourse(link.goalId, link.entityId);
+      }
+    });
+    if (ok && mounted) await _refresh();
   }
 
   // ---------------- Build ----------------

@@ -51,6 +51,21 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
     await _future;
   }
 
+  /// Chạy [action]; nếu lỗi thì hiện SnackBar và trả về false.
+  Future<bool> _guard(Future<void> Function() action) async {
+    try {
+      await action();
+      return true;
+    } catch (e) {
+      if (mounted) {
+        final l = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${l.error}: $e')));
+      }
+      return false;
+    }
+  }
+
   Future<void> _editProject(Project project) async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => ProjectFormScreen(project: project)),
@@ -60,21 +75,23 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
 
   Future<void> _onProjectAction(
       AppLocalizations l, _ProjectAction action) async {
+    final bool ok;
     switch (action) {
       case _ProjectAction.archive:
         if (!await showConfirmDialog(context,
             message: l.confirmArchiveProject, confirmLabel: l.archive)) {
           return;
         }
-        await _projects.archiveProject(widget.projectId);
+        ok = await _guard(() => _projects.archiveProject(widget.projectId));
       case _ProjectAction.trash:
         if (!await showConfirmDialog(context,
             message: l.confirmTrashProject, confirmLabel: l.moveToTrash)) {
           return;
         }
-        await _projects.softDeleteProject(widget.projectId);
+        ok = await _guard(
+            () => _projects.softDeleteProject(widget.projectId));
     }
-    if (!mounted) return;
+    if (!ok || !mounted) return;
     Navigator.of(context).pop(true);
   }
 
@@ -116,9 +133,10 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
       ),
     );
     if (entry == null) return;
-    await _projects.addItem(widget.projectId, type, entry.id,
-        sortOrder: items.length);
-    if (mounted) await _refresh();
+    final ok = await _guard(() => _projects.addItem(
+        widget.projectId, type, entry.id,
+        sortOrder: items.length));
+    if (ok && mounted) await _refresh();
   }
 
   Future<void> _removeItem(
@@ -127,8 +145,9 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
         message: l.confirmRemoveProjectItem, confirmLabel: l.removeItem)) {
       return;
     }
-    await _projects.removeEntity(widget.projectId, type, entityId);
-    if (mounted) await _refresh();
+    final ok = await _guard(
+        () => _projects.removeEntity(widget.projectId, type, entityId));
+    if (ok && mounted) await _refresh();
   }
 
   @override

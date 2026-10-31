@@ -40,6 +40,13 @@ class _FakeWorkspaceService implements ProjectWorkspaceService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// [FakeProjectRepository] whose project creation throws.
+class _FailingProjectRepository extends FakeProjectRepository {
+  @override
+  Future<void> createProject(Project project) async =>
+      throw Exception('boom');
+}
+
 FakeProjectRepository _projectsWith(List<Project> projects) {
   final fake = FakeProjectRepository();
   for (final p in projects) {
@@ -113,6 +120,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Title is required'), findsOneWidget);
       expect(fake.projects, isEmpty);
+    });
+
+    testWidgets('save failure shows an error SnackBar and re-enables Save',
+        (tester) async {
+      await tester.pumpWidget(_harness(
+          home: const ProjectFormScreen(),
+          projects: _FailingProjectRepository()));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).first, 'My project');
+      await tester.tap(find.byTooltip('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Error: Exception: boom'), findsOneWidget);
+      expect(find.text('New project'), findsOneWidget); // still on the form
+      final save = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.check));
+      expect(save.onPressed, isNotNull);
     });
 
     testWidgets('target before start shows an error and saves nothing',
@@ -410,6 +434,26 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(ProjectFormScreen), findsOneWidget);
       expect(find.text('Edit project'), findsOneWidget);
+    });
+
+    testWidgets('archive after confirm archives the project and pops',
+        (tester) async {
+      await pump(tester,
+          launcher(const ProjectWorkspaceScreen(projectId: 'p')));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+          of: find.byType(AlertDialog), matching: find.text('Archive')));
+      await tester.pumpAndSettle();
+
+      expect(projects.projects['p']!.isArchived, isTrue);
+      expect(projects.projects['p']!.isDeleted, isFalse);
+      expect(find.text('result: true'), findsOneWidget);
     });
 
     testWidgets('move to trash soft-deletes the project and pops',
