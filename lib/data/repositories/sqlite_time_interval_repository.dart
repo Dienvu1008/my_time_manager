@@ -2,72 +2,64 @@ import '../../application/reminder_scheduler.dart';
 import '../../domain/models/model_time_interval.dart';
 import '../../domain/repositories/time_interval_repository.dart';
 import '../database/database_manager.dart';
+import '../database/daos/time_interval_dao.dart';
 
 /// SQLite-backed [TimeIntervalRepository].
 ///
-/// Thin adapter over [DatabaseManager] (pure SQL). Reminder side-effects are
-/// coordinated here via an injected [ReminderScheduler], so that
-/// [DatabaseManager] remains a platform-agnostic SQL layer (fixes H3).
-///
-/// Production: inject [NotificationReminderScheduler].
-/// Tests / desktop: inject [NoOpReminderScheduler] (no Flutter binding needed).
+/// Thin adapter: [TimeIntervalDao] (pure SQL) + [ReminderScheduler]
+/// (notification side-effect). The DAO was extracted from DatabaseManager
+/// in Core Track C4.
 class SqliteTimeIntervalRepository implements TimeIntervalRepository {
   SqliteTimeIntervalRepository({
     DatabaseManager? databaseManager,
     ReminderScheduler? reminderScheduler,
-  })  : _db = databaseManager ?? DatabaseManager(),
+  })  : _dao = TimeIntervalDao(() => (databaseManager ?? DatabaseManager()).database),
         _reminders = reminderScheduler ?? const NoOpReminderScheduler();
 
-  final DatabaseManager _db;
+  final TimeIntervalDao _dao;
   final ReminderScheduler _reminders;
 
   @override
-  Future<List<TimeInterval>> getTimeIntervals() => _db.timeIntervals();
+  Future<List<TimeInterval>> getTimeIntervals() => _dao.getAll();
 
   @override
-  Future<TimeInterval> getTimeInterval(String id) => _db.timeInterval(id);
+  Future<TimeInterval> getTimeInterval(String id) => _dao.getById(id);
 
   @override
-  Future<List<TimeInterval>> getTimeIntervalsOfTask(String taskId) =>
-      _db.timeIntervalsOfTask(taskId);
+  Future<List<TimeInterval>> getTimeIntervalsOfTask(String taskId) => _dao.ofTask(taskId);
 
   @override
-  Future<List<TimeInterval>> getAllTimeIntervalsOfTask(String taskId) =>
-      _db.allTimeIntervalsOfTask(taskId);
+  Future<List<TimeInterval>> getAllTimeIntervalsOfTask(String taskId) => _dao.allOfTask(taskId);
 
   @override
   Future<List<TimeInterval>> getTimeIntervalsOfSubtask(String subtaskId) =>
-      _db.timeIntervalsOfSubtask(subtaskId);
+      _dao.ofSubtask(subtaskId);
 
   @override
   Future<void> createTimeInterval(TimeInterval timeInterval) async {
-    await _db.insertTimeInterval(timeInterval);
+    await _dao.insert(timeInterval);
     await _reminders.schedule(timeInterval);
   }
 
   @override
   Future<void> updateTimeInterval(TimeInterval timeInterval) async {
-    await _db.updateTimeInterval(timeInterval);
-    // schedule() tự hủy mốc cũ rồi đặt lại (NotificationService đã làm vậy).
+    await _dao.update(timeInterval);
     await _reminders.schedule(timeInterval);
   }
 
   @override
   Future<void> deleteTimeInterval(String id) async {
-    // Cần đọc interval trước khi xóa để hủy đúng các mốc nhắc đã đặt.
     TimeInterval? ti;
     try {
-      ti = await _db.timeInterval(id);
-    } catch (_) {
-      // Không tìm thấy interval → không có gì để hủy.
-    }
-    await _db.deleteTimeInterval(id);
+      ti = await _dao.getById(id);
+    } catch (_) {}
+    await _dao.delete(id);
     if (ti != null) await _reminders.cancel(ti);
   }
 
   @override
   Future<void> rescheduleAllReminders() async {
-    final all = await _db.timeIntervals();
+    final all = await _dao.getAll();
     await _reminders.rescheduleAll(all);
   }
 }

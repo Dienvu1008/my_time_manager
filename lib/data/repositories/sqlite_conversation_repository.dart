@@ -1,40 +1,37 @@
 import '../../domain/repositories/conversation_repository.dart';
 import '../database/database_manager.dart';
+import '../database/daos/conversation_dao.dart';
 import '../../domain/models/model_conversation.dart';
 
-/// [ConversationRepository] chạy trên SQLite. Adapter mỏng qua [DatabaseManager].
 class SqliteConversationRepository implements ConversationRepository {
   SqliteConversationRepository({DatabaseManager? databaseManager})
-      : _db = databaseManager ?? DatabaseManager();
+      : _dao = ConversationDao(() => (databaseManager ?? DatabaseManager()).database);
 
-  final DatabaseManager _db;
-
-  @override
-  Future<List<Conversation>> getConversations() => _db.conversations();
+  final ConversationDao _dao;
 
   @override
-  Future<Conversation?> getConversation(String id) => _db.conversation(id);
+  Future<List<Conversation>> getConversations() => _dao.getAll();
 
   @override
-  Future<void> createConversation(Conversation conversation) =>
-      _db.insertConversation(conversation);
+  Future<Conversation?> getConversation(String id) => _dao.getById(id);
 
   @override
-  Future<void> updateConversation(Conversation conversation) =>
-      _db.updateConversation(conversation);
+  Future<void> createConversation(Conversation conversation) => _dao.insert(conversation);
 
   @override
-  Future<void> deleteConversation(String id) => _db.deleteConversation(id);
+  Future<void> updateConversation(Conversation conversation) => _dao.update(conversation);
+
+  @override
+  Future<void> deleteConversation(String id) => _dao.delete(id);
 
   @override
   Future<int> deleteConversationsUpdatedBefore(DateTime cutoff) =>
-      _db.deleteConversationsUpdatedBefore(cutoff);
+      _dao.deleteUpdatedBefore(cutoff);
 
   @override
   Future<List<ChatMessageRecord>> getMessages(String conversationId) =>
-      _db.chatMessages(conversationId);
+      _dao.getMessages(conversationId);
 
   @override
-  Future<void> appendMessage(ChatMessageRecord message) =>
-      _db.insertChatMessage(message);
+  Future<void> appendMessage(ChatMessageRecord message) => _dao.insertMessage(message);
 }

@@ -1,26 +1,27 @@
 import '../../domain/repositories/note_repository.dart';
-import '../database/database_manager.dart';
 import '../../domain/models/model_note.dart';
+import '../database/database_manager.dart';
+import '../database/daos/note_dao.dart';
 
-/// SQLite-backed [NoteRepository]. Thin adapter over [DatabaseManager].
+/// SQLite-backed [NoteRepository]. Thin adapter over [NoteDao].
 class SqliteNoteRepository implements NoteRepository {
   SqliteNoteRepository({DatabaseManager? databaseManager})
-      : _db = databaseManager ?? DatabaseManager();
+      : _dao = NoteDao(() => (databaseManager ?? DatabaseManager()).database);
 
-  final DatabaseManager _db;
-
-  @override
-  Future<List<Note>> getNotes() => _db.notes();
+  final NoteDao _dao;
 
   @override
-  Future<Note?> getNote(String id) => _db.note(id);
+  Future<List<Note>> getNotes() => _dao.getAll();
 
   @override
-  Future<void> createNote(Note note) => _db.insertNote(note);
+  Future<Note?> getNote(String id) => _dao.getById(id);
 
   @override
-  Future<void> updateNote(Note note) => _db.updateNote(note);
+  Future<void> createNote(Note note) => _dao.insert(note);
 
   @override
-  Future<void> deleteNote(String id) => _db.deleteNote(id);
+  Future<void> updateNote(Note note) => _dao.update(note);
+
+  @override
+  Future<void> deleteNote(String id) => _dao.delete(id);
 }

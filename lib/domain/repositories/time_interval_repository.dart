@@ -9,7 +9,7 @@ import '../models/model_time_interval.dart';
 /// NOTE on side effects: creating/updating a time interval schedules its
 /// notification reminders, and deleting one cancels them. That behaviour lives
 /// inside the existing persistence layer and is preserved exactly by the SQLite
-/// implementation (which delegates 1:1 to DatabaseManager). Callers should not
+/// implementation (TimeIntervalDao + ReminderScheduler). Callers should not
 /// assume these are pure data operations.
 abstract class TimeIntervalRepository {
   /// All time intervals.

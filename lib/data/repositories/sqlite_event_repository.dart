@@ -1,15 +1,14 @@
 import '../../domain/repositories/event_repository.dart';
-import '../database/database_manager.dart';
 import '../../domain/models/models.dart';
+import '../database/database_manager.dart';
+import '../database/daos/event_dao.dart';
 
-/// SQLite-backed [EventRepository] for the legacy `events` table.
 class SqliteEventRepository implements EventRepository {
   SqliteEventRepository({DatabaseManager? databaseManager})
-      : _db = databaseManager ?? DatabaseManager();
+      : _dao = EventDao(() => (databaseManager ?? DatabaseManager()).database);
 
-  final DatabaseManager _db;
+  final EventDao _dao;
 
   @override
-  Future<List<Event>> getEventsOfTaskList(String taskListId) =>
-      _db.eventsOfTaskList(taskListId);
+  Future<List<Event>> getEventsOfTaskList(String taskListId) => _dao.ofTaskList(taskListId);
 }

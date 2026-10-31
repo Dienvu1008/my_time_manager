@@ -1,14 +1,29 @@
 import '../../domain/repositories/archive_repository.dart';
 import '../../screen_archive/model_archived_item.dart';
+import '../database/daos/calendar_event_dao.dart';
+import '../database/daos/task_dao.dart';
+import '../database/daos/task_list_dao.dart';
 import '../database/database_manager.dart';
 
-/// SQLite-backed [ArchiveRepository]. Delegates to [DatabaseManager], preserving
-/// its archive cascade / unarchive-by-timestamp semantics exactly.
+/// SQLite-backed [ArchiveRepository].
+///
+/// Per-item unarchive/trash goes through the aggregate DAOs (which preserve the
+/// archive cascade and unarchive-by-timestamp semantics). The cross-table
+/// listing query stays in [DatabaseManager].
 class SqliteArchiveRepository implements ArchiveRepository {
   SqliteArchiveRepository({DatabaseManager? databaseManager})
-      : _db = databaseManager ?? DatabaseManager();
+      : this._(databaseManager ?? DatabaseManager());
+
+  SqliteArchiveRepository._(DatabaseManager db)
+      : _db = db,
+        _taskLists = TaskListDao(() => db.database),
+        _tasks = TaskDao(() => db.database),
+        _calendarEvents = CalendarEventDao(() => db.database);
 
   final DatabaseManager _db;
+  final TaskListDao _taskLists;
+  final TaskDao _tasks;
+  final CalendarEventDao _calendarEvents;
 
   @override
   Future<List<ArchivedItem>> getArchivedItems() => _db.archivedItems();
@@ -17,11 +32,11 @@ class SqliteArchiveRepository implements ArchiveRepository {
   Future<void> unarchive(ArchivedItem item) {
     switch (item.type) {
       case ArchivedItemType.taskList:
-        return _db.unarchiveTaskList(item.id);
+        return _taskLists.unarchive(item.id);
       case ArchivedItemType.task:
-        return _db.unarchiveTask(item.id);
+        return _tasks.unarchive(item.id);
       case ArchivedItemType.calendarEvent:
-        return _db.unarchiveCalendarEvent(item.id);
+        return _calendarEvents.unarchive(item.id);
     }
   }
 
@@ -30,16 +45,16 @@ class SqliteArchiveRepository implements ArchiveRepository {
     // Unarchive first, then soft-delete, so the item shows correctly in trash.
     switch (item.type) {
       case ArchivedItemType.taskList:
-        await _db.unarchiveTaskList(item.id);
-        await _db.softDeleteTaskList(item.id);
+        await _taskLists.unarchive(item.id);
+        await _taskLists.softDelete(item.id);
         break;
       case ArchivedItemType.task:
-        await _db.unarchiveTask(item.id);
-        await _db.softDeleteTask(item.id);
+        await _tasks.unarchive(item.id);
+        await _tasks.softDelete(item.id);
         break;
       case ArchivedItemType.calendarEvent:
-        await _db.unarchiveCalendarEvent(item.id);
-        await _db.softDeleteCalendarEvent(item.id);
+        await _calendarEvents.unarchive(item.id);
+        await _calendarEvents.softDelete(item.id);
         break;
     }
   }

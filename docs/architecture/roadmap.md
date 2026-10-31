@@ -79,7 +79,7 @@ these features.
 | C1 | Stabilization (dead-code cleanup, regression tests, DB-init/transaction review, debug-output cleanup, doc alignment) | **done** (commit `fbfe0b1`) |
 | C2 | Domain boundary cleanup (models → `lib/domain/models/`; domain no longer imports `data/`) | **done** |
 | C3 | Thin application layer + authorized mutation workflows + side-effect coordination | **done** |
-| C4 | Persistence refactor (`DatabaseManager` → per-aggregate DAOs behind a façade) | planned |
+| C4 | Persistence refactor (`DatabaseManager` → per-aggregate DAOs behind a façade) | **done** |
 | C5 | Goal / Plan / Milestone foundations | planned |
 | C6 | Project Workspace | planned |
 | C7 | Learning system (Course / Module / Lesson / Progress) | planned |

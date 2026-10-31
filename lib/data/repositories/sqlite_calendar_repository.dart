@@ -1,81 +1,67 @@
 import '../../domain/repositories/calendar_repository.dart';
-import '../database/database_manager.dart';
 import '../../domain/models/model_calendar_event.dart';
+import '../database/database_manager.dart';
+import '../database/daos/calendar_event_dao.dart';
 
-/// SQLite-backed [CalendarRepository].
-///
-/// Thin adapter over the existing [DatabaseManager] singleton, delegating 1:1
-/// so schema, visibility filters, and sync-support semantics are preserved.
 class SqliteCalendarRepository implements CalendarRepository {
   SqliteCalendarRepository({DatabaseManager? databaseManager})
-      : _db = databaseManager ?? DatabaseManager();
+      : _dao = CalendarEventDao(() => (databaseManager ?? DatabaseManager()).database);
 
-  final DatabaseManager _db;
-
-  @override
-  Future<List<CalendarEvent>> getCalendarEvents() => _db.calendarEvents();
+  final CalendarEventDao _dao;
 
   @override
-  Future<CalendarEvent?> getCalendarEvent(String id) => _db.calendarEvent(id);
+  Future<List<CalendarEvent>> getCalendarEvents() => _dao.getAll();
+
+  @override
+  Future<CalendarEvent?> getCalendarEvent(String id) => _dao.getById(id);
 
   @override
   Future<List<CalendarEvent>> getCalendarEventsOfTaskList(String taskListId) =>
-      _db.calendarEventsOfTaskList(taskListId);
+      _dao.ofTaskList(taskListId);
 
   @override
-  Future<List<CalendarEvent>> getCalendarEventsWithoutTaskList() =>
-      _db.calendarEventsWithoutTaskList();
+  Future<List<CalendarEvent>> getCalendarEventsWithoutTaskList() => _dao.withoutTaskList();
 
   @override
-  Future<void> createCalendarEvent(CalendarEvent event) =>
-      _db.insertCalendarEvent(event);
+  Future<void> createCalendarEvent(CalendarEvent event) => _dao.insert(event);
 
   @override
-  Future<void> updateCalendarEvent(CalendarEvent event) =>
-      _db.updateCalendarEvent(event);
+  Future<void> updateCalendarEvent(CalendarEvent event) => _dao.update(event);
 
   @override
-  Future<void> deleteCalendarEvent(String id) => _db.deleteCalendarEvent(id);
+  Future<void> deleteCalendarEvent(String id) => _dao.delete(id);
 
   @override
   Future<void> moveCalendarEvent(String eventId, String? newTaskListId) =>
-      _db.moveCalendarEvent(eventId, newTaskListId);
+      _dao.move(eventId, newTaskListId);
 
   @override
-  Future<void> softDeleteCalendarEvent(String id) =>
-      _db.softDeleteCalendarEvent(id);
+  Future<void> softDeleteCalendarEvent(String id) => _dao.softDelete(id);
 
   @override
-  Future<void> restoreCalendarEvent(String id) => _db.restoreCalendarEvent(id);
+  Future<void> restoreCalendarEvent(String id) => _dao.restore(id);
 
   @override
-  Future<void> archiveCalendarEvent(String id) => _db.archiveCalendarEvent(id);
+  Future<void> archiveCalendarEvent(String id) => _dao.archive(id);
 
   @override
-  Future<void> unarchiveCalendarEvent(String id) =>
-      _db.unarchiveCalendarEvent(id);
+  Future<void> unarchiveCalendarEvent(String id) => _dao.unarchive(id);
 
   @override
-  Future<List<CalendarEvent>> getEventsPendingSync() =>
-      _db.calendarEventsPendingSync();
+  Future<List<CalendarEvent>> getEventsPendingSync() => _dao.pendingSync();
 
   @override
-  Future<CalendarEvent?> getEventByGoogleId(String googleEventId) =>
-      _db.calendarEventByGoogleId(googleEventId);
+  Future<CalendarEvent?> getEventByGoogleId(String googleEventId) => _dao.byGoogleId(googleEventId);
 
   @override
-  Future<void> markSynced(
-    String id, {
-    String? googleEventId,
-    String? etag,
-    String? calendarId,
-    String? iCalUID,
-  }) =>
-      _db.markCalendarEventSynced(
-        id,
-        googleEventId: googleEventId,
-        etag: etag,
-        calendarId: calendarId,
-        iCalUID: iCalUID,
-      );
+  Future<void> markSynced(String id,
+          {String? googleEventId,
+          String? etag,
+          String? calendarId,
+          String? iCalUID}) =>
+      _dao.markSynced(id,
+          googleEventId: googleEventId,
+          etag: etag,
+          calendarId: calendarId,
+          iCalUID: iCalUID);
 }

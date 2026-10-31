@@ -1,14 +1,29 @@
 import '../../domain/repositories/trash_repository.dart';
 import '../../screen_trash/model_trashed_item.dart';
+import '../database/daos/calendar_event_dao.dart';
+import '../database/daos/task_dao.dart';
+import '../database/daos/task_list_dao.dart';
 import '../database/database_manager.dart';
 
-/// SQLite-backed [TrashRepository]. Delegates to [DatabaseManager], preserving
-/// its soft-delete cascade and restore-by-timestamp semantics exactly.
+/// SQLite-backed [TrashRepository].
+///
+/// Per-item restore/delete goes through the aggregate DAOs (which preserve the
+/// soft-delete cascade and restore-by-timestamp semantics). Cross-table queries
+/// (listing, emptying, purging the trash) stay in [DatabaseManager].
 class SqliteTrashRepository implements TrashRepository {
   SqliteTrashRepository({DatabaseManager? databaseManager})
-      : _db = databaseManager ?? DatabaseManager();
+      : this._(databaseManager ?? DatabaseManager());
+
+  SqliteTrashRepository._(DatabaseManager db)
+      : _db = db,
+        _taskLists = TaskListDao(() => db.database),
+        _tasks = TaskDao(() => db.database),
+        _calendarEvents = CalendarEventDao(() => db.database);
 
   final DatabaseManager _db;
+  final TaskListDao _taskLists;
+  final TaskDao _tasks;
+  final CalendarEventDao _calendarEvents;
 
   @override
   Future<List<TrashedItem>> getTrashedItems() => _db.trashedItems();
@@ -17,11 +32,11 @@ class SqliteTrashRepository implements TrashRepository {
   Future<void> restore(TrashedItem item) {
     switch (item.type) {
       case TrashedItemType.taskList:
-        return _db.restoreTaskList(item.id);
+        return _taskLists.restore(item.id);
       case TrashedItemType.task:
-        return _db.restoreTask(item.id);
+        return _tasks.restore(item.id);
       case TrashedItemType.calendarEvent:
-        return _db.restoreCalendarEvent(item.id);
+        return _calendarEvents.restore(item.id);
     }
   }
 
@@ -29,11 +44,11 @@ class SqliteTrashRepository implements TrashRepository {
   Future<void> permanentlyDelete(TrashedItem item) {
     switch (item.type) {
       case TrashedItemType.taskList:
-        return _db.permanentlyDeleteTaskList(item.id);
+        return _taskLists.permanentlyDelete(item.id);
       case TrashedItemType.task:
-        return _db.permanentlyDeleteTask(item.id);
+        return _tasks.permanentlyDelete(item.id);
       case TrashedItemType.calendarEvent:
-        return _db.deleteCalendarEvent(item.id);
+        return _calendarEvents.delete(item.id);
     }
   }
 

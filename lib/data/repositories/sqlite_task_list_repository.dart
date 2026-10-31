@@ -1,47 +1,41 @@
 import '../../domain/repositories/task_list_repository.dart';
-import '../database/database_manager.dart';
 import '../../domain/models/model_list.dart';
+import '../database/database_manager.dart';
+import '../database/daos/task_list_dao.dart';
 
-/// SQLite-backed [TaskListRepository].
-///
-/// Thin adapter over the existing [DatabaseManager] singleton. It intentionally
-/// contains **no** new persistence logic — it delegates 1:1 to the battle-tested
-/// [DatabaseManager] so schema, migrations, triggers, and cascade semantics are
-/// preserved exactly.
 class SqliteTaskListRepository implements TaskListRepository {
   SqliteTaskListRepository({DatabaseManager? databaseManager})
-      : _db = databaseManager ?? DatabaseManager();
+      : _dao = TaskListDao(() => (databaseManager ?? DatabaseManager()).database);
 
-  final DatabaseManager _db;
-
-  @override
-  Future<List<TaskList>> getTaskLists() => _db.taskLists();
+  final TaskListDao _dao;
 
   @override
-  Future<TaskList> getTaskList(String id) => _db.taskList(id);
+  Future<List<TaskList>> getTaskLists() => _dao.getAll();
 
   @override
-  Future<void> createTaskList(TaskList taskList) => _db.insertTaskList(taskList);
+  Future<TaskList> getTaskList(String id) => _dao.getById(id);
 
   @override
-  Future<void> updateTaskList(TaskList taskList) => _db.updateTaskList(taskList);
+  Future<void> createTaskList(TaskList taskList) => _dao.insert(taskList);
 
   @override
-  Future<void> deleteTaskList(String id) => _db.deleteTaskList(id);
+  Future<void> updateTaskList(TaskList taskList) => _dao.update(taskList);
 
   @override
-  Future<void> softDeleteTaskList(String id) => _db.softDeleteTaskList(id);
+  Future<void> deleteTaskList(String id) => _dao.delete(id);
 
   @override
-  Future<void> restoreTaskList(String id) => _db.restoreTaskList(id);
+  Future<void> softDeleteTaskList(String id) => _dao.softDelete(id);
 
   @override
-  Future<void> permanentlyDeleteTaskList(String id) =>
-      _db.permanentlyDeleteTaskList(id);
+  Future<void> restoreTaskList(String id) => _dao.restore(id);
 
   @override
-  Future<void> archiveTaskList(String id) => _db.archiveTaskList(id);
+  Future<void> permanentlyDeleteTaskList(String id) => _dao.permanentlyDelete(id);
 
   @override
-  Future<void> unarchiveTaskList(String id) => _db.unarchiveTaskList(id);
+  Future<void> archiveTaskList(String id) => _dao.archive(id);
+
+  @override
+  Future<void> unarchiveTaskList(String id) => _dao.unarchive(id);
 }
