@@ -9,6 +9,18 @@ import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
 import 'package:my_time_manager/domain/services/focus_statistics_service.dart';
 import 'package:my_time_manager/domain/models/model_focus_session.dart';
+import 'package:my_time_manager/domain/models/model_course.dart';
+import 'package:my_time_manager/domain/models/model_course_module.dart';
+import 'package:my_time_manager/domain/models/model_goal.dart';
+import 'package:my_time_manager/domain/models/model_goal_link.dart';
+import 'package:my_time_manager/domain/models/model_lesson.dart';
+import 'package:my_time_manager/domain/models/model_lesson_progress.dart';
+import 'package:my_time_manager/domain/models/model_milestone.dart';
+import 'package:my_time_manager/domain/models/model_project.dart';
+import 'package:my_time_manager/domain/repositories/goal_repository.dart';
+import 'package:my_time_manager/domain/repositories/learning_repository.dart';
+import 'package:my_time_manager/domain/repositories/project_repository.dart';
+import 'package:my_time_manager/domain/services/goal_progress_service.dart';
 
 // ---- Fakes ------------------------------------------------------------------
 
@@ -225,4 +237,179 @@ void main() {
     expect(ctx.render(), isNot(contains('User timezone')));
     expect(ctx.toJson().containsKey('timezone'), isFalse);
   });
+
+  group('C8a entity sections', () {
+    ContextBuilder entityBuilder({
+      List<Goal> goals = const [],
+      List<Milestone> milestones = const [],
+      List<Project> projects = const [],
+      _FakeLearning? learning,
+      ContextOptions options = const ContextOptions(),
+    }) {
+      final tasks = _FakeTasks(const []);
+      final g = _FakeGoals(goals, milestones);
+      return ContextBuilder(
+        tasks: tasks,
+        calendar: _FakeCalendar(const []),
+        timeIntervals: _FakeIntervals(const []),
+        goals: g,
+        goalProgress: GoalProgressService(g, tasks),
+        projects: _FakeProjects(projects),
+        learning: learning ?? _FakeLearning(),
+        options: options,
+      );
+    }
+
+    test('absent deps → no keys and no sections', () async {
+      final ctx = await _builder().build(now: _now);
+      final json = ctx.toJson();
+      expect(json.containsKey('activeGoals'), isFalse);
+      expect(json.containsKey('activeProjects'), isFalse);
+      expect(json.containsKey('inProgressLessons'), isFalse);
+      final text = ctx.render();
+      expect(text, isNot(contains('Active goals')));
+      expect(text, isNot(contains('Active projects')));
+      expect(text, isNot(contains('In-progress lessons')));
+    });
+
+    test('only active goals are listed with percent, capped', () async {
+      final a = Goal(title: 'Run 10k');
+      final paused = Goal(title: 'Paused', status: GoalStatus.paused);
+      final more = [for (var i = 0; i < 6; i++) Goal(title: 'G$i')];
+      final ctx = await entityBuilder(
+        goals: [a, paused, ...more],
+        milestones: [
+          Milestone(goalId: a.id, title: 'm1', isCompleted: true),
+          Milestone(goalId: a.id, title: 'm2', sortOrder: 1),
+        ],
+      ).build(now: _now);
+      expect(ctx.activeGoals, hasLength(5));
+      expect(ctx.activeGoals.first.title, 'Run 10k');
+      expect(ctx.activeGoals.first.progressPercent, 50);
+      expect(ctx.activeGoals.map((g) => g.title), isNot(contains('Paused')));
+      expect(ctx.render(), contains('- Active goals: 5'));
+      expect(ctx.render(), contains('Run 10k — 50% (id: ${a.id})'));
+      expect((ctx.toJson()['activeGoals'] as List).first['progressPercent'],
+          50);
+    });
+
+    test('active projects are listed and capped', () async {
+      final ctx = await entityBuilder(
+        projects: [
+          Project(title: 'Done', status: ProjectStatus.completed),
+          for (var i = 0; i < 4; i++) Project(title: 'P$i'),
+        ],
+        options: const ContextOptions(maxProjects: 3),
+      ).build(now: _now);
+      expect(ctx.activeProjects.map((p) => p.title), ['P0', 'P1', 'P2']);
+      expect(ctx.render(), contains('- Active projects: 3'));
+    });
+
+    test('in-progress lessons of active courses: recent first, capped',
+        () async {
+      final learning = _FakeLearning();
+      final active = Course(title: 'Spanish');
+      final paused = Course(title: 'Paused', status: CourseStatus.paused);
+      final m = CourseModule(courseId: active.id, title: 'M');
+      final pm = CourseModule(courseId: paused.id, title: 'PM');
+      final old = Lesson(moduleId: m.id, title: 'Old');
+      final recent = Lesson(moduleId: m.id, title: 'Recent');
+      final never = Lesson(moduleId: m.id, title: 'Never opened');
+      final done = Lesson(moduleId: m.id, title: 'Done');
+      final hidden = Lesson(moduleId: pm.id, title: 'Hidden');
+      learning
+        ..courses.addAll([active, paused])
+        ..modules.addAll([m, pm])
+        ..lessons.addAll([old, recent, never, done, hidden]);
+      learning.progress.addAll([
+        LessonProgress(
+            lessonId: old.id,
+            status: LessonStatus.inProgress,
+            lastOpenedAt: DateTime(2026, 3, 1)),
+        LessonProgress(
+            lessonId: recent.id,
+            status: LessonStatus.inProgress,
+            lastOpenedAt: DateTime(2026, 3, 2)),
+        LessonProgress(lessonId: never.id, status: LessonStatus.inProgress),
+        LessonProgress(lessonId: done.id, status: LessonStatus.completed),
+        LessonProgress(lessonId: hidden.id, status: LessonStatus.inProgress),
+      ]);
+
+      final ctx = await entityBuilder(learning: learning).build(now: _now);
+      expect(ctx.inProgressLessons.map((l) => l.lessonTitle),
+          ['Recent', 'Old', 'Never opened']);
+      expect(ctx.render(), contains('- In-progress lessons: 3'));
+      expect(ctx.render(), contains('Spanish › Recent (id: ${recent.id})'));
+
+      final capped = await entityBuilder(
+        learning: learning,
+        options: const ContextOptions(maxLessons: 1),
+      ).build(now: _now);
+      expect(capped.inProgressLessons.single.lessonTitle, 'Recent');
+    });
+
+    test('rendering is deterministic', () async {
+      final goals = [Goal(title: 'A'), Goal(title: 'B')];
+      final projects = [Project(title: 'P')];
+      final b = entityBuilder(goals: goals, projects: projects);
+      final r1 = (await b.build(now: _now)).render();
+      final r2 = (await b.build(now: _now)).render();
+      expect(r1, r2);
+      expect(r1, contains('- Active projects: 1'));
+    });
+  });
+}
+
+class _FakeGoals implements GoalRepository {
+  _FakeGoals(this._goals, this._milestones);
+  final List<Goal> _goals;
+  final List<Milestone> _milestones;
+  @override
+  Future<List<Goal>> getGoals() async => _goals;
+  @override
+  Future<Goal?> getGoal(String id) async {
+    for (final g in _goals) {
+      if (g.id == id) return g;
+    }
+    return null;
+  }
+
+  @override
+  Future<List<Milestone>> getMilestones(String goalId) async =>
+      _milestones.where((m) => m.goalId == goalId).toList();
+  @override
+  Future<List<GoalLink>> getLinks(String goalId) async => const [];
+  @override
+  noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+class _FakeProjects implements ProjectRepository {
+  _FakeProjects(this._projects);
+  final List<Project> _projects;
+  @override
+  Future<List<Project>> getProjects() async => _projects;
+  @override
+  noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+class _FakeLearning implements LearningRepository {
+  final List<Course> courses = [];
+  final List<CourseModule> modules = [];
+  final List<Lesson> lessons = [];
+  final List<LessonProgress> progress = [];
+  @override
+  Future<List<Course>> getCourses() async => courses;
+  @override
+  Future<List<Lesson>> getLessonsOfCourse(String courseId) async => [
+        for (final m in modules.where((m) => m.courseId == courseId))
+          ...lessons.where((l) => l.moduleId == m.id),
+      ];
+  @override
+  Future<List<LessonProgress>> getProgressForCourse(String courseId) async {
+    final ids = {for (final l in await getLessonsOfCourse(courseId)) l.id};
+    return progress.where((p) => ids.contains(p.lessonId)).toList();
+  }
+
+  @override
+  noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }

@@ -48,3 +48,11 @@ abstract class Tool {
         parametersSchema: parametersSchema,
       );
 }
+
+/// Opt-in for tools that can describe a proposed call in human-readable terms
+/// for the confirmation prompt (e.g. `Create goal "Learn Spanish"`). Built
+/// synchronously from the arguments only. The [ToolExecutor] uses it when no
+/// explicit summarizer is given; tools without it keep the generic summary.
+abstract interface class ConfirmationDescriber {
+  String confirmationSummary(Map<String, dynamic> arguments);
+}

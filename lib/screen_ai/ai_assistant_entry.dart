@@ -11,12 +11,21 @@ import '../ai/gateway/ai_engine_factory.dart';
 import '../ai/gateway/provider_selection.dart';
 import '../ai/policy/action_policy.dart';
 import '../ai/tools/domain/domain_tools.dart';
+import '../application/reminders/reminder_coordinator.dart';
 import '../domain/repositories/calendar_repository.dart';
 import '../domain/repositories/conversation_repository.dart';
 import '../domain/repositories/focus_repository.dart';
+import '../domain/repositories/goal_repository.dart';
+import '../domain/repositories/learning_repository.dart';
+import '../domain/repositories/note_repository.dart';
+import '../domain/repositories/project_repository.dart';
+import '../domain/repositories/reminder_rule_repository.dart';
 import '../domain/repositories/task_repository.dart';
 import '../domain/repositories/time_interval_repository.dart';
 import '../domain/services/focus_statistics_service.dart';
+import '../domain/services/goal_progress_service.dart';
+import '../domain/services/learning_progress_service.dart';
+import '../domain/services/project_workspace_service.dart';
 import '../domain/services/task_completion_service.dart';
 import 'ai_assistant_controller.dart';
 import 'ai_assistant_page.dart';
@@ -101,6 +110,15 @@ class _AiAssistantEntryState extends State<AiAssistantEntry> {
     final taskCompletion = context.read<TaskCompletionService>();
     final focusStats = context.read<FocusStatisticsService>();
     final conversations = context.read<ConversationRepository>();
+    final goals = context.read<GoalRepository>();
+    final goalProgress = context.read<GoalProgressService>();
+    final projects = context.read<ProjectRepository>();
+    final projectWorkspace = context.read<ProjectWorkspaceService>();
+    final learning = context.read<LearningRepository>();
+    final learningProgress = context.read<LearningProgressService>();
+    final notes = context.read<NoteRepository>();
+    final reminderRules = context.read<ReminderRuleRepository>();
+    final reminderCoordinator = context.read<ReminderCoordinator>();
 
     // Best-effort retention: drop chat history older than the configured
     // number of days (null = keep forever). Never blocks opening the screen.
@@ -120,6 +138,15 @@ class _AiAssistantEntryState extends State<AiAssistantEntry> {
       timeIntervals: intervals,
       focus: focus,
       focusStats: focusStats,
+      goals: goals,
+      goalProgress: goalProgress,
+      projects: projects,
+      projectWorkspace: projectWorkspace,
+      learning: learning,
+      learningProgress: learningProgress,
+      notes: notes,
+      reminderRules: reminderRules,
+      upcomingReminders: reminderCoordinator.upcoming,
     );
 
     setState(() {
@@ -134,6 +161,10 @@ class _AiAssistantEntryState extends State<AiAssistantEntry> {
           calendar: calendar,
           timeIntervals: intervals,
           focusStats: focusStats,
+          goals: goals,
+          goalProgress: goalProgress,
+          projects: projects,
+          learning: learning,
         ),
         policy: widget.policy,
         agentConfig: widget.agentConfig,

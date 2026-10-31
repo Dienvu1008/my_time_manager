@@ -83,7 +83,7 @@ these features.
 | C5 | Goal / Plan / Milestone foundations | **done** — contract in §6 |
 | C6 | Project Workspace | **done** — contract in §6 |
 | C7 | Learning system (Course / Module / Lesson / Progress) | **done** — contract in §6 |
-| C8 | AI foundation hardening (extends the built AI Track) | planned |
+| C8 | AI foundation hardening (extends the built AI Track) | in progress — C8a done (AI tools for new entities); C8b (hardening) planned |
 | C9 | AI-assisted planning (overlay on the deterministic DR core) | planned |
 | C10 | Knowledge tools (dictionary / translate / pronounce / TTS / vocabulary) | planned |
 | C11 | Semantic canvas (nodes/edges/properties; AI-editable) | planned |
@@ -527,6 +527,33 @@ open questions.
   `confirm_dialog.dart`.
 - **New repository method:** `GoalRepository.reorderMilestones` (persists
   milestone `sortOrder`). No schema change.
+
+### Phase C8a — AI tools for new entities (implemented)
+
+- **Tools** (`lib/ai/tools/domain/{goal,project,learning,note,reminder}_tools.dart`):
+  - readOnly: `list_goals`, `get_goal`, `list_projects`,
+    `get_project_workspace`, `list_courses`, `get_course_progress`,
+    `search_notes`, `list_upcoming_reminders`.
+  - write (confirmation required): `create_goal`, `update_goal`,
+    `create_milestone`, `update_milestone`, `link_task_to_goal`,
+    `create_project`, `add_project_item`, `set_lesson_completed`,
+    `add_interval_reminder` (saves a `ReminderRule.offset` via
+    `ReminderRuleRepository`; the coordinator reconciles).
+  - destructive (confirmation required, denied in read-only mode):
+    `archive_goal`, `trash_goal`, `archive_project`, `trash_project`,
+    `archive_course`, `trash_course`. Trash = soft delete; no hard-delete
+    tools.
+- **Confirmation text:** optional `ConfirmationDescriber` on tools, used by
+  `ToolExecutor` when no summarizer is given; existing tools unchanged.
+- **Untrusted content:** user-authored descriptions / note snippets / lesson
+  content are returned as `{untrusted: true, text, truncated?}`
+  (`ToolViews.untrusted` / `snippet`, ≤300 chars for snippets).
+- **ContextBuilder:** optional sections for active goals (with progress %),
+  active projects and in-progress lessons, each capped at 5, deterministic
+  order, omitted when empty.
+- **Layering:** `lib/ai/tools` and `lib/ai/context` do not import `lib/data`
+  or `sqflite` (enforced by `test/ai/tools/ai_tools_layering_test.dart`).
+  No schema change.
 
 ---
 

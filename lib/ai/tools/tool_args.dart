@@ -57,6 +57,18 @@ class ToolArgs {
     throw ToolArgumentError('"$key" must be an integer.');
   }
 
+  /// Optional enum given by its `.name`, or null when absent. Throws on an
+  /// unknown name (never silently defaults).
+  T? optEnum<T extends Enum>(String key, List<T> values) {
+    final raw = optString(key);
+    if (raw == null) return null;
+    for (final v in values) {
+      if (v.name == raw) return v;
+    }
+    throw ToolArgumentError(
+        '"$key" must be one of: ${values.map((v) => v.name).join(', ')}.');
+  }
+
   /// Required number as double.
   double requireDouble(String key) {
     final v = _map[key];

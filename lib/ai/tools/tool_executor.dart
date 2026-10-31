@@ -83,7 +83,10 @@ class ToolExecutor {
           toolName: tool.name,
           risk: tool.risk,
           summary: _summarizer?.call(tool, arguments) ??
-              'Run "${tool.name}" (${tool.risk.name}).',
+              switch (tool) {
+                ConfirmationDescriber d => d.confirmationSummary(arguments),
+                _ => 'Run "${tool.name}" (${tool.risk.name}).',
+              },
           arguments: arguments,
         );
         // _confirm is non-null whenever _policy is non-null (defaults to deny).

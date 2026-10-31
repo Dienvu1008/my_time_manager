@@ -61,6 +61,51 @@ class ContextFocus {
       };
 }
 
+/// An active goal with its derived progress (C8a).
+class ContextGoal {
+  const ContextGoal({
+    required this.id,
+    required this.title,
+    required this.progressPercent,
+  });
+  final String id;
+  final String title;
+  final int progressPercent;
+
+  Map<String, dynamic> toJson() =>
+      {'id': id, 'title': title, 'progressPercent': progressPercent};
+}
+
+/// An active project (C8a).
+class ContextProject {
+  const ContextProject({required this.id, required this.title});
+  final String id;
+  final String title;
+
+  Map<String, dynamic> toJson() => {'id': id, 'title': title};
+}
+
+/// An in-progress lesson of an active course (C8a).
+class ContextLesson {
+  const ContextLesson({
+    required this.lessonId,
+    required this.lessonTitle,
+    required this.courseId,
+    required this.courseTitle,
+  });
+  final String lessonId;
+  final String lessonTitle;
+  final String courseId;
+  final String courseTitle;
+
+  Map<String, dynamic> toJson() => {
+        'lessonId': lessonId,
+        'lessonTitle': lessonTitle,
+        'courseId': courseId,
+        'courseTitle': courseTitle,
+      };
+}
+
 /// A targeted, minimal, deterministic snapshot of the user's current state that
 /// the agent can read up front — instead of dumping the whole database. It is
 /// inspectable (structured fields), serializable, and renderable to a compact
@@ -77,6 +122,9 @@ class AgentContext {
     required this.upcoming,
     required this.focus,
     this.timezone,
+    this.activeGoals = const [],
+    this.activeProjects = const [],
+    this.inProgressLessons = const [],
   });
 
   /// The reference "now" the context was built at.
@@ -103,6 +151,16 @@ class AgentContext {
   /// Recent focus summary, or null if unavailable.
   final ContextFocus? focus;
 
+  /// Active goals with progress (capped). Empty when unavailable.
+  final List<ContextGoal> activeGoals;
+
+  /// Active projects (capped). Empty when unavailable.
+  final List<ContextProject> activeProjects;
+
+  /// In-progress lessons of active courses, most recently opened first
+  /// (capped). Empty when unavailable.
+  final List<ContextLesson> inProgressLessons;
+
   Map<String, dynamic> toJson() => {
         'now': now.toIso8601String(),
         if (timezone != null) 'timezone': timezone,
@@ -111,6 +169,13 @@ class AgentContext {
         'todaySchedule': todaySchedule.map((s) => s.toJson()).toList(),
         'upcoming': upcoming.map((s) => s.toJson()).toList(),
         if (focus != null) 'focus': focus!.toJson(),
+        if (activeGoals.isNotEmpty)
+          'activeGoals': activeGoals.map((g) => g.toJson()).toList(),
+        if (activeProjects.isNotEmpty)
+          'activeProjects': activeProjects.map((p) => p.toJson()).toList(),
+        if (inProgressLessons.isNotEmpty)
+          'inProgressLessons':
+              inProgressLessons.map((l) => l.toJson()).toList(),
       };
 
   /// A compact, human/LLM-readable rendering for a context message. Deterministic
@@ -144,6 +209,27 @@ class AgentContext {
     if (focus != null) {
       b.writeln('- Focus (last ${focus!.windowDays}d): '
           '${focus!.totalMinutes} min across ${focus!.sessionCount} session(s)');
+    }
+
+    if (activeGoals.isNotEmpty) {
+      b.writeln('- Active goals: ${activeGoals.length}');
+      for (final g in activeGoals) {
+        b.writeln('    • ${g.title} — ${g.progressPercent}% (id: ${g.id})');
+      }
+    }
+
+    if (activeProjects.isNotEmpty) {
+      b.writeln('- Active projects: ${activeProjects.length}');
+      for (final p in activeProjects) {
+        b.writeln('    • ${p.title} (id: ${p.id})');
+      }
+    }
+
+    if (inProgressLessons.isNotEmpty) {
+      b.writeln('- In-progress lessons: ${inProgressLessons.length}');
+      for (final l in inProgressLessons) {
+        b.writeln('    • ${l.courseTitle} › ${l.lessonTitle} (id: ${l.lessonId})');
+      }
     }
     return b.toString().trimRight();
   }

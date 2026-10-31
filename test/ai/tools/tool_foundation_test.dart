@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/ai/core/ai_tool_call.dart';
+import 'package:my_time_manager/ai/policy/action_policy.dart';
+import 'package:my_time_manager/ai/policy/confirmation.dart';
 import 'package:my_time_manager/ai/tools/tool.dart';
 import 'package:my_time_manager/ai/tools/tool_args.dart';
 import 'package:my_time_manager/ai/tools/tool_executor.dart';
@@ -47,7 +49,56 @@ class _ThrowingTool extends Tool {
       throw StateError('kaboom');
 }
 
+class _DescribedWriteTool extends Tool implements ConfirmationDescriber {
+  const _DescribedWriteTool();
+  @override
+  String get name => 'described';
+  @override
+  String get description => 'A write tool with its own summary.';
+  @override
+  ToolRisk get risk => ToolRisk.write;
+  @override
+  String confirmationSummary(Map<String, dynamic> a) => 'Do "${a['x']}".';
+  @override
+  Future<ToolResult> execute(Map<String, dynamic> arguments) async =>
+      const ToolResult.ok(null);
+}
+
 void main() {
+  group('ConfirmationDescriber', () {
+    test('executor uses the tool summary when no summarizer is given',
+        () async {
+      ConfirmationRequest? seen;
+      final exec = ToolExecutor(
+        ToolRegistry([const _DescribedWriteTool(), const _ThrowingTool()]),
+        policy: const ActionPolicy(),
+        confirm: (r) async {
+          seen = r;
+          return false;
+        },
+      );
+      await exec.execute('described', {'x': 'it'});
+      expect(seen!.summary, 'Do "it".');
+      await exec.execute('boom', {});
+      expect(seen!.summary, 'Run "boom" (write).');
+    });
+
+    test('an explicit summarizer still wins', () async {
+      ConfirmationRequest? seen;
+      final exec = ToolExecutor(
+        ToolRegistry([const _DescribedWriteTool()]),
+        policy: const ActionPolicy(),
+        confirm: (r) async {
+          seen = r;
+          return false;
+        },
+        summarizer: (t, a) => 'custom',
+      );
+      await exec.execute('described', {'x': 'it'});
+      expect(seen!.summary, 'custom');
+    });
+  });
+
   group('ToolResult', () {
     test('ok serializes data', () {
       expect(const ToolResult.ok({'a': 1}).toJson(),
