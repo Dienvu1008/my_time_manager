@@ -13,6 +13,7 @@ import 'daos/focus_session_dao.dart';
 import 'daos/note_dao.dart';
 import 'daos/conversation_dao.dart';
 import 'daos/goal_dao.dart';
+import 'daos/project_dao.dart';
 import 'device_id_helper.dart' as device_id;
 
 class DatabaseManager {
@@ -83,7 +84,7 @@ class DatabaseManager {
 
   /// The current schema version. Kept in one place so the production opener and
   /// the test seam cannot drift apart.
-  static const int _schemaVersion = 13;
+  static const int _schemaVersion = 14;
 
   Future<Database> _initDatabase() async {
     final databasePath = await getDatabasesPath();
@@ -129,6 +130,10 @@ class DatabaseManager {
       //     liên kết mục tiêu–task), các index và trigger
       //     delete_goal_links_of_task (xóa cứng task → xóa liên kết). Hoàn
       //     toàn bổ sung: không đổi cột của bảng cũ nào.
+      // v14: thêm bảng projects + project_items (Dự án / mục thuộc dự án), các
+      //     index và 5 trigger delete_project_items_of_* (xóa cứng tasklist /
+      //     task / note / calendar event / goal → xóa mục dự án). Hoàn toàn
+      //     bổ sung: không đổi cột của bảng cũ nào.
       version: _schemaVersion,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
@@ -140,11 +145,12 @@ class DatabaseManager {
     'tasks',
     'calendar_events',
     'goals',
+    'projects',
   ];
 
   /// Tất cả các bảng dữ liệu (dùng cho export/import và cho migrate deviceId).
   /// Thứ tự tôn trọng khóa ngoại: cha trước, con sau (goals → milestones →
-  /// goal_links).
+  /// goal_links; projects → project_items, đặt sau mọi bảng thực thể).
   static const List<String> allDataTables = [
     'tasklists',
     'tasks',
@@ -156,6 +162,8 @@ class DatabaseManager {
     'goals',
     'milestones',
     'goal_links',
+    'projects',
+    'project_items',
   ];
 
   /// Đặt deviceId hiện tại (gọi một lần khi app khởi động). Uỷ thác cho
@@ -287,6 +295,13 @@ class DatabaseManager {
       // khi trigger được tạo nên không mất trigger).
       await GoalDao.createSchema(db);
     }
+    if (oldVersion < 14) {
+      // Thêm 2 bảng mới projects + project_items, các index và 5 trigger xóa
+      // mục dự án khi xóa cứng thực thể. Không đụng tới bảng/cột cũ nào. Mọi
+      // bảng được trigger tham chiếu đều đã tồn tại ở đây: notes (v6),
+      // calendar_events (v11), goals (v13), tasks (tạo lại ở v9).
+      await ProjectDao.createSchema(db);
+    }
   }
 
   /// Tạo các trigger đồng bộ/xóa timeintervals theo tasks (dùng cho cả onCreate
@@ -339,6 +354,9 @@ class DatabaseManager {
     await ConversationDao.createChatMessagesTable(db);
     // Mục tiêu / cột mốc / liên kết (v13). Phải sau TaskDao (trigger trên tasks).
     await GoalDao.createSchema(db);
+    // Dự án / mục dự án (v14). Phải sau Task/Note/CalendarEvent/Goal (trigger
+    // trên các bảng đó).
+    await ProjectDao.createSchema(db);
 
 
     // Run the CREATE {tasks} TABLE statement on the database.
@@ -503,6 +521,7 @@ class DatabaseManager {
     await collect(TrashedItemType.task);
     await collect(TrashedItemType.calendarEvent);
     await collect(TrashedItemType.goal);
+    await collect(TrashedItemType.project);
 
     result.sort((a, b) => b.deletedAt.compareTo(a.deletedAt));
     return result;
@@ -567,6 +586,7 @@ class DatabaseManager {
     await collect(ArchivedItemType.task);
     await collect(ArchivedItemType.calendarEvent);
     await collect(ArchivedItemType.goal);
+    await collect(ArchivedItemType.project);
 
     result.sort((a, b) => b.archivedAt.compareTo(a.archivedAt));
     return result;
@@ -614,10 +634,14 @@ class DatabaseManager {
   /// liên kết cục bộ của nó (hoặc làm null milestoneId của liên kết). Không
   /// dùng `ON CONFLICT DO UPDATE` vì cần SQLite 3.24 (quá mới với vài bản
   /// Android). Các bảng khác giữ nguyên REPLACE (không đổi hành vi).
+  /// `projects` / `project_items` (C6) cũng vậy: ghi đè một dự án bằng REPLACE
+  /// sẽ cascade xóa các mục của nó.
   static const Set<String> _updateFirstImportTables = {
     'goals',
     'milestones',
     'goal_links',
+    'projects',
+    'project_items',
   };
 
   /// Ghi một hàng import đã lọc cột vào [table] qua [exec] (db hoặc txn).

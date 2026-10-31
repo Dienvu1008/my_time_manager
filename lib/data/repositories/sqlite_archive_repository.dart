@@ -2,6 +2,7 @@ import '../../domain/repositories/archive_repository.dart';
 import '../../screen_archive/model_archived_item.dart';
 import '../database/daos/calendar_event_dao.dart';
 import '../database/daos/goal_dao.dart';
+import '../database/daos/project_dao.dart';
 import '../database/daos/task_dao.dart';
 import '../database/daos/task_list_dao.dart';
 import '../database/database_manager.dart';
@@ -20,13 +21,15 @@ class SqliteArchiveRepository implements ArchiveRepository {
         _taskLists = TaskListDao(() => db.database),
         _tasks = TaskDao(() => db.database),
         _calendarEvents = CalendarEventDao(() => db.database),
-        _goals = GoalDao(() => db.database);
+        _goals = GoalDao(() => db.database),
+        _projects = ProjectDao(() => db.database);
 
   final DatabaseManager _db;
   final TaskListDao _taskLists;
   final TaskDao _tasks;
   final CalendarEventDao _calendarEvents;
   final GoalDao _goals;
+  final ProjectDao _projects;
 
   @override
   Future<List<ArchivedItem>> getArchivedItems() => _db.archivedItems();
@@ -42,6 +45,8 @@ class SqliteArchiveRepository implements ArchiveRepository {
         return _calendarEvents.unarchive(item.id);
       case ArchivedItemType.goal:
         return _goals.unarchive(item.id);
+      case ArchivedItemType.project:
+        return _projects.unarchive(item.id);
     }
   }
 
@@ -64,6 +69,10 @@ class SqliteArchiveRepository implements ArchiveRepository {
       case ArchivedItemType.goal:
         await _goals.unarchive(item.id);
         await _goals.softDelete(item.id);
+        break;
+      case ArchivedItemType.project:
+        await _projects.unarchive(item.id);
+        await _projects.softDelete(item.id);
         break;
     }
   }

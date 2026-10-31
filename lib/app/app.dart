@@ -31,6 +31,9 @@ import 'package:my_time_manager/domain/repositories/archive_repository.dart';
 import 'package:my_time_manager/domain/repositories/event_repository.dart';
 import 'package:my_time_manager/domain/repositories/goal_repository.dart';
 import 'package:my_time_manager/domain/services/goal_progress_service.dart';
+import 'package:my_time_manager/data/repositories/sqlite_project_repository.dart';
+import 'package:my_time_manager/domain/repositories/project_repository.dart';
+import 'package:my_time_manager/domain/services/project_workspace_service.dart';
 import 'package:my_time_manager/domain/services/task_completion_service.dart';
 import 'package:my_time_manager/domain/services/recurrence_service.dart';
 import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
@@ -118,6 +121,21 @@ class App extends StatelessWidget {
         RepositoryProvider<GoalProgressService>(
           create: (context) => GoalProgressService(
               context.read<GoalRepository>(), context.read<TaskRepository>()),
+        ),
+        // Dự án / workspace (Core Track C6). Workspace là read model suy ra (không lưu).
+        RepositoryProvider<ProjectRepository>(
+          create: (_) => SqliteProjectRepository(),
+        ),
+        RepositoryProvider<ProjectWorkspaceService>(
+          create: (context) => ProjectWorkspaceService(
+            projects: context.read<ProjectRepository>(),
+            taskLists: context.read<TaskListRepository>(),
+            tasks: context.read<TaskRepository>(),
+            notes: context.read<NoteRepository>(),
+            calendar: context.read<CalendarRepository>(),
+            goals: context.read<GoalRepository>(),
+            goalProgress: context.read<GoalProgressService>(),
+          ),
         ),
         // FocusRepository luôn được cung cấp cho toàn app (local-first). Lớp sync
         // Firestore chỉ bật khi Firebase sẵn sàng; nếu không thì dùng NoOp (chạy

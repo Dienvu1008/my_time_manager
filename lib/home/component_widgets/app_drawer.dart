@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../screen_ai/ai_assistant_entry.dart';
 import '../../screen_ai/ai_settings_page.dart';
+import '../../screen_projects/projects_list_screen.dart';
 import '../../utils/constants.dart';
 import '../../utils/utils.dart';
 
@@ -66,6 +67,20 @@ class MyAppDrawer extends StatelessWidget {
                   _selectedDrawerItemIndex == ScreenSelected.notesScreen.value,
               onTap: () =>
                   _onDrawerItemTapped(ScreenSelected.notesScreen.value)),
+          // Dự án (Core Track C6) — mở dạng route đẩy (giống AI Assistant) nên
+          // không đụng tới bộ chuyển màn theo index của Home.
+          ListTile(
+            leading: const Icon(Icons.workspaces_outlined),
+            title: Text(localizations.projects),
+            onTap: () {
+              Navigator.of(context).pop(); // đóng drawer
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ProjectsListScreen(),
+                ),
+              );
+            },
+          ),
           // AI Assistant — opens as a pushed route (not part of the index-based
           // screen switcher) so Home's navigation stays unchanged. The pushed
           // page inherits the app-wide repository providers.

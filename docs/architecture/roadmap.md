@@ -81,7 +81,7 @@ these features.
 | C3 | Thin application layer + authorized mutation workflows + side-effect coordination | **done** |
 | C4 | Persistence refactor (`DatabaseManager` → per-aggregate DAOs behind a façade) | **done** |
 | C5 | Goal / Plan / Milestone foundations | **done** — contract in §6 |
-| C6 | Project Workspace | planned |
+| C6 | Project Workspace | **done** — contract in §6 |
 | C7 | Learning system (Course / Module / Lesson / Progress) | planned |
 | C8 | AI foundation hardening (extends the built AI Track) | planned |
 | C9 | AI-assisted planning (overlay on the deterministic DR core) | planned |
@@ -329,6 +329,57 @@ open questions.
   children); other tables keep REPLACE.
 - **Known gap (pre-existing, out of scope):** `ImportService._importOrder`
   still lacks `calendar_events` / `notes`.
+
+### Phase C6 — Project Workspace (contract, implemented)
+
+- **Scope delivered:** domain models (`Project` with `ProjectStatus`
+  active/onHold/completed/cancelled, `ProjectItem` + `ProjectEntityType` in
+  `lib/domain/models/`), one aggregate `ProjectDao`, `ProjectRepository` +
+  `SqliteProjectRepository`, pure `ProjectWorkspaceService` (read model), DI in
+  `app.dart`, Trash/Archive + backup/import integration, localized strings, and
+  a **read-only** UI: drawer entry "Projects" → `ProjectsListScreen` →
+  `ProjectWorkspaceScreen`. No create/edit/link UI, no AI tools yet.
+- **Project is a new entity**, not a TaskList. Its parts are linked through
+  `project_items`; the workspace is computed, never stored.
+- **Schema v14 (strictly additive):** new tables `projects` (title,
+  description, color, `status` TEXT default `'active'`, `startDate`,
+  `targetDate`, `createdAt`, `updateTimeStamp`, soft-delete + archive columns,
+  `deviceId`) and `project_items` (`projectId` NOT NULL, `entityType`,
+  `entityId`, `sortOrder` default 0, `createdAt`, `deviceId`); indexes
+  `idx_project_items_projectId`, UNIQUE `idx_project_items_unique
+  (projectId, entityType, entityId)`, `idx_project_items_entityRef
+  (entityType, entityId)`; triggers `delete_project_items_of_{tasklist, task,
+  note, calendar_event, goal}` (AFTER DELETE on the entity table → remove the
+  matching items). `ProjectDao.createSchema` is the single SQL source for both
+  `_onCreate` and the `_onUpgrade` `oldVersion < 14` branch. No existing
+  table/column changed.
+- **FK rules:** `project_items.projectId` → `projects` `ON DELETE CASCADE`.
+  Hard-deleting a project removes only its items, **never** the linked
+  entities. There is no FK to entity tables (`entityType` is extensible:
+  `taskList`, `task`, `note`, `calendarEvent`, `goal` today); the triggers
+  clean up items on entity hard delete. DAO inserts never use REPLACE.
+- **Membership:** many-to-many; an entity is in a project at most once
+  (`addItem` is an upsert that only updates `sortOrder` when given; throws
+  `ArgumentError` for an unknown project or empty `entityType`).
+- **Workspace rules (derived, never stored):**
+  - "Live" entity = visible in its repository list (exists, not trashed, not
+    archived). Items pointing elsewhere, or with an unknown `entityType`, are
+    skipped and counted in `ignoredItemCount`.
+  - Items are walked by `sortOrder`, then `createdAt`; duplicates are taken once.
+  - A live linked task list contributes its live tasks **implicitly**
+    (`viaTaskListId`); a directly linked task is `isDirect`. A task reached
+    both ways appears once with both flags.
+  - Goals carry their C5 `GoalProgress` (passthrough from
+    `GoalProgressService`, not recomputed).
+  - Task counts and completion ratio are derived (0 tasks → 0.0).
+- **Trash / Archive:** projects join `_softDeleteTables` and the
+  `TrashedItemType` / `ArchivedItemType` enums. Project soft-delete/archive do
+  **not** cascade (items are kept and reappear on restore/unarchive); hard
+  delete (permanent delete, empty trash, expired purge) cascades to items via FK.
+- **Backup / import:** `projects`, `project_items` appended to `allDataTables`
+  and at the end of `ImportService._importOrder` (after every entity table).
+  Both use **update-first-then-insert** (REPLACE would cascade-delete a
+  project's items); `project_items` uses `createdAt` as its update timestamp.
 
 ---
 

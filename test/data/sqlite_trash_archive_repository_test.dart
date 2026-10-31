@@ -6,6 +6,9 @@ import 'package:my_time_manager/data/database/database_manager.dart';
 import 'package:my_time_manager/data/repositories/sqlite_goal_repository.dart';
 import 'package:my_time_manager/domain/models/model_goal.dart';
 import 'package:my_time_manager/domain/models/model_milestone.dart';
+import 'package:my_time_manager/domain/models/model_project.dart';
+import 'package:my_time_manager/domain/models/model_project_item.dart';
+import 'package:my_time_manager/data/repositories/sqlite_project_repository.dart';
 import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/data/repositories/sqlite_archive_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_task_repository.dart';
@@ -238,6 +241,133 @@ void main() {
       final back = await goals.getGoal(g.id);
       expect(back!.isArchived, isFalse);
       expect(back.isDeleted, isTrue);
+    });
+  });
+
+  group('Project in Trash/Archive', () {
+    Future<int> count(String table) async {
+      final db = await DatabaseManager().database;
+      final r = await db.rawQuery('SELECT COUNT(*) AS c FROM $table');
+      return r.first['c'] as int;
+    }
+
+    Future<(Project, Task)> seedProject(
+        SqliteProjectRepository projects) async {
+      final tasks = SqliteTaskRepository();
+      final p = Project(title: 'Project');
+      await projects.createProject(p);
+      final t = Task(title: 'T');
+      await tasks.createTask(t);
+      await projects.addItem(p.id, ProjectEntityType.task, t.id);
+      return (p, t);
+    }
+
+    test('soft-deleted project listed as project; restore keeps its item',
+        () async {
+      final projects = SqliteProjectRepository();
+      final trash = SqliteTrashRepository();
+      final (p, _) = await seedProject(projects);
+      await projects.softDeleteProject(p.id);
+
+      final item =
+          (await trash.getTrashedItems()).firstWhere((i) => i.id == p.id);
+      expect(item.type, TrashedItemType.project);
+      expect(item.title, 'Project');
+      expect(await projects.getProjects(), isEmpty);
+
+      await trash.restore(item);
+      expect((await projects.getProjects()).map((e) => e.id), [p.id]);
+      expect(await projects.getItems(p.id), hasLength(1));
+    });
+
+    test('permanentlyDelete via trash removes project + items, keeps task',
+        () async {
+      final projects = SqliteProjectRepository();
+      final trash = SqliteTrashRepository();
+      final (p, t) = await seedProject(projects);
+      await projects.softDeleteProject(p.id);
+
+      final item =
+          (await trash.getTrashedItems()).firstWhere((i) => i.id == p.id);
+      await trash.permanentlyDelete(item);
+
+      expect(await projects.getProject(p.id), isNull);
+      expect(await count('project_items'), 0);
+      expect((await SqliteTaskRepository().getTasks()).map((e) => e.id),
+          [t.id]);
+    });
+
+    test('emptyTrash removes a trashed project and its items, keeps task',
+        () async {
+      final projects = SqliteProjectRepository();
+      final trash = SqliteTrashRepository();
+      final (p, _) = await seedProject(projects);
+      await projects.softDeleteProject(p.id);
+
+      await trash.emptyTrash();
+
+      expect(await trash.getTrashedItems(), isEmpty);
+      expect(await count('projects'), 0);
+      expect(await count('project_items'), 0);
+      expect(await count('tasks'), 1);
+    });
+
+    test('archived project listed as project; unarchive works', () async {
+      final projects = SqliteProjectRepository();
+      final archive = SqliteArchiveRepository();
+      final (p, _) = await seedProject(projects);
+      await projects.archiveProject(p.id);
+
+      final item =
+          (await archive.getArchivedItems()).firstWhere((i) => i.id == p.id);
+      expect(item.type, ArchivedItemType.project);
+      expect(item.title, 'Project');
+
+      await archive.unarchive(item);
+      expect(await archive.getArchivedItems(), isEmpty);
+      expect((await projects.getProjects()).map((e) => e.id), [p.id]);
+      expect(await projects.getItems(p.id), hasLength(1));
+    });
+
+    test('moveToTrash on an archived project lands it in trash', () async {
+      final projects = SqliteProjectRepository();
+      final archive = SqliteArchiveRepository();
+      final trash = SqliteTrashRepository();
+      final (p, _) = await seedProject(projects);
+      await projects.archiveProject(p.id);
+
+      final item =
+          (await archive.getArchivedItems()).firstWhere((i) => i.id == p.id);
+      await archive.moveToTrash(item);
+
+      expect((await archive.getArchivedItems()).any((i) => i.id == p.id),
+          isFalse);
+      final trashed =
+          (await trash.getTrashedItems()).firstWhere((i) => i.id == p.id);
+      expect(trashed.type, TrashedItemType.project);
+      final back = await projects.getProject(p.id);
+      expect(back!.isArchived, isFalse);
+      expect(back.isDeleted, isTrue);
+    });
+
+    test('purgeExpiredTrash removes an expired trashed project', () async {
+      final projects = SqliteProjectRepository();
+      final trash = SqliteTrashRepository();
+      final (p, _) = await seedProject(projects);
+      await projects.softDeleteProject(p.id);
+      final db = await DatabaseManager().database;
+      await db.update(
+        'projects',
+        {'deletedAt': DateTime(2000, 1, 1).toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [p.id],
+      );
+
+      final purged = await trash.purgeExpiredTrash(0);
+      expect(purged, greaterThanOrEqualTo(1));
+      expect(await projects.getProject(p.id), isNull);
+      expect(await count('project_items'), 0);
+      expect(await count('tasks'), 1);
     });
   });
 }

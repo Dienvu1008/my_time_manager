@@ -1,0 +1,305 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:my_time_manager/domain/models/model_calendar_event.dart';
+import 'package:my_time_manager/domain/models/model_goal.dart';
+import 'package:my_time_manager/domain/models/model_goal_link.dart';
+import 'package:my_time_manager/domain/models/model_list.dart';
+import 'package:my_time_manager/domain/models/model_milestone.dart';
+import 'package:my_time_manager/domain/models/model_note.dart';
+import 'package:my_time_manager/domain/models/model_project.dart';
+import 'package:my_time_manager/domain/models/model_project_item.dart';
+import 'package:my_time_manager/domain/models/model_task.dart';
+import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
+import 'package:my_time_manager/domain/repositories/goal_repository.dart';
+import 'package:my_time_manager/domain/repositories/note_repository.dart';
+import 'package:my_time_manager/domain/repositories/project_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_repository.dart';
+import 'package:my_time_manager/domain/services/goal_progress_service.dart';
+import 'package:my_time_manager/domain/services/project_workspace_service.dart';
+
+// In-memory fakes: only the read members used by ProjectWorkspaceService /
+// GoalProgressService are meaningful; everything else falls to noSuchMethod.
+
+class _FakeProjects implements ProjectRepository {
+  final Map<String, Project> projects = {};
+  final List<ProjectItem> items = [];
+
+  @override
+  Future<Project?> getProject(String id) async => projects[id];
+  @override
+  Future<List<ProjectItem>> getItems(String projectId) async {
+    final list = items.where((i) => i.projectId == projectId).toList();
+    list.sort((a, b) {
+      final c = a.sortOrder.compareTo(b.sortOrder);
+      return c != 0 ? c : a.createdAt.compareTo(b.createdAt);
+    });
+    return list;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeTaskLists implements TaskListRepository {
+  final List<TaskList> visible = [];
+  @override
+  Future<List<TaskList>> getTaskLists() async => visible;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeTasks implements TaskRepository {
+  final List<Task> visible = [];
+  @override
+  Future<List<Task>> getTasks() async => visible;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeNotes implements NoteRepository {
+  final List<Note> visible = [];
+  @override
+  Future<List<Note>> getNotes() async => visible;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeCalendar implements CalendarRepository {
+  final List<CalendarEvent> visible = [];
+  @override
+  Future<List<CalendarEvent>> getCalendarEvents() async => visible;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// [all] = every goal (any state); [visible] ids = live goals.
+class _FakeGoals implements GoalRepository {
+  final Map<String, Goal> all = {};
+  final Set<String> hidden = {};
+  final List<GoalLink> links = [];
+
+  @override
+  Future<List<Goal>> getGoals() async =>
+      all.values.where((g) => !hidden.contains(g.id)).toList();
+  @override
+  Future<Goal?> getGoal(String id) async => all[id];
+  @override
+  Future<List<Milestone>> getMilestones(String goalId) async => const [];
+  @override
+  Future<List<GoalLink>> getLinks(String goalId) async =>
+      links.where((l) => l.goalId == goalId).toList();
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+void main() {
+  late _FakeProjects projects;
+  late _FakeTaskLists lists;
+  late _FakeTasks tasks;
+  late _FakeNotes notes;
+  late _FakeCalendar calendar;
+  late _FakeGoals goals;
+  late ProjectWorkspaceService service;
+  late Project project;
+  var order = 0;
+
+  setUp(() {
+    projects = _FakeProjects();
+    lists = _FakeTaskLists();
+    tasks = _FakeTasks();
+    notes = _FakeNotes();
+    calendar = _FakeCalendar();
+    goals = _FakeGoals();
+    service = ProjectWorkspaceService(
+      projects: projects,
+      taskLists: lists,
+      tasks: tasks,
+      notes: notes,
+      calendar: calendar,
+      goals: goals,
+      goalProgress: GoalProgressService(goals, tasks),
+    );
+    project = Project(id: 'p', title: 'P');
+    projects.projects[project.id] = project;
+    order = 0;
+  });
+
+  /// Adds an item with increasing sortOrder (link order).
+  void link(String type, String id) => projects.items.add(ProjectItem(
+        projectId: project.id,
+        entityType: type,
+        entityId: id,
+        sortOrder: order++,
+      ));
+
+  CalendarEvent event(String id, String title) => CalendarEvent(
+        id: id,
+        title: title,
+        start: EventDateTime(dateTime: DateTime(2026, 5, 1, 9)),
+        end: EventDateTime(dateTime: DateTime(2026, 5, 1, 10)),
+      );
+
+  test('missing project → null', () async {
+    expect(await service.workspaceOf('nope'), isNull);
+  });
+
+  test('empty project → isEmpty, counts 0, ratio 0.0', () async {
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.project, project);
+    expect(ws.isEmpty, isTrue);
+    expect(ws.totalTasks, 0);
+    expect(ws.completedTasks, 0);
+    expect(ws.taskCompletionRatio, 0.0);
+    expect(ws.ignoredItemCount, 0);
+  });
+
+  test('linked list makes its live tasks implicit (via list, not direct)',
+      () async {
+    lists.visible.add(TaskList(id: 'L', title: 'List'));
+    tasks.visible.addAll([
+      Task(id: 't1', taskListId: 'L', title: 'A'),
+      Task(id: 't2', taskListId: 'L', title: 'B'),
+      Task(id: 'other', taskListId: 'X', title: 'Other'),
+    ]);
+    link(ProjectEntityType.taskList, 'L');
+
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.taskLists.map((l) => l.id), ['L']);
+    expect(ws.tasks.map((t) => t.task.id), ['t1', 't2']);
+    for (final t in ws.tasks) {
+      expect(t.isViaTaskList, isTrue);
+      expect(t.viaTaskListId, 'L');
+      expect(t.isDirect, isFalse);
+    }
+  });
+
+  test('task linked directly AND via its list appears once with both flags',
+      () async {
+    lists.visible.add(TaskList(id: 'L', title: 'List'));
+    tasks.visible.add(Task(id: 't1', taskListId: 'L', title: 'A'));
+    link(ProjectEntityType.task, 't1');
+    link(ProjectEntityType.taskList, 'L');
+
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.tasks, hasLength(1));
+    expect(ws.tasks.single.isDirect, isTrue);
+    expect(ws.tasks.single.viaTaskListId, 'L');
+    expect(ws.totalTasks, 1);
+  });
+
+  test('order follows sortOrder / first appearance', () async {
+    tasks.visible.addAll([
+      Task(id: 'a', title: 'A'),
+      Task(id: 'b', title: 'B'),
+      Task(id: 'c', title: 'C'),
+    ]);
+    projects.items.addAll([
+      ProjectItem(
+          projectId: 'p', entityType: 'task', entityId: 'c', sortOrder: 0),
+      ProjectItem(
+          projectId: 'p', entityType: 'task', entityId: 'a', sortOrder: 1),
+      ProjectItem(
+          projectId: 'p', entityType: 'task', entityId: 'b', sortOrder: 2),
+    ]);
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.tasks.map((t) => t.task.id), ['c', 'a', 'b']);
+  });
+
+  test('links to missing / trashed / archived entities are ignored and counted',
+      () async {
+    // Trashed list 'TL' is not in getTaskLists; its task is live but must
+    // not become implicit.
+    tasks.visible.add(Task(id: 'inTrashedList', taskListId: 'TL', title: 'X'));
+    link(ProjectEntityType.task, 'missingTask');
+    link(ProjectEntityType.task, 'trashedTask'); // absent from getTasks
+    link(ProjectEntityType.taskList, 'TL');
+    link(ProjectEntityType.note, 'missingNote');
+    link(ProjectEntityType.calendarEvent, 'archivedEvent');
+    goals.all['tg'] = Goal(id: 'tg', title: 'Trashed goal');
+    goals.hidden.add('tg');
+    link(ProjectEntityType.goal, 'tg');
+
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.isEmpty, isTrue);
+    expect(ws.ignoredItemCount, 6);
+  });
+
+  test('unknown entityType is ignored and counted', () async {
+    link('habit', 'h1');
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.isEmpty, isTrue);
+    expect(ws.ignoredItemCount, 1);
+  });
+
+  test('goal progress passthrough', () async {
+    final g = Goal(id: 'g', title: 'G');
+    final done = Goal(id: 'done', title: 'Done', status: GoalStatus.completed);
+    goals.all[g.id] = g;
+    goals.all[done.id] = done;
+    tasks.visible.addAll([
+      Task(id: 't1', title: 'T1', isCompleted: true),
+      Task(id: 't2', title: 'T2'),
+    ]);
+    goals.links.addAll([
+      GoalLink(goalId: 'g', entityType: GoalEntityType.task, entityId: 't1'),
+      GoalLink(goalId: 'g', entityType: GoalEntityType.task, entityId: 't2'),
+    ]);
+    link(ProjectEntityType.goal, 'g');
+    link(ProjectEntityType.goal, 'done');
+
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.goals.map((wg) => wg.goal.id), ['g', 'done']);
+    expect(ws.goals[0].progress!.ratio, 0.5);
+    expect(ws.goals[1].progress!.ratio, 1.0);
+    // Goal-linked tasks are NOT project tasks unless linked to the project.
+    expect(ws.tasks, isEmpty);
+  });
+
+  test('totalTasks / completedTasks / ratio', () async {
+    tasks.visible.addAll([
+      Task(id: 'a', title: 'A', isCompleted: true),
+      Task(id: 'b', title: 'B'),
+      Task(id: 'c', title: 'C', isCompleted: true),
+      Task(id: 'd', title: 'D'),
+    ]);
+    for (final id in ['a', 'b', 'c', 'd']) {
+      link(ProjectEntityType.task, id);
+    }
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.totalTasks, 4);
+    expect(ws.completedTasks, 2);
+    expect(ws.taskCompletionRatio, 0.5);
+  });
+
+  test('notes and events appear in link order', () async {
+    notes.visible.addAll([Note(id: 'n1', title: 'N1'), Note(id: 'n2')]);
+    calendar.visible.addAll([event('e1', 'E1'), event('e2', 'E2')]);
+    link(ProjectEntityType.calendarEvent, 'e2');
+    link(ProjectEntityType.note, 'n2');
+    link(ProjectEntityType.calendarEvent, 'e1');
+    link(ProjectEntityType.note, 'n1');
+
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.notes.map((n) => n.id), ['n2', 'n1']);
+    expect(ws.calendarEvents.map((e) => e.id), ['e2', 'e1']);
+    expect(ws.ignoredItemCount, 0);
+  });
+
+  test('compute is pure: duplicate items count once', () {
+    final t = Task(id: 't', title: 'T');
+    final ws = ProjectWorkspaceService.compute(
+      project: project,
+      items: [
+        ProjectItem(projectId: 'p', entityType: 'task', entityId: 't'),
+        ProjectItem(projectId: 'p', entityType: 'task', entityId: 't'),
+      ],
+      liveTaskLists: const [],
+      liveTasks: [t],
+      liveNotes: const [],
+      liveEvents: const [],
+      liveGoals: const [],
+    );
+    expect(ws.tasks, hasLength(1));
+    expect(ws.ignoredItemCount, 0);
+  });
+}

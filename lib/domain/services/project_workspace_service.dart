@@ -1,0 +1,264 @@
+import '../models/model_calendar_event.dart';
+import '../models/model_goal.dart';
+import '../models/model_list.dart';
+import '../models/model_note.dart';
+import '../models/model_project.dart';
+import '../models/model_project_item.dart';
+import '../models/model_task.dart';
+import '../repositories/calendar_repository.dart';
+import '../repositories/goal_repository.dart';
+import '../repositories/note_repository.dart';
+import '../repositories/project_repository.dart';
+import '../repositories/task_list_repository.dart';
+import '../repositories/task_repository.dart';
+import 'goal_progress_service.dart';
+
+/// A task in a project workspace, with where its membership comes from.
+class WorkspaceTask {
+  const WorkspaceTask({
+    required this.task,
+    required this.isDirect,
+    this.viaTaskListId,
+  });
+
+  final Task task;
+
+  /// The task has a direct `'task'` item in the project.
+  final bool isDirect;
+
+  /// Id of the linked (and live) task list the task belongs to, or null.
+  final String? viaTaskListId;
+
+  bool get isViaTaskList => viaTaskListId != null;
+}
+
+/// A goal in a project workspace with its DERIVED progress (C5 rules).
+class WorkspaceGoal {
+  const WorkspaceGoal({required this.goal, this.progress});
+
+  final Goal goal;
+  final GoalProgress? progress;
+}
+
+/// Read model of one project (never stored).
+class ProjectWorkspace {
+  const ProjectWorkspace({
+    required this.project,
+    this.taskLists = const [],
+    this.tasks = const [],
+    this.notes = const [],
+    this.goals = const [],
+    this.calendarEvents = const [],
+    this.ignoredItemCount = 0,
+  });
+
+  final Project project;
+  final List<TaskList> taskLists;
+  final List<WorkspaceTask> tasks;
+  final List<Note> notes;
+  final List<WorkspaceGoal> goals;
+  final List<CalendarEvent> calendarEvents;
+
+  /// Items skipped because their entity is missing / trashed / archived or
+  /// their entityType is unknown.
+  final int ignoredItemCount;
+
+  int get totalTasks => tasks.length;
+  int get completedTasks => tasks.where((t) => t.task.isCompleted).length;
+  double get taskCompletionRatio =>
+      totalTasks == 0 ? 0.0 : completedTasks / totalTasks;
+
+  bool get isEmpty =>
+      taskLists.isEmpty &&
+      tasks.isEmpty &&
+      notes.isEmpty &&
+      goals.isEmpty &&
+      calendarEvents.isEmpty;
+}
+
+/// Pure, deterministic read model of a project (Core Track C6):
+///
+///     UI / AI Tool → ProjectWorkspaceService → repositories (+ GoalProgressService)
+///
+/// Rules:
+/// - "Live" entity = present in the repository's visible list
+///   (`getTaskLists`, `getTasks`, `getNotes`, `getCalendarEvents`,
+///   `getGoals`): exists, not trashed, not archived. Items pointing to anything
+///   else, and items with an unknown entityType, are skipped and counted in
+///   [ProjectWorkspace.ignoredItemCount].
+/// - Items are walked in the given order (sortOrder, createdAt); each
+///   (entityType, entityId) is taken on first occurrence.
+/// - `'taskList'` (live) → listed, and its live tasks (in `getTasks` order) are
+///   IMPLICITLY part of the project with `viaTaskListId` = list id. A task of a
+///   linked but non-live list is not implicit.
+/// - `'task'` (live) → `isDirect: true`. A task reached both directly and via
+///   its list appears ONCE with both flags.
+/// - `'goal'` (live) → listed with its [GoalProgress] from
+///   [GoalProgressService] (passthrough, not recomputed).
+/// - Counts (total/completed tasks, ratio) are derived; nothing is written.
+class ProjectWorkspaceService {
+  ProjectWorkspaceService({
+    required ProjectRepository projects,
+    required TaskListRepository taskLists,
+    required TaskRepository tasks,
+    required NoteRepository notes,
+    required CalendarRepository calendar,
+    required GoalRepository goals,
+    required GoalProgressService goalProgress,
+  })  : _projects = projects,
+        _taskLists = taskLists,
+        _tasks = tasks,
+        _notes = notes,
+        _calendar = calendar,
+        _goals = goals,
+        _goalProgress = goalProgress;
+
+  final ProjectRepository _projects;
+  final TaskListRepository _taskLists;
+  final TaskRepository _tasks;
+  final NoteRepository _notes;
+  final CalendarRepository _calendar;
+  final GoalRepository _goals;
+  final GoalProgressService _goalProgress;
+
+  /// Workspace of a project (any state), or null if it does not exist.
+  Future<ProjectWorkspace?> workspaceOf(String projectId) async {
+    final project = await _projects.getProject(projectId);
+    if (project == null) return null;
+    final items = await _projects.getItems(projectId);
+    final liveLists = await _taskLists.getTaskLists();
+    final liveTasks = await _tasks.getTasks();
+    final liveNotes = await _notes.getNotes();
+    final liveEvents = await _calendar.getCalendarEvents();
+    final liveGoals = await _goals.getGoals();
+
+    final liveGoalIds = {for (final g in liveGoals) g.id};
+    final linkedGoalIds = <String>{
+      for (final i in items)
+        if (i.entityType == ProjectEntityType.goal &&
+            liveGoalIds.contains(i.entityId))
+          i.entityId,
+    };
+    final progress = <String, GoalProgress?>{
+      for (final id in linkedGoalIds) id: await _goalProgress.progressOf(id),
+    };
+
+    return compute(
+      project: project,
+      items: items,
+      liveTaskLists: liveLists,
+      liveTasks: liveTasks,
+      liveNotes: liveNotes,
+      liveEvents: liveEvents,
+      liveGoals: liveGoals,
+      goalProgress: progress,
+    );
+  }
+
+  /// Pure rule (see class doc).
+  static ProjectWorkspace compute({
+    required Project project,
+    required List<ProjectItem> items,
+    required List<TaskList> liveTaskLists,
+    required List<Task> liveTasks,
+    required List<Note> liveNotes,
+    required List<CalendarEvent> liveEvents,
+    required List<Goal> liveGoals,
+    Map<String, GoalProgress?> goalProgress = const {},
+  }) {
+    final listsById = {for (final l in liveTaskLists) l.id: l};
+    final tasksById = {for (final t in liveTasks) t.id: t};
+    final notesById = {for (final n in liveNotes) n.id: n};
+    final eventsById = {for (final e in liveEvents) e.id: e};
+    final goalsById = {for (final g in liveGoals) g.id: g};
+
+    final seen = <String>{};
+    final taskLists = <TaskList>[];
+    // Map literal = LinkedHashMap: giữ thứ tự xuất hiện đầu tiên.
+    final taskEntries = <String, _TaskEntry>{};
+    final notes = <Note>[];
+    final goals = <WorkspaceGoal>[];
+    final events = <CalendarEvent>[];
+    var ignored = 0;
+
+    for (final item in items) {
+      if (!seen.add('${item.entityType}\u0000${item.entityId}')) continue;
+      switch (item.entityType) {
+        case ProjectEntityType.taskList:
+          final list = listsById[item.entityId];
+          if (list == null) {
+            ignored++;
+            break;
+          }
+          taskLists.add(list);
+          for (final t in liveTasks) {
+            if (t.taskListId != list.id) continue;
+            final entry = taskEntries.putIfAbsent(t.id, () => _TaskEntry(t));
+            entry.viaTaskListId ??= list.id;
+          }
+          break;
+        case ProjectEntityType.task:
+          final task = tasksById[item.entityId];
+          if (task == null) {
+            ignored++;
+            break;
+          }
+          taskEntries.putIfAbsent(task.id, () => _TaskEntry(task)).isDirect =
+              true;
+          break;
+        case ProjectEntityType.note:
+          final note = notesById[item.entityId];
+          if (note == null) {
+            ignored++;
+            break;
+          }
+          notes.add(note);
+          break;
+        case ProjectEntityType.calendarEvent:
+          final event = eventsById[item.entityId];
+          if (event == null) {
+            ignored++;
+            break;
+          }
+          events.add(event);
+          break;
+        case ProjectEntityType.goal:
+          final goal = goalsById[item.entityId];
+          if (goal == null) {
+            ignored++;
+            break;
+          }
+          goals.add(WorkspaceGoal(goal: goal, progress: goalProgress[goal.id]));
+          break;
+        default:
+          ignored++;
+      }
+    }
+
+    return ProjectWorkspace(
+      project: project,
+      taskLists: List.unmodifiable(taskLists),
+      tasks: List.unmodifiable([
+        for (final e in taskEntries.values)
+          WorkspaceTask(
+            task: e.task,
+            isDirect: e.isDirect,
+            viaTaskListId: e.viaTaskListId,
+          ),
+      ]),
+      notes: List.unmodifiable(notes),
+      goals: List.unmodifiable(goals),
+      calendarEvents: List.unmodifiable(events),
+      ignoredItemCount: ignored,
+    );
+  }
+}
+
+/// Mutable builder entry used only inside [ProjectWorkspaceService.compute].
+class _TaskEntry {
+  _TaskEntry(this.task);
+
+  final Task task;
+  bool isDirect = false;
+  String? viaTaskListId;
+}

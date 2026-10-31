@@ -69,7 +69,8 @@ class ImportService {
 
   final DatabaseManager _db;
 
-  /// Thứ tự import tôn trọng khóa ngoại: cha trước, con sau.
+  /// Thứ tự import tôn trọng khóa ngoại: cha trước, con sau. projects →
+  /// project_items đặt CUỐI, sau mọi bảng thực thể được import (C6).
   static const List<String> _importOrder = [
     'tasklists',
     'tasks',
@@ -81,6 +82,8 @@ class ImportService {
     'goals',
     'milestones',
     'goal_links',
+    'projects',
+    'project_items',
   ];
 
   /// Đọc metadata (deviceId/deviceName nguồn, thời điểm export) từ nội dung
@@ -236,10 +239,12 @@ class ImportService {
   /// - Đa số bảng dùng updateTimeStamp (ISO8601).
   /// - focus_sessions không có updateTimeStamp -> dùng endTime.
   /// - goal_links không có updateTimeStamp -> dùng createdAt.
+  /// - project_items không có updateTimeStamp -> dùng createdAt.
   DateTime? _updatedAt(String table, Map<String, dynamic> row) {
     final raw = switch (table) {
       'focus_sessions' => row['endTime'],
       'goal_links' => row['createdAt'],
+      'project_items' => row['createdAt'],
       _ => row['updateTimeStamp'],
     };
     if (raw == null) return null;

@@ -946,6 +946,440 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- Projects / workspace (Core Track C6) ---
+
+  String get projects {
+    return {
+      'en': 'Projects',
+      'vi': 'Dự án',
+      'de': 'Projekte',
+      'cs': 'Projekty',
+      'es': 'Proyectos',
+      'fr': 'Projets',
+      'it': 'Progetti',
+      'ja': 'プロジェクト',
+      'ko': '프로젝트',
+      'no': 'Prosjekter',
+      'ru': 'Проекты',
+      'sv': 'Projekt',
+      'zh': '项目',
+    }[locale.languageCode]!;
+  }
+
+  String get projectWorkspace {
+    return {
+      'en': 'Project workspace',
+      'vi': 'Không gian dự án',
+      'de': 'Projektarbeitsbereich',
+      'cs': 'Pracovní prostor projektu',
+      'es': 'Espacio de trabajo del proyecto',
+      'fr': 'Espace de travail du projet',
+      'it': 'Area di lavoro del progetto',
+      'ja': 'プロジェクトワークスペース',
+      'ko': '프로젝트 작업 공간',
+      'no': 'Prosjektarbeidsområde',
+      'ru': 'Рабочее пространство проекта',
+      'sv': 'Projektarbetsyta',
+      'zh': '项目工作区',
+    }[locale.languageCode]!;
+  }
+
+  String get noProjectsYet {
+    return {
+      'en': 'No projects yet',
+      'vi': 'Chưa có dự án nào',
+      'de': 'Noch keine Projekte',
+      'cs': 'Zatím žádné projekty',
+      'es': 'Aún no hay proyectos',
+      'fr': 'Aucun projet pour le moment',
+      'it': 'Ancora nessun progetto',
+      'ja': 'まだプロジェクトがありません',
+      'ko': '아직 프로젝트가 없습니다',
+      'no': 'Ingen prosjekter ennå',
+      'ru': 'Проектов пока нет',
+      'sv': 'Inga projekt ännu',
+      'zh': '暂无项目',
+    }[locale.languageCode]!;
+  }
+
+  String get noProjectsHint {
+    return {
+      'en': 'Projects will appear here once they are created.',
+      'vi': 'Các dự án sẽ hiển thị ở đây khi được tạo.',
+      'de': 'Projekte erscheinen hier, sobald sie erstellt wurden.',
+      'cs': 'Projekty se zde zobrazí, jakmile budou vytvořeny.',
+      'es': 'Los proyectos aparecerán aquí cuando se creen.',
+      'fr': 'Les projets apparaîtront ici une fois créés.',
+      'it': 'I progetti appariranno qui una volta creati.',
+      'ja': 'プロジェクトを作成するとここに表示されます。',
+      'ko': '프로젝트가 생성되면 여기에 표시됩니다.',
+      'no': 'Prosjekter vises her når de er opprettet.',
+      'ru': 'Проекты появятся здесь после создания.',
+      'sv': 'Projekt visas här när de har skapats.',
+      'zh': '项目创建后将显示在这里。',
+    }[locale.languageCode]!;
+  }
+
+  String get projectNotFound {
+    return {
+      'en': 'Project not found',
+      'vi': 'Không tìm thấy dự án',
+      'de': 'Projekt nicht gefunden',
+      'cs': 'Projekt nenalezen',
+      'es': 'Proyecto no encontrado',
+      'fr': 'Projet introuvable',
+      'it': 'Progetto non trovato',
+      'ja': 'プロジェクトが見つかりません',
+      'ko': '프로젝트를 찾을 수 없습니다',
+      'no': 'Prosjektet ble ikke funnet',
+      'ru': 'Проект не найден',
+      'sv': 'Projektet hittades inte',
+      'zh': '未找到项目',
+    }[locale.languageCode]!;
+  }
+
+  String get projectUntitled {
+    return {
+      'en': '(Untitled)',
+      'vi': '(Không có tiêu đề)',
+      'de': '(Ohne Titel)',
+      'cs': '(Bez názvu)',
+      'es': '(Sin título)',
+      'fr': '(Sans titre)',
+      'it': '(Senza titolo)',
+      'ja': '(無題)',
+      'ko': '(제목 없음)',
+      'no': '(Uten tittel)',
+      'ru': '(Без названия)',
+      'sv': '(Namnlös)',
+      'zh': '(无标题)',
+    }[locale.languageCode]!;
+  }
+
+  String get projectSectionTaskLists {
+    return {
+      'en': 'Task lists',
+      'vi': 'Danh sách công việc',
+      'de': 'Aufgabenlisten',
+      'cs': 'Seznamy úkolů',
+      'es': 'Listas de tareas',
+      'fr': 'Listes de tâches',
+      'it': 'Elenchi di attività',
+      'ja': 'タスクリスト',
+      'ko': '작업 목록',
+      'no': 'Oppgavelister',
+      'ru': 'Списки задач',
+      'sv': 'Uppgiftslistor',
+      'zh': '任务列表',
+    }[locale.languageCode]!;
+  }
+
+  String get projectSectionTasks {
+    return {
+      'en': 'Tasks',
+      'vi': 'Công việc',
+      'de': 'Aufgaben',
+      'cs': 'Úkoly',
+      'es': 'Tareas',
+      'fr': 'Tâches',
+      'it': 'Attività',
+      'ja': 'タスク',
+      'ko': '작업',
+      'no': 'Oppgaver',
+      'ru': 'Задачи',
+      'sv': 'Uppgifter',
+      'zh': '任务',
+    }[locale.languageCode]!;
+  }
+
+  String get projectSectionNotes {
+    return {
+      'en': 'Notes',
+      'vi': 'Ghi chú',
+      'de': 'Notizen',
+      'cs': 'Poznámky',
+      'es': 'Notas',
+      'fr': 'Notes',
+      'it': 'Note',
+      'ja': 'メモ',
+      'ko': '메모',
+      'no': 'Notater',
+      'ru': 'Заметки',
+      'sv': 'Anteckningar',
+      'zh': '笔记',
+    }[locale.languageCode]!;
+  }
+
+  String get projectSectionGoals {
+    return {
+      'en': 'Goals',
+      'vi': 'Mục tiêu',
+      'de': 'Ziele',
+      'cs': 'Cíle',
+      'es': 'Objetivos',
+      'fr': 'Objectifs',
+      'it': 'Obiettivi',
+      'ja': '目標',
+      'ko': '목표',
+      'no': 'Mål',
+      'ru': 'Цели',
+      'sv': 'Mål',
+      'zh': '目标',
+    }[locale.languageCode]!;
+  }
+
+  String get projectSectionEvents {
+    return {
+      'en': 'Calendar events',
+      'vi': 'Sự kiện lịch',
+      'de': 'Kalenderereignisse',
+      'cs': 'Události kalendáře',
+      'es': 'Eventos del calendario',
+      'fr': 'Événements du calendrier',
+      'it': 'Eventi del calendario',
+      'ja': 'カレンダーの予定',
+      'ko': '캘린더 일정',
+      'no': 'Kalenderhendelser',
+      'ru': 'События календаря',
+      'sv': 'Kalenderhändelser',
+      'zh': '日历事件',
+    }[locale.languageCode]!;
+  }
+
+  String get projectSectionEmpty {
+    return {
+      'en': 'Nothing linked yet',
+      'vi': 'Chưa có mục nào được liên kết',
+      'de': 'Noch nichts verknüpft',
+      'cs': 'Zatím nic propojeno',
+      'es': 'Aún no hay nada vinculado',
+      'fr': 'Rien de lié pour le moment',
+      'it': 'Ancora nulla di collegato',
+      'ja': 'まだリンクされた項目はありません',
+      'ko': '아직 연결된 항목이 없습니다',
+      'no': 'Ingenting koblet ennå',
+      'ru': 'Пока ничего не связано',
+      'sv': 'Inget länkat ännu',
+      'zh': '尚未关联任何内容',
+    }[locale.languageCode]!;
+  }
+
+  String get projectViaList {
+    return {
+      'en': 'Via list',
+      'vi': 'Qua danh sách',
+      'de': 'Über Liste',
+      'cs': 'Přes seznam',
+      'es': 'Mediante lista',
+      'fr': 'Via la liste',
+      'it': 'Tramite elenco',
+      'ja': 'リスト経由',
+      'ko': '목록을 통해',
+      'no': 'Via liste',
+      'ru': 'Через список',
+      'sv': 'Via lista',
+      'zh': '通过列表',
+    }[locale.languageCode]!;
+  }
+
+  String get projectLinkedDirectly {
+    return {
+      'en': 'Linked directly',
+      'vi': 'Liên kết trực tiếp',
+      'de': 'Direkt verknüpft',
+      'cs': 'Propojeno přímo',
+      'es': 'Vinculado directamente',
+      'fr': 'Lié directement',
+      'it': 'Collegato direttamente',
+      'ja': '直接リンク',
+      'ko': '직접 연결됨',
+      'no': 'Koblet direkte',
+      'ru': 'Связано напрямую',
+      'sv': 'Direktlänkad',
+      'zh': '直接关联',
+    }[locale.languageCode]!;
+  }
+
+  String get projectTasksCompleted {
+    return {
+      'en': 'Tasks completed',
+      'vi': 'Công việc đã hoàn thành',
+      'de': 'Erledigte Aufgaben',
+      'cs': 'Dokončené úkoly',
+      'es': 'Tareas completadas',
+      'fr': 'Tâches terminées',
+      'it': 'Attività completate',
+      'ja': '完了したタスク',
+      'ko': '완료된 작업',
+      'no': 'Fullførte oppgaver',
+      'ru': 'Выполнено задач',
+      'sv': 'Slutförda uppgifter',
+      'zh': '已完成任务',
+    }[locale.languageCode]!;
+  }
+
+  String get projectTaskCompleted {
+    return {
+      'en': 'Completed',
+      'vi': 'Đã hoàn thành',
+      'de': 'Erledigt',
+      'cs': 'Dokončeno',
+      'es': 'Completada',
+      'fr': 'Terminée',
+      'it': 'Completata',
+      'ja': '完了',
+      'ko': '완료됨',
+      'no': 'Fullført',
+      'ru': 'Выполнено',
+      'sv': 'Slutförd',
+      'zh': '已完成',
+    }[locale.languageCode]!;
+  }
+
+  String get projectTaskNotCompleted {
+    return {
+      'en': 'Not completed',
+      'vi': 'Chưa hoàn thành',
+      'de': 'Nicht erledigt',
+      'cs': 'Nedokončeno',
+      'es': 'No completada',
+      'fr': 'Non terminée',
+      'it': 'Non completata',
+      'ja': '未完了',
+      'ko': '미완료',
+      'no': 'Ikke fullført',
+      'ru': 'Не выполнено',
+      'sv': 'Inte slutförd',
+      'zh': '未完成',
+    }[locale.languageCode]!;
+  }
+
+  String get projectStartDate {
+    return {
+      'en': 'Start',
+      'vi': 'Bắt đầu',
+      'de': 'Beginn',
+      'cs': 'Začátek',
+      'es': 'Inicio',
+      'fr': 'Début',
+      'it': 'Inizio',
+      'ja': '開始',
+      'ko': '시작',
+      'no': 'Start',
+      'ru': 'Начало',
+      'sv': 'Start',
+      'zh': '开始',
+    }[locale.languageCode]!;
+  }
+
+  String get projectTargetDate {
+    return {
+      'en': 'Target',
+      'vi': 'Mục tiêu đến',
+      'de': 'Ziel',
+      'cs': 'Cílové datum',
+      'es': 'Fecha objetivo',
+      'fr': 'Échéance',
+      'it': 'Scadenza',
+      'ja': '目標日',
+      'ko': '목표일',
+      'no': 'Mål',
+      'ru': 'Срок',
+      'sv': 'Måldatum',
+      'zh': '目标日期',
+    }[locale.languageCode]!;
+  }
+
+  String get projectStatusActive {
+    return {
+      'en': 'Active',
+      'vi': 'Đang thực hiện',
+      'de': 'Aktiv',
+      'cs': 'Aktivní',
+      'es': 'Activo',
+      'fr': 'Actif',
+      'it': 'Attivo',
+      'ja': '進行中',
+      'ko': '진행 중',
+      'no': 'Aktiv',
+      'ru': 'Активный',
+      'sv': 'Aktiv',
+      'zh': '进行中',
+    }[locale.languageCode]!;
+  }
+
+  String get projectStatusOnHold {
+    return {
+      'en': 'On hold',
+      'vi': 'Tạm dừng',
+      'de': 'Pausiert',
+      'cs': 'Pozastaveno',
+      'es': 'En pausa',
+      'fr': 'En pause',
+      'it': 'In pausa',
+      'ja': '保留中',
+      'ko': '보류 중',
+      'no': 'På vent',
+      'ru': 'Приостановлен',
+      'sv': 'Pausad',
+      'zh': '暂停',
+    }[locale.languageCode]!;
+  }
+
+  String get projectStatusCompleted {
+    return {
+      'en': 'Completed',
+      'vi': 'Đã hoàn thành',
+      'de': 'Abgeschlossen',
+      'cs': 'Dokončeno',
+      'es': 'Completado',
+      'fr': 'Terminé',
+      'it': 'Completato',
+      'ja': '完了',
+      'ko': '완료됨',
+      'no': 'Fullført',
+      'ru': 'Завершён',
+      'sv': 'Slutfört',
+      'zh': '已完成',
+    }[locale.languageCode]!;
+  }
+
+  String get projectStatusCancelled {
+    return {
+      'en': 'Cancelled',
+      'vi': 'Đã hủy',
+      'de': 'Abgebrochen',
+      'cs': 'Zrušeno',
+      'es': 'Cancelado',
+      'fr': 'Annulé',
+      'it': 'Annullato',
+      'ja': 'キャンセル',
+      'ko': '취소됨',
+      'no': 'Avbrutt',
+      'ru': 'Отменён',
+      'sv': 'Avbrutet',
+      'zh': '已取消',
+    }[locale.languageCode]!;
+  }
+
+  String get projectGoalProgress {
+    return {
+      'en': 'Progress',
+      'vi': 'Tiến độ',
+      'de': 'Fortschritt',
+      'cs': 'Pokrok',
+      'es': 'Progreso',
+      'fr': 'Progression',
+      'it': 'Avanzamento',
+      'ja': '進捗',
+      'ko': '진행률',
+      'no': 'Fremdrift',
+      'ru': 'Прогресс',
+      'sv': 'Framsteg',
+      'zh': '进度',
+    }[locale.languageCode]!;
+  }
+
   String get brightness {
     return {
       'en': 'Brightness',

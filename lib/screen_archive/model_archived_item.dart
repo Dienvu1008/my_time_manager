@@ -3,7 +3,8 @@ enum ArchivedItemType {
   taskList,
   task,
   calendarEvent,
-  goal;
+  goal,
+  project;
 
   /// Nhãn hiển thị tiếng Việt.
   String get label {
@@ -16,6 +17,8 @@ enum ArchivedItemType {
         return 'Sự kiện';
       case ArchivedItemType.goal:
         return 'Mục tiêu';
+      case ArchivedItemType.project:
+        return 'Dự án';
     }
   }
 
@@ -30,6 +33,8 @@ enum ArchivedItemType {
         return 'calendar_events';
       case ArchivedItemType.goal:
         return 'goals';
+      case ArchivedItemType.project:
+        return 'projects';
     }
   }
 }

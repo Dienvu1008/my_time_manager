@@ -180,6 +180,8 @@ class BackupService {
       'goals': 'Mục tiêu',
       'milestones': 'Cột mốc',
       'goal_links': 'Liên kết mục tiêu',
+      'projects': 'Dự án',
+      'project_items': 'Mục trong dự án',
     };
 
     for (final table in DatabaseManager.allDataTables) {

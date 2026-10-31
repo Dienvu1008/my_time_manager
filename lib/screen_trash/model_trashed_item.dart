@@ -3,7 +3,8 @@ enum TrashedItemType {
   taskList,
   task,
   calendarEvent,
-  goal;
+  goal,
+  project;
 
   /// Nhãn hiển thị tiếng Việt.
   String get label {
@@ -16,6 +17,8 @@ enum TrashedItemType {
         return 'Sự kiện';
       case TrashedItemType.goal:
         return 'Mục tiêu';
+      case TrashedItemType.project:
+        return 'Dự án';
     }
   }
 
@@ -30,6 +33,8 @@ enum TrashedItemType {
         return 'calendar_events';
       case TrashedItemType.goal:
         return 'goals';
+      case TrashedItemType.project:
+        return 'projects';
     }
   }
 }
