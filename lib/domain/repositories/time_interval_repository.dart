@@ -33,7 +33,9 @@ abstract class TimeIntervalRepository {
 
   /// Create many time intervals (e.g. the occurrences of a repeating one),
   /// then schedule their reminders in one batch. [onProgress] is invoked
-  /// after each insert with the number created so far.
+  /// after each insert with the number created so far. Not all-or-nothing:
+  /// if an insert fails, the intervals inserted before it are kept and their
+  /// reminders are still scheduled, then the error is rethrown.
   Future<void> createTimeIntervals(
     List<TimeInterval> timeIntervals, {
     void Function(int done)? onProgress,

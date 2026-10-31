@@ -159,6 +159,26 @@ void main() {
         {for (final ti in batch) legacyIntervalReminderId(ti.id, 15)});
   });
 
+  test('createTimeIntervals failing midway still schedules the inserted prefix',
+      () async {
+    final task = await seedTask();
+    final a = interval(task.id, title: 'A');
+    final b = interval(task.id, title: 'B');
+    // Unknown taskId -> foreign key violation on the third insert.
+    final orphan = interval('missing-task', title: 'C');
+    final progress = <int>[];
+    await expectLater(
+      intervals.createTimeIntervals([a, b, orphan], onProgress: progress.add),
+      throwsA(anything),
+    );
+    expect(progress, [1, 2]);
+    expect((await intervals.getTimeIntervals()).length, 2);
+    expect(scheduler.active.keys.toSet(), {
+      legacyIntervalReminderId(a.id, 15),
+      legacyIntervalReminderId(b.id, 15),
+    });
+  });
+
   test('time interval: delete cancels (also via alsoCancel on a fresh engine)',
       () async {
     final task = await seedTask();

@@ -46,12 +46,19 @@ class SqliteTimeIntervalRepository implements TimeIntervalRepository {
     List<TimeInterval> timeIntervals, {
     void Function(int done)? onProgress,
   }) async {
-    var done = 0;
-    for (final ti in timeIntervals) {
-      await _dao.insert(ti);
-      onProgress?.call(++done);
+    // Not a transaction: rows inserted before a failing insert stay persisted
+    // (as with the old per-occurrence path), so their reminders are scheduled
+    // in `finally` and the insert error is then rethrown.
+    final inserted = <TimeInterval>[];
+    try {
+      for (final ti in timeIntervals) {
+        await _dao.insert(ti);
+        inserted.add(ti);
+        onProgress?.call(inserted.length);
+      }
+    } finally {
+      await _reminders.scheduleAll(inserted);
     }
-    await _reminders.scheduleAll(timeIntervals);
   }
 
   @override

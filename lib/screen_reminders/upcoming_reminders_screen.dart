@@ -41,8 +41,14 @@ class _UpcomingRemindersScreenState extends State<UpcomingRemindersScreen> {
   }
 
   Future<void> _allow() async {
+    final wasExact = _coordinator.health.value.exactAlarmsAllowed;
     await _coordinator.requestPermission();
     await _coordinator.refreshPermission();
+    // Mốc đã đặt ở chế độ không chính xác không tự nâng cấp khi được cấp quyền:
+    // reset để đặt lại toàn bộ ở chế độ chính xác.
+    if (!wasExact && _coordinator.health.value.exactAlarmsAllowed) {
+      await _coordinator.reconcileAll(reset: true);
+    }
     if (mounted) await _refresh();
   }
 

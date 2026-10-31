@@ -101,6 +101,35 @@ void main() {
     expect(find.byType(MaterialBanner), findsNothing);
   });
 
+  testWidgets('granting exact alarms re-arms reminders with a reset',
+      (tester) async {
+    scheduler.exactAllowed = false;
+    source.inputs = ReminderInputs(intervals: [ti('a', 10, 'Alpha')]);
+    final c = build();
+    await tester.runAsync(() => c.reconcileAll(reset: true));
+    expect(scheduler.active, hasLength(1));
+    await open(tester, c);
+
+    scheduler.clearCalls();
+    await tester.tap(find.text('Allow'));
+    await tester.pumpAndSettle();
+    expect(scheduler.cancelAllCount, 1);
+    expect(scheduler.scheduleCalls, hasLength(1));
+    expect(scheduler.active, hasLength(1));
+  });
+
+  testWidgets('Allow without an exact-alarm change does not reset',
+      (tester) async {
+    scheduler.permission = ReminderPermission.denied;
+    source.inputs = ReminderInputs(intervals: [ti('a', 10, 'Alpha')]);
+    await open(tester, build());
+
+    scheduler.clearCalls();
+    await tester.tap(find.text('Allow'));
+    await tester.pumpAndSettle();
+    expect(scheduler.cancelAllCount, 0);
+  });
+
   Future<void> openWithSettings(
       WidgetTester tester, Map<String, Object> prefs) async {
     SharedPreferences.setMockInitialValues(prefs);
