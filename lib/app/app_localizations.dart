@@ -1004,19 +1004,19 @@ class AppLocalizations {
 
   String get noProjectsHint {
     return {
-      'en': 'Projects will appear here once they are created.',
-      'vi': 'Các dự án sẽ hiển thị ở đây khi được tạo.',
-      'de': 'Projekte erscheinen hier, sobald sie erstellt wurden.',
-      'cs': 'Projekty se zde zobrazí, jakmile budou vytvořeny.',
-      'es': 'Los proyectos aparecerán aquí cuando se creen.',
-      'fr': 'Les projets apparaîtront ici une fois créés.',
-      'it': 'I progetti appariranno qui una volta creati.',
-      'ja': 'プロジェクトを作成するとここに表示されます。',
-      'ko': '프로젝트가 생성되면 여기에 표시됩니다.',
-      'no': 'Prosjekter vises her når de er opprettet.',
-      'ru': 'Проекты появятся здесь после создания.',
-      'sv': 'Projekt visas här när de har skapats.',
-      'zh': '项目创建后将显示在这里。',
+      'en': 'Tap + to create your first project.',
+      'vi': 'Nhấn + để tạo dự án đầu tiên.',
+      'de': 'Tippe auf +, um dein erstes Projekt zu erstellen.',
+      'cs': 'Klepnutím na + vytvoříte svůj první projekt.',
+      'es': 'Toca + para crear tu primer proyecto.',
+      'fr': 'Appuyez sur + pour créer votre premier projet.',
+      'it': 'Tocca + per creare il tuo primo progetto.',
+      'ja': '+ をタップして最初のプロジェクトを作成しましょう。',
+      'ko': '+를 눌러 첫 프로젝트를 만드세요.',
+      'no': 'Trykk på + for å opprette ditt første prosjekt.',
+      'ru': 'Нажмите +, чтобы создать первый проект.',
+      'sv': 'Tryck på + för att skapa ditt första projekt.',
+      'zh': '点按 + 创建你的第一个项目。',
     }[locale.languageCode]!;
   }
 
@@ -2781,6 +2781,174 @@ class AppLocalizations {
       'ru': 'Переместить эту цель в корзину?',
       'sv': 'Flytta detta mål till papperskorgen?',
       'zh': '将此目标移到回收站？',
+    }[locale.languageCode]!;
+  }
+
+  // --- Projects (UI) ---
+
+  String get newProject {
+    return {
+      'en': 'New project',
+      'vi': 'Dự án mới',
+      'de': 'Neues Projekt',
+      'cs': 'Nový projekt',
+      'es': 'Nuevo proyecto',
+      'fr': 'Nouveau projet',
+      'it': 'Nuovo progetto',
+      'ja': '新しいプロジェクト',
+      'ko': '새 프로젝트',
+      'no': 'Nytt prosjekt',
+      'ru': 'Новый проект',
+      'sv': 'Nytt projekt',
+      'zh': '新建项目',
+    }[locale.languageCode]!;
+  }
+
+  String get editProject {
+    return {
+      'en': 'Edit project',
+      'vi': 'Sửa dự án',
+      'de': 'Projekt bearbeiten',
+      'cs': 'Upravit projekt',
+      'es': 'Editar proyecto',
+      'fr': 'Modifier le projet',
+      'it': 'Modifica progetto',
+      'ja': 'プロジェクトを編集',
+      'ko': '프로젝트 편집',
+      'no': 'Rediger prosjekt',
+      'ru': 'Изменить проект',
+      'sv': 'Redigera projekt',
+      'zh': '编辑项目',
+    }[locale.languageCode]!;
+  }
+
+  String get projectStatus {
+    return {
+      'en': 'Status',
+      'vi': 'Trạng thái',
+      'de': 'Status',
+      'cs': 'Stav',
+      'es': 'Estado',
+      'fr': 'Statut',
+      'it': 'Stato',
+      'ja': 'ステータス',
+      'ko': '상태',
+      'no': 'Status',
+      'ru': 'Статус',
+      'sv': 'Status',
+      'zh': '状态',
+    }[locale.languageCode]!;
+  }
+
+  String get projectTargetBeforeStart {
+    return {
+      'en': 'Target date cannot be before start date',
+      'vi': 'Ngày mục tiêu không được trước ngày bắt đầu',
+      'de': 'Das Zieldatum darf nicht vor dem Startdatum liegen',
+      'cs': 'Cílové datum nemůže být před datem zahájení',
+      'es': 'La fecha objetivo no puede ser anterior a la fecha de inicio',
+      'fr': 'La date cible ne peut pas précéder la date de début',
+      'it': 'La data obiettivo non può essere precedente alla data di inizio',
+      'ja': '目標日を開始日より前にすることはできません',
+      'ko': '목표일은 시작일보다 앞설 수 없습니다',
+      'no': 'Måldato kan ikke være før startdato',
+      'ru': 'Целевая дата не может быть раньше даты начала',
+      'sv': 'Måldatum kan inte vara före startdatum',
+      'zh': '目标日期不能早于开始日期',
+    }[locale.languageCode]!;
+  }
+
+  String get projectAddItem {
+    return {
+      'en': 'Add item',
+      'vi': 'Thêm mục',
+      'de': 'Element hinzufügen',
+      'cs': 'Přidat položku',
+      'es': 'Añadir elemento',
+      'fr': 'Ajouter un élément',
+      'it': 'Aggiungi elemento',
+      'ja': '項目を追加',
+      'ko': '항목 추가',
+      'no': 'Legg til element',
+      'ru': 'Добавить элемент',
+      'sv': 'Lägg till objekt',
+      'zh': '添加项目内容',
+    }[locale.languageCode]!;
+  }
+
+  String get projectChooseItemType {
+    return {
+      'en': 'Choose item type',
+      'vi': 'Chọn loại mục',
+      'de': 'Elementtyp wählen',
+      'cs': 'Vyberte typ položky',
+      'es': 'Elige el tipo de elemento',
+      'fr': 'Choisir le type d\'élément',
+      'it': 'Scegli il tipo di elemento',
+      'ja': '項目の種類を選択',
+      'ko': '항목 유형 선택',
+      'no': 'Velg elementtype',
+      'ru': 'Выберите тип элемента',
+      'sv': 'Välj objekttyp',
+      'zh': '选择内容类型',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmRemoveProjectItem {
+    return {
+      'en': 'Remove this item from the project? The item itself is not deleted.',
+      'vi': 'Gỡ mục này khỏi dự án? Bản thân mục đó không bị xóa.',
+      'de':
+          'Dieses Element aus dem Projekt entfernen? Das Element selbst wird nicht gelöscht.',
+      'cs': 'Odebrat tuto položku z projektu? Samotná položka nebude smazána.',
+      'es':
+          '¿Quitar este elemento del proyecto? El elemento en sí no se elimina.',
+      'fr':
+          'Retirer cet élément du projet ? L\'élément lui-même n\'est pas supprimé.',
+      'it':
+          'Rimuovere questo elemento dal progetto? L\'elemento stesso non viene eliminato.',
+      'ja': 'この項目をプロジェクトから外しますか？項目自体は削除されません。',
+      'ko': '이 항목을 프로젝트에서 제거할까요? 항목 자체는 삭제되지 않습니다.',
+      'no': 'Fjerne dette elementet fra prosjektet? Selve elementet slettes ikke.',
+      'ru': 'Убрать этот элемент из проекта? Сам элемент не удаляется.',
+      'sv': 'Ta bort detta objekt från projektet? Själva objektet tas inte bort.',
+      'zh': '从项目中移除此内容？内容本身不会被删除。',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmArchiveProject {
+    return {
+      'en': 'Archive this project?',
+      'vi': 'Lưu trữ dự án này?',
+      'de': 'Dieses Projekt archivieren?',
+      'cs': 'Archivovat tento projekt?',
+      'es': '¿Archivar este proyecto?',
+      'fr': 'Archiver ce projet ?',
+      'it': 'Archiviare questo progetto?',
+      'ja': 'このプロジェクトをアーカイブしますか？',
+      'ko': '이 프로젝트를 보관할까요?',
+      'no': 'Arkivere dette prosjektet?',
+      'ru': 'Архивировать этот проект?',
+      'sv': 'Arkivera detta projekt?',
+      'zh': '归档此项目？',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmTrashProject {
+    return {
+      'en': 'Move this project to trash?',
+      'vi': 'Chuyển dự án này vào thùng rác?',
+      'de': 'Dieses Projekt in den Papierkorb verschieben?',
+      'cs': 'Přesunout tento projekt do koše?',
+      'es': '¿Mover este proyecto a la papelera?',
+      'fr': 'Mettre ce projet à la corbeille ?',
+      'it': 'Spostare questo progetto nel cestino?',
+      'ja': 'このプロジェクトをゴミ箱に移動しますか？',
+      'ko': '이 프로젝트를 휴지통으로 이동할까요?',
+      'no': 'Flytte dette prosjektet til papirkurven?',
+      'ru': 'Переместить этот проект в корзину?',
+      'sv': 'Flytta detta projekt till papperskorgen?',
+      'zh': '将此项目移到回收站？',
     }[locale.languageCode]!;
   }
 

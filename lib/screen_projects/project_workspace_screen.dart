@@ -2,12 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../app/app_localizations.dart';
+import '../domain/models/model_project.dart';
+import '../domain/models/model_project_item.dart';
+import '../domain/repositories/project_repository.dart';
 import '../domain/services/project_workspace_service.dart';
+import '../shared/confirm_dialog.dart';
+import '../shared/entity_picker.dart';
+import '../shared/entity_picker_sources.dart';
+import 'project_form_screen.dart';
 import 'project_labels.dart';
 
-/// Màn không gian làm việc của một dự án (Core Track C6) — CHỈ ĐỌC. Hiển thị
-/// read model [ProjectWorkspace] (suy ra bởi [ProjectWorkspaceService], không
-/// lưu) theo các mục: danh sách, công việc, ghi chú, mục tiêu, sự kiện lịch.
+/// Màn không gian làm việc của một dự án (Core Track C6). Hiển thị read model
+/// [ProjectWorkspace] (suy ra bởi [ProjectWorkspaceService], không lưu) theo
+/// các mục: danh sách, công việc, ghi chú, mục tiêu, khóa học, sự kiện lịch.
+/// Cho phép sửa / lưu trữ / chuyển dự án vào thùng rác, thêm mục (chọn loại →
+/// chọn thực thể) và gỡ mục (chỉ gỡ liên kết, không xóa thực thể). Task chỉ
+/// thuộc dự án gián tiếp qua danh sách không có nút gỡ.
 class ProjectWorkspaceScreen extends StatefulWidget {
   const ProjectWorkspaceScreen({super.key, required this.projectId});
 
@@ -17,9 +27,13 @@ class ProjectWorkspaceScreen extends StatefulWidget {
   State<ProjectWorkspaceScreen> createState() => _ProjectWorkspaceScreenState();
 }
 
+enum _ProjectAction { archive, trash }
+
 class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
   late final ProjectWorkspaceService _service =
       context.read<ProjectWorkspaceService>();
+  // Lazy: chỉ đọc trong các callback (thêm / gỡ mục, lưu trữ, thùng rác).
+  late final ProjectRepository _projects = context.read<ProjectRepository>();
   late Future<ProjectWorkspace?> _future;
 
   @override
@@ -35,6 +49,86 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
   Future<void> _refresh() async {
     setState(_reload);
     await _future;
+  }
+
+  Future<void> _editProject(Project project) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => ProjectFormScreen(project: project)),
+    );
+    if (saved == true && mounted) await _refresh();
+  }
+
+  Future<void> _onProjectAction(
+      AppLocalizations l, _ProjectAction action) async {
+    switch (action) {
+      case _ProjectAction.archive:
+        if (!await showConfirmDialog(context,
+            message: l.confirmArchiveProject, confirmLabel: l.archive)) {
+          return;
+        }
+        await _projects.archiveProject(widget.projectId);
+      case _ProjectAction.trash:
+        if (!await showConfirmDialog(context,
+            message: l.confirmTrashProject, confirmLabel: l.moveToTrash)) {
+          return;
+        }
+        await _projects.softDeleteProject(widget.projectId);
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
+  }
+
+  Future<void> _addItem(AppLocalizations l) async {
+    final type = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l.projectChooseItemType),
+        children: [
+          for (final t in ProjectEntityType.supported)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, t),
+              child: Row(
+                children: [
+                  ExcludeSemantics(child: Icon(entityTypeIcon(t))),
+                  const SizedBox(width: 16),
+                  Text(entityTypeLabel(l, t)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (type == null || !mounted) return;
+    // Đọc repository cần thiết trước các await kế tiếp.
+    final load = entityLoader(context, type);
+    final items = await _projects.getItems(widget.projectId);
+    if (!mounted) return;
+    final entry = await Navigator.of(context).push<PickerEntry>(
+      MaterialPageRoute(
+        builder: (_) => EntityPickerScreen(
+          title: entityTypeLabel(l, type),
+          load: load,
+          excludeIds: {
+            for (final i in items)
+              if (i.entityType == type) i.entityId,
+          },
+        ),
+      ),
+    );
+    if (entry == null) return;
+    await _projects.addItem(widget.projectId, type, entry.id,
+        sortOrder: items.length);
+    if (mounted) await _refresh();
+  }
+
+  Future<void> _removeItem(
+      AppLocalizations l, String type, String entityId) async {
+    if (!await showConfirmDialog(context,
+        message: l.confirmRemoveProjectItem, confirmLabel: l.removeItem)) {
+      return;
+    }
+    await _projects.removeEntity(widget.projectId, type, entityId);
+    if (mounted) await _refresh();
   }
 
   @override
@@ -63,13 +157,45 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
         } else {
           body = RefreshIndicator(
             onRefresh: _refresh,
-            child: _WorkspaceView(ws: ws, l: l),
+            child: _WorkspaceView(
+              ws: ws,
+              l: l,
+              onRemove: (String type, String entityId) =>
+                  _removeItem(l, type, entityId),
+            ),
           );
         }
         return Scaffold(
           appBar: AppBar(
             title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+            actions: [
+              if (ws != null) ...[
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: l.editProject,
+                  onPressed: () => _editProject(ws.project),
+                ),
+                PopupMenuButton<_ProjectAction>(
+                  onSelected: (a) => _onProjectAction(l, a),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                        value: _ProjectAction.archive, child: Text(l.archive)),
+                    PopupMenuItem(
+                        value: _ProjectAction.trash,
+                        child: Text(l.moveToTrash)),
+                  ],
+                ),
+              ],
+            ],
           ),
+          floatingActionButton: ws == null
+              ? null
+              : FloatingActionButton.extended(
+                  onPressed: () => _addItem(l),
+                  tooltip: l.projectAddItem,
+                  icon: const Icon(Icons.add),
+                  label: Text(l.projectAddItem),
+                ),
           body: body,
         );
       },
@@ -78,10 +204,23 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
 }
 
 class _WorkspaceView extends StatelessWidget {
-  const _WorkspaceView({required this.ws, required this.l});
+  const _WorkspaceView({
+    required this.ws,
+    required this.l,
+    required this.onRemove,
+  });
 
   final ProjectWorkspace ws;
   final AppLocalizations l;
+
+  /// Gỡ mục (entityType, entityId) khỏi dự án (chỉ liên kết).
+  final void Function(String type, String entityId) onRemove;
+
+  Widget _removeButton(String type, String entityId) => IconButton(
+        icon: const Icon(Icons.remove_circle_outline),
+        tooltip: l.removeItem,
+        onPressed: () => onRemove(type, entityId),
+      );
 
   String _listTitle(String? id) {
     for (final list in ws.taskLists) {
@@ -98,7 +237,8 @@ class _WorkspaceView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 24),
+      // Chừa chỗ cho FAB "Thêm mục".
+      padding: const EdgeInsets.only(bottom: 96),
       children: [
         _Header(ws: ws, l: l),
         _Section(
@@ -110,6 +250,7 @@ class _WorkspaceView extends StatelessWidget {
                 leading: const ExcludeSemantics(
                     child: Icon(Icons.folder_outlined)),
                 title: Text(_orUntitled(list.title)),
+                trailing: _removeButton(ProjectEntityType.taskList, list.id),
               ),
           ],
         ),
@@ -133,6 +274,10 @@ class _WorkspaceView extends StatelessWidget {
                     '${l.projectViaList}: ${_listTitle(t.viaTaskListId)}',
                   if (t.isDirect) l.projectLinkedDirectly,
                 ].join(' · ')),
+                // Task chỉ thuộc gián tiếp (qua danh sách) không có item để gỡ.
+                trailing: t.isDirect
+                    ? _removeButton(ProjectEntityType.task, t.task.id)
+                    : null,
               ),
           ],
         ),
@@ -145,6 +290,7 @@ class _WorkspaceView extends StatelessWidget {
                 leading:
                     const ExcludeSemantics(child: Icon(Icons.notes_outlined)),
                 title: Text(_orUntitled(n.title)),
+                trailing: _removeButton(ProjectEntityType.note, n.id),
               ),
           ],
         ),
@@ -173,6 +319,7 @@ class _WorkspaceView extends StatelessWidget {
                     const ExcludeSemantics(child: Icon(Icons.event_outlined)),
                 title: Text(_orUntitled(e.title)),
                 subtitle: Text(formatProjectDate(e.start.effective)),
+                trailing: _removeButton(ProjectEntityType.calendarEvent, e.id),
               ),
           ],
         ),
@@ -199,6 +346,7 @@ class _WorkspaceView extends StatelessWidget {
           Text(percent, style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
+      trailing: _removeButton(ProjectEntityType.goal, g.goal.id),
     );
   }
 
@@ -221,6 +369,7 @@ class _WorkspaceView extends StatelessWidget {
           Text(percent, style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
+      trailing: _removeButton(ProjectEntityType.course, c.course.id),
     );
   }
 }

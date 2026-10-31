@@ -1,34 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/domain/models/model_calendar_event.dart';
 import 'package:my_time_manager/domain/models/model_course.dart';
 import 'package:my_time_manager/domain/models/model_goal.dart';
 import 'package:my_time_manager/domain/models/model_list.dart';
 import 'package:my_time_manager/domain/models/model_note.dart';
 import 'package:my_time_manager/domain/models/model_project.dart';
+import 'package:my_time_manager/domain/models/model_project_item.dart';
 import 'package:my_time_manager/domain/models/model_task.dart';
+import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
+import 'package:my_time_manager/domain/repositories/goal_repository.dart';
+import 'package:my_time_manager/domain/repositories/learning_repository.dart';
+import 'package:my_time_manager/domain/repositories/note_repository.dart';
 import 'package:my_time_manager/domain/repositories/project_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
+import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/services/goal_progress_service.dart';
 import 'package:my_time_manager/domain/services/learning_progress_service.dart';
 import 'package:my_time_manager/domain/services/project_workspace_service.dart';
+import 'package:my_time_manager/screen_projects/project_form_screen.dart';
 import 'package:my_time_manager/screen_projects/project_workspace_screen.dart';
 import 'package:my_time_manager/screen_projects/projects_list_screen.dart';
 
-/// Only [getProjects] matters for the list screen.
-class _FakeProjectRepository implements ProjectRepository {
-  _FakeProjectRepository(this.projects);
-
-  final List<Project> projects;
-
-  @override
-  Future<List<Project>> getProjects() async => projects;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+import '../screen_learning/fake_learning_repository.dart';
+import '../shared/fake_repositories.dart';
+import '../shared/test_harness.dart';
 
 /// Returns a prebuilt workspace (or null).
 class _FakeWorkspaceService implements ProjectWorkspaceService {
@@ -43,30 +40,25 @@ class _FakeWorkspaceService implements ProjectWorkspaceService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+FakeProjectRepository _projectsWith(List<Project> projects) {
+  final fake = FakeProjectRepository();
+  for (final p in projects) {
+    fake.projects[p.id] = p;
+  }
+  return fake;
+}
+
 Widget _harness({
   required Widget home,
-  List<Project> projects = const [],
+  FakeProjectRepository? projects,
   ProjectWorkspace? workspace,
 }) {
-  return MultiRepositoryProvider(
-    providers: [
-      RepositoryProvider<ProjectRepository>.value(
-          value: _FakeProjectRepository(projects)),
-      RepositoryProvider<ProjectWorkspaceService>.value(
-          value: _FakeWorkspaceService(workspace)),
-    ],
-    child: MaterialApp(
-      locale: const Locale('en'),
-      localizationsDelegates: const [
-        AppLocalizationsDelegate(),
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('en')],
-      home: home,
-    ),
-  );
+  return testApp([
+    RepositoryProvider<ProjectRepository>.value(
+        value: projects ?? FakeProjectRepository()),
+    RepositoryProvider<ProjectWorkspaceService>.value(
+        value: _FakeWorkspaceService(workspace)),
+  ], home);
 }
 
 void main() {
@@ -77,19 +69,102 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Projects'), findsOneWidget);
       expect(find.text('No projects yet'), findsOneWidget);
-      expect(find.text('Projects will appear here once they are created.'),
-          findsOneWidget);
+      expect(find.text('Tap + to create your first project.'), findsOneWidget);
     });
 
     testWidgets('lists a project with its status', (tester) async {
       await tester.pumpWidget(_harness(
         home: const ProjectsListScreen(),
-        projects: [Project(title: 'Website relaunch')],
+        projects: _projectsWith([Project(title: 'Website relaunch')]),
       ));
       await tester.pumpAndSettle();
       expect(find.text('Website relaunch'), findsOneWidget);
       expect(find.text('Active'), findsOneWidget);
       expect(find.text('No projects yet'), findsNothing);
+    });
+
+    testWidgets('FAB creates a project and the list shows it',
+        (tester) async {
+      final fake = FakeProjectRepository();
+      await tester.pumpWidget(
+          _harness(home: const ProjectsListScreen(), projects: fake));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('New project'));
+      await tester.pumpAndSettle();
+      expect(find.text('New project'), findsOneWidget); // form AppBar
+      await tester.enterText(find.byType(TextFormField).first, 'My project');
+      await tester.tap(find.byTooltip('Save'));
+      await tester.pumpAndSettle();
+
+      expect(fake.projects.values.single.title, 'My project');
+      expect(find.text('My project'), findsOneWidget);
+      expect(find.text('No projects yet'), findsNothing);
+    });
+  });
+
+  group('ProjectFormScreen', () {
+    testWidgets('empty title shows a validation error', (tester) async {
+      final fake = FakeProjectRepository();
+      await tester.pumpWidget(
+          _harness(home: const ProjectFormScreen(), projects: fake));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Save'));
+      await tester.pumpAndSettle();
+      expect(find.text('Title is required'), findsOneWidget);
+      expect(fake.projects, isEmpty);
+    });
+
+    testWidgets('target before start shows an error and saves nothing',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final p = Project(
+        id: 'p',
+        title: 'Inverted',
+        startDate: DateTime(2026, 5, 10),
+        targetDate: DateTime(2026, 5, 1),
+      );
+      final fake = _projectsWith([p]);
+      await tester.pumpWidget(_harness(
+          home: launcher(ProjectFormScreen(project: p)), projects: fake));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'Changed');
+      await tester.tap(find.byTooltip('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Target date cannot be before start date'),
+          findsOneWidget);
+      expect(find.text('Edit project'), findsOneWidget); // still on the form
+      expect(fake.projects['p']!.title, 'Inverted');
+    });
+
+    testWidgets('edit saves the new title and clearing the start date',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final p = Project(
+          id: 'p', title: 'Old', startDate: DateTime(2026, 5, 10));
+      final fake = _projectsWith([p]);
+      await tester.pumpWidget(_harness(
+          home: launcher(ProjectFormScreen(project: p)), projects: fake));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('10/05/2026'), findsOneWidget);
+      await tester.enterText(find.byType(TextFormField).first, 'New');
+      await tester.tap(find.byTooltip('Clear date'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('result: true'), findsOneWidget);
+      expect(fake.projects['p']!.title, 'New');
+      expect(fake.projects['p']!.startDate, isNull);
     });
   });
 
@@ -211,6 +286,149 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Project not found'), findsOneWidget);
       expect(find.text('Project workspace'), findsOneWidget);
+    });
+  });
+
+  group('ProjectWorkspaceScreen interactions', () {
+    late FakeProjectRepository projects;
+    late FakeTaskListRepository taskLists;
+    late FakeTaskRepository tasks;
+    late FakeNoteRepository notes;
+    late FakeCalendarRepository calendar;
+    late FakeGoalRepository goals;
+    late FakeLearningRepository learning;
+
+    setUp(() {
+      projects = FakeProjectRepository();
+      taskLists = FakeTaskListRepository();
+      tasks = FakeTaskRepository();
+      notes = FakeNoteRepository();
+      calendar = FakeCalendarRepository();
+      goals = FakeGoalRepository();
+      learning = FakeLearningRepository();
+      projects.projects['p'] = Project(id: 'p', title: 'Website');
+    });
+
+    Widget app(Widget home) => testApp([
+          RepositoryProvider<ProjectRepository>.value(value: projects),
+          RepositoryProvider<TaskListRepository>.value(value: taskLists),
+          RepositoryProvider<TaskRepository>.value(value: tasks),
+          RepositoryProvider<NoteRepository>.value(value: notes),
+          RepositoryProvider<CalendarRepository>.value(value: calendar),
+          RepositoryProvider<GoalRepository>.value(value: goals),
+          RepositoryProvider<LearningRepository>.value(value: learning),
+          RepositoryProvider<ProjectWorkspaceService>.value(
+            value: ProjectWorkspaceService(
+              projects: projects,
+              taskLists: taskLists,
+              tasks: tasks,
+              notes: notes,
+              calendar: calendar,
+              goals: goals,
+              goalProgress: GoalProgressService(goals, tasks),
+              learning: learning,
+              learningProgress: LearningProgressService(learning),
+            ),
+          ),
+        ], home);
+
+    Future<void> pump(WidgetTester tester, Widget home) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(app(home));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> chooseType(WidgetTester tester, String label) async {
+      await tester.tap(find.byTooltip('Add item'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+          of: find.byType(SimpleDialog), matching: find.text(label)));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('add a note via the picker, then remove it (link only)',
+        (tester) async {
+      notes.visible.add(Note(id: 'n1', title: 'Meeting note'));
+      await pump(tester, const ProjectWorkspaceScreen(projectId: 'p'));
+      expect(find.text('Meeting note'), findsNothing);
+
+      await chooseType(tester, 'Notes');
+      expect(find.byType(ListTile), findsOneWidget); // picker row
+      await tester.tap(find.text('Meeting note'));
+      await tester.pumpAndSettle();
+
+      final item = projects.items.values.single;
+      expect(item.entityType, ProjectEntityType.note);
+      expect(item.entityId, 'n1');
+      expect(find.text('Meeting note'), findsOneWidget);
+
+      // Already linked → no longer offered.
+      await chooseType(tester, 'Notes');
+      expect(find.text('Nothing to choose'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Remove'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+          of: find.byType(AlertDialog), matching: find.text('Remove')));
+      await tester.pumpAndSettle();
+
+      expect(projects.items, isEmpty);
+      expect(find.text('Meeting note'), findsNothing);
+      expect(notes.visible.map((n) => n.id), ['n1']);
+    });
+
+    testWidgets('implicit tasks (via linked list) have no remove action',
+        (tester) async {
+      taskLists.visible.add(TaskList(id: 'L', title: 'List L'));
+      tasks.visible.addAll([
+        Task(id: 't1', taskListId: 'L', title: 'Implicit task'),
+        Task(id: 't2', taskListId: 'L', title: 'Direct task'),
+      ]);
+      await projects.addItem('p', ProjectEntityType.taskList, 'L');
+      await projects.addItem('p', ProjectEntityType.task, 't2',
+          sortOrder: 1);
+      await pump(tester, const ProjectWorkspaceScreen(projectId: 'p'));
+
+      expect(find.text('Implicit task'), findsOneWidget);
+      expect(find.byTooltip('Remove'), findsNWidgets(2));
+      final t1Tile = find.ancestor(
+          of: find.text('Implicit task'), matching: find.byType(ListTile));
+      expect(find.descendant(of: t1Tile, matching: find.byTooltip('Remove')),
+          findsNothing);
+      final t2Tile = find.ancestor(
+          of: find.text('Direct task'), matching: find.byType(ListTile));
+      expect(find.descendant(of: t2Tile, matching: find.byTooltip('Remove')),
+          findsOneWidget);
+    });
+
+    testWidgets('edit button opens the project form', (tester) async {
+      await pump(tester, const ProjectWorkspaceScreen(projectId: 'p'));
+      await tester.tap(find.byTooltip('Edit project'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectFormScreen), findsOneWidget);
+      expect(find.text('Edit project'), findsOneWidget);
+    });
+
+    testWidgets('move to trash soft-deletes the project and pops',
+        (tester) async {
+      await pump(tester,
+          launcher(const ProjectWorkspaceScreen(projectId: 'p')));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Move to trash'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+          of: find.byType(AlertDialog), matching: find.text('Move to trash')));
+      await tester.pumpAndSettle();
+
+      expect(projects.projects['p']!.isDeleted, isTrue);
+      expect(find.text('result: true'), findsOneWidget);
     });
   });
 }

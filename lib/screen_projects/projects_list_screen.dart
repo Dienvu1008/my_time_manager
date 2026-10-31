@@ -4,11 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../app/app_localizations.dart';
 import '../domain/models/model_project.dart';
 import '../domain/repositories/project_repository.dart';
+import 'project_form_screen.dart';
 import 'project_labels.dart';
 import 'project_workspace_screen.dart';
 
-/// Màn danh sách Dự án (Core Track C6) — CHỈ ĐỌC: chưa có thao tác tạo / sửa /
-/// xóa. Mở dạng route đẩy từ drawer; đọc [ProjectRepository] qua provider.
+/// Màn danh sách Dự án (Core Track C6). Nút + mở [ProjectFormScreen] để tạo
+/// dự án; chạm một dự án mở workspace (sửa / lưu trữ / thùng rác ở đó).
+/// Mở dạng route đẩy từ drawer; đọc [ProjectRepository] qua provider.
 class ProjectsListScreen extends StatefulWidget {
   const ProjectsListScreen({super.key});
 
@@ -40,6 +42,16 @@ class _ProjectsListScreenState extends State<ProjectsListScreen> {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l.projects)),
+      floatingActionButton: FloatingActionButton(
+        tooltip: l.newProject,
+        onPressed: () async {
+          final saved = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(builder: (_) => const ProjectFormScreen()),
+          );
+          if (saved == true && mounted) await _refresh();
+        },
+        child: const Icon(Icons.add),
+      ),
       body: FutureBuilder<List<Project>>(
         future: _projectsFuture,
         builder: (context, snapshot) {
@@ -63,6 +75,7 @@ class _ProjectsListScreenState extends State<ProjectsListScreen> {
             onRefresh: _refresh,
             child: ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 88),
               itemCount: projects.length,
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (context, index) {
