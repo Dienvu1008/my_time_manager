@@ -289,7 +289,8 @@ open questions.
 - **Scope delivered:** domain models (`Goal`, `Milestone`, `GoalLink` in
   `lib/domain/models/`), one aggregate `GoalDao`, `GoalRepository` +
   `SqliteGoalRepository`, pure `GoalProgressService`, DI in `app.dart`,
-  Trash/Archive + backup/import integration, tests. No goal UI, no AI tools.
+  Trash/Archive + backup/import integration, tests. Goal UI was added later
+  (see "Goal / Project UI" below); no AI tools.
 - **No separate Plan entity.** A goal's "plan" = its milestones + linked items.
 - **Schema v13 (strictly additive):** new tables `goals` (soft-delete +
   archive columns, `status` TEXT active/paused/completed/abandoned),
@@ -339,8 +340,9 @@ open questions.
   `lib/domain/models/`), one aggregate `ProjectDao`, `ProjectRepository` +
   `SqliteProjectRepository`, pure `ProjectWorkspaceService` (read model), DI in
   `app.dart`, Trash/Archive + backup/import integration, localized strings, and
-  a **read-only** UI: drawer entry "Projects" → `ProjectsListScreen` →
-  `ProjectWorkspaceScreen`. No create/edit/link UI, no AI tools yet.
+  a UI: drawer entry "Projects" → `ProjectsListScreen` →
+  `ProjectWorkspaceScreen` (originally read-only; create/edit/link was added
+  later, see "Goal / Project UI" below). No AI tools yet.
 - **Project is a new entity**, not a TaskList. Its parts are linked through
   `project_items`; the workspace is computed, never stored.
 - **Schema v14 (strictly additive):** new tables `projects` (title,
@@ -446,6 +448,22 @@ open questions.
   `ImportService._importOrder` after `notes` and before `goals` (parents
   first), all **update-first-then-insert**; keep-newest uses
   `updateTimeStamp`.
+
+### Goal / Project UI (implemented)
+
+- **Screens:** `GoalsListScreen`, `GoalFormScreen`, `GoalDetailScreen`
+  (milestones: add/edit/delete/reorder/complete; link/unlink tasks and
+  courses, directly or per milestone) in `lib/screen_goals/`;
+  `ProjectFormScreen` plus extended `ProjectsListScreen` (create) and
+  `ProjectWorkspaceScreen` (edit project, add/remove linked items) in
+  `lib/screen_projects/`.
+- **Entry points:** drawer entries "Goals" and "Projects".
+- **Shared pickers / fields:** `lib/shared/entity_picker.dart` +
+  `lib/shared/entity_picker_sources.dart` (searchable `EntityPickerScreen`;
+  loaders for task lists, tasks, notes, goals, calendar events, courses), plus `color_choice_field.dart`, `date_field.dart`,
+  `confirm_dialog.dart`.
+- **New repository method:** `GoalRepository.reorderMilestones` (persists
+  milestone `sortOrder`). No schema change.
 
 ---
 
