@@ -12,6 +12,7 @@ import 'daos/time_interval_dao.dart';
 import 'daos/focus_session_dao.dart';
 import 'daos/note_dao.dart';
 import 'daos/conversation_dao.dart';
+import 'daos/goal_dao.dart';
 import 'device_id_helper.dart' as device_id;
 
 class DatabaseManager {
@@ -35,10 +36,14 @@ class DatabaseManager {
   /// production. This does not affect production code paths in any way — the
   /// [database] getter still opens the on-disk database via [_initDatabase].
   ///
+  /// If [path] is given, that database FILE is opened instead of a fresh
+  /// in-memory one (same version/onCreate/onUpgrade/FK config) — used by
+  /// migration tests to upgrade a DB created at an older schema version.
+  ///
   /// Requires an FFI factory to be configured by the caller (test setup does
   /// `sqfliteFfiInit(); databaseFactory = databaseFactoryFfi;`).
   @visibleForTesting
-  Future<void> resetForTesting({bool inMemory = true}) async {
+  Future<void> resetForTesting({bool inMemory = true, String? path}) async {
     final existing = _database;
     // Null the field first so a concurrent/late [database] getter never hands
     // back a handle that is mid-close. Then best-effort close the old handle.
@@ -51,7 +56,16 @@ class DatabaseManager {
         // in tests and must not abort the reset.
       }
     }
-    if (inMemory) {
+    if (path != null) {
+      _database = await openDatabase(
+        path,
+        version: _schemaVersion,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+        onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
+        singleInstance: false,
+      );
+    } else if (inMemory) {
       // Fresh in-memory database. `singleInstance: false` ensures sqflite does
       // not hand back a cached/closed handle across tests when the whole suite
       // runs in one `flutter test` process (all test files share this
@@ -69,7 +83,7 @@ class DatabaseManager {
 
   /// The current schema version. Kept in one place so the production opener and
   /// the test seam cannot drift apart.
-  static const int _schemaVersion = 12;
+  static const int _schemaVersion = 13;
 
   Future<Database> _initDatabase() async {
     final databasePath = await getDatabasesPath();
@@ -111,6 +125,10 @@ class DatabaseManager {
       // v12: thêm bảng conversations + chat_messages cho lịch sử chat AI
       //     (danh sách/mở lại/đổi tên/xóa cuộc trò chuyện, và tự xóa theo N
       //     ngày). chat_messages tham chiếu conversations với ON DELETE CASCADE.
+      // v13: thêm bảng goals + milestones + goal_links (Mục tiêu / Cột mốc /
+      //     liên kết mục tiêu–task), các index và trigger
+      //     delete_goal_links_of_task (xóa cứng task → xóa liên kết). Hoàn
+      //     toàn bổ sung: không đổi cột của bảng cũ nào.
       version: _schemaVersion,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
@@ -121,9 +139,12 @@ class DatabaseManager {
     'tasklists',
     'tasks',
     'calendar_events',
+    'goals',
   ];
 
   /// Tất cả các bảng dữ liệu (dùng cho export/import và cho migrate deviceId).
+  /// Thứ tự tôn trọng khóa ngoại: cha trước, con sau (goals → milestones →
+  /// goal_links).
   static const List<String> allDataTables = [
     'tasklists',
     'tasks',
@@ -132,6 +153,9 @@ class DatabaseManager {
     'timeintervals',
     'focus_sessions',
     'notes',
+    'goals',
+    'milestones',
+    'goal_links',
   ];
 
   /// Đặt deviceId hiện tại (gọi một lần khi app khởi động). Uỷ thác cho
@@ -256,6 +280,13 @@ class DatabaseManager {
       await ConversationDao.createConversationsTable(db);
       await ConversationDao.createChatMessagesTable(db);
     }
+    if (oldVersion < 13) {
+      // Thêm 3 bảng mới goals + milestones + goal_links, các index và trigger
+      // xóa liên kết khi xóa cứng task. Không đụng tới bảng/cột cũ nào. Bảng
+      // tasks chắc chắn đã tồn tại ở đây (tạo lại ở nhánh v9 phía trên, trước
+      // khi trigger được tạo nên không mất trigger).
+      await GoalDao.createSchema(db);
+    }
   }
 
   /// Tạo các trigger đồng bộ/xóa timeintervals theo tasks (dùng cho cả onCreate
@@ -306,6 +337,8 @@ class DatabaseManager {
     await NoteDao.createTable(db);
     await ConversationDao.createConversationsTable(db);
     await ConversationDao.createChatMessagesTable(db);
+    // Mục tiêu / cột mốc / liên kết (v13). Phải sau TaskDao (trigger trên tasks).
+    await GoalDao.createSchema(db);
 
 
     // Run the CREATE {tasks} TABLE statement on the database.
@@ -469,6 +502,7 @@ class DatabaseManager {
     await collect(TrashedItemType.taskList);
     await collect(TrashedItemType.task);
     await collect(TrashedItemType.calendarEvent);
+    await collect(TrashedItemType.goal);
 
     result.sort((a, b) => b.deletedAt.compareTo(a.deletedAt));
     return result;
@@ -532,6 +566,7 @@ class DatabaseManager {
     await collect(ArchivedItemType.taskList);
     await collect(ArchivedItemType.task);
     await collect(ArchivedItemType.calendarEvent);
+    await collect(ArchivedItemType.goal);
 
     result.sort((a, b) => b.archivedAt.compareTo(a.archivedAt));
     return result;
@@ -570,7 +605,31 @@ class DatabaseManager {
       for (final entry in row.entries)
         if (columns.contains(entry.key)) entry.key: entry.value,
     };
-    await db.insert(
+    await _writeImportRow(db, table, filtered);
+  }
+
+  /// Các bảng import theo kiểu "update trước, không có thì insert" thay vì
+  /// INSERT OR REPLACE. Lý do: REPLACE = DELETE + INSERT, sẽ kích hoạt
+  /// ON DELETE CASCADE / SET NULL — ghi đè một goal sẽ xóa mất các milestone /
+  /// liên kết cục bộ của nó (hoặc làm null milestoneId của liên kết). Không
+  /// dùng `ON CONFLICT DO UPDATE` vì cần SQLite 3.24 (quá mới với vài bản
+  /// Android). Các bảng khác giữ nguyên REPLACE (không đổi hành vi).
+  static const Set<String> _updateFirstImportTables = {
+    'goals',
+    'milestones',
+    'goal_links',
+  };
+
+  /// Ghi một hàng import đã lọc cột vào [table] qua [exec] (db hoặc txn).
+  Future<void> _writeImportRow(DatabaseExecutor exec, String table,
+      Map<String, dynamic> filtered) async {
+    if (_updateFirstImportTables.contains(table)) {
+      final n = await exec.update(table, filtered,
+          where: 'id = ?', whereArgs: [filtered['id']]);
+      if (n == 0) await exec.insert(table, filtered);
+      return;
+    }
+    await exec.insert(
       table,
       filtered,
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -588,11 +647,7 @@ class DatabaseManager {
           for (final entry in row.entries)
             if (columns.contains(entry.key)) entry.key: entry.value,
         };
-        await txn.insert(
-          table,
-          filtered,
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await _writeImportRow(txn, table, filtered);
       }
     });
   }

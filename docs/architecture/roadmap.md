@@ -80,7 +80,7 @@ these features.
 | C2 | Domain boundary cleanup (models → `lib/domain/models/`; domain no longer imports `data/`) | **done** |
 | C3 | Thin application layer + authorized mutation workflows + side-effect coordination | **done** |
 | C4 | Persistence refactor (`DatabaseManager` → per-aggregate DAOs behind a façade) | **done** |
-| C5 | Goal / Plan / Milestone foundations | planned |
+| C5 | Goal / Plan / Milestone foundations | **done** — contract in §6 |
 | C6 | Project Workspace | planned |
 | C7 | Learning system (Course / Module / Lesson / Progress) | planned |
 | C8 | AI foundation hardening (extends the built AI Track) | planned |
@@ -283,6 +283,52 @@ open questions.
 - **Rollback:** proposals transient/reversible; feature flag disables the review.
 - **Open:** DR-a (atomicity when a multi-item accepted batch partially fails);
   DR-b (definition of a "user-fixed" appointment that must never auto-move).
+
+### Phase C5 — Goal / Milestone foundations (contract, implemented)
+
+- **Scope delivered:** domain models (`Goal`, `Milestone`, `GoalLink` in
+  `lib/domain/models/`), one aggregate `GoalDao`, `GoalRepository` +
+  `SqliteGoalRepository`, pure `GoalProgressService`, DI in `app.dart`,
+  Trash/Archive + backup/import integration, tests. No goal UI, no AI tools.
+- **No separate Plan entity.** A goal's "plan" = its milestones + linked items.
+- **Schema v13 (strictly additive):** new tables `goals` (soft-delete +
+  archive columns, `status` TEXT active/paused/completed/abandoned),
+  `milestones`, `goal_links` (`goalId`, nullable `milestoneId`, `entityType`,
+  `entityId`, `createdAt`, `deviceId`; `UNIQUE (entityType, entityId, goalId)`)
+  plus indexes, and trigger `delete_goal_links_of_task` (AFTER DELETE ON tasks →
+  removes `entityType='task'` links; also fires when a tasklist hard delete
+  cascades into tasks). `GoalDao.createSchema` is the single SQL source for
+  both `_onCreate` and the `_onUpgrade` `oldVersion < 13` branch. No existing
+  table/column changed.
+- **FK rules:** `goalId` → `goals` `ON DELETE CASCADE` (milestones and links);
+  `goal_links.milestoneId` → `milestones` `ON DELETE SET NULL` (deleting a
+  milestone degrades its links to direct goal links instead of detaching the
+  task from the goal).
+- **Extensible links:** `entityType` is a free TEXT (`GoalEntityType.task =
+  'task'` today); `'calendarEvent'`, `'habit'`, `'note'` can be added later
+  without migration, and unknown types never break `fromMap`.
+- **Progress is derived, never stored** (no manual override):
+  - "Live" linked task = linked task visible in `TaskRepository.getTasks()`
+    (exists, not trashed, not archived); missing/trashed/archived links are
+    ignored in numerator and denominator; duplicate ids count once.
+  - Milestone: `isCompleted` flag → 1.0; else live completed / live total
+    (0 live → 0.0). Done iff ratio == 1.0. The service never writes the flag.
+  - Goal: `status == completed` → 1.0; else with ≥1 milestone → done
+    milestones / total milestones (direct links reported, not counted); with
+    0 milestones → live completed direct-linked tasks / live direct-linked
+    tasks (0 live → 0.0).
+- **Trash / Archive:** goals join `_softDeleteTables` and the
+  `TrashedItemType` / `ArchivedItemType` enums. Goal soft-delete/archive do
+  **not** cascade (milestones/links are only reachable through the goal and
+  reappear on restore/unarchive); hard delete (permanent delete, empty trash,
+  expired purge) cascades via FK. Task soft-delete/archive keeps its links.
+- **Backup / import:** `goals`, `milestones`, `goal_links` appended to
+  `allDataTables` and `ImportService._importOrder` (parents first). Import of
+  these 3 tables is **update-first-then-insert** (not `INSERT OR REPLACE`,
+  which would DELETE + INSERT and fire the CASCADE / SET NULL on local
+  children); other tables keep REPLACE.
+- **Known gap (pre-existing, out of scope):** `ImportService._importOrder`
+  still lacks `calendar_events` / `notes`.
 
 ---
 

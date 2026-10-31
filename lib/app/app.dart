@@ -19,6 +19,7 @@ import 'package:my_time_manager/data/repositories/sqlite_trash_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_archive_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_event_repository.dart';
 import 'package:my_time_manager/data/repositories/sqlite_focus_repository.dart';
+import 'package:my_time_manager/data/repositories/sqlite_goal_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/domain/repositories/time_interval_repository.dart';
@@ -28,6 +29,8 @@ import 'package:my_time_manager/domain/repositories/conversation_repository.dart
 import 'package:my_time_manager/domain/repositories/trash_repository.dart';
 import 'package:my_time_manager/domain/repositories/archive_repository.dart';
 import 'package:my_time_manager/domain/repositories/event_repository.dart';
+import 'package:my_time_manager/domain/repositories/goal_repository.dart';
+import 'package:my_time_manager/domain/services/goal_progress_service.dart';
 import 'package:my_time_manager/domain/services/task_completion_service.dart';
 import 'package:my_time_manager/domain/services/recurrence_service.dart';
 import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
@@ -107,6 +110,14 @@ class App extends StatelessWidget {
         ),
         RepositoryProvider<EventRepository>(
           create: (_) => SqliteEventRepository(),
+        ),
+        // Mục tiêu / cột mốc (Core Track C5) + tiến độ suy ra (không lưu).
+        RepositoryProvider<GoalRepository>(
+          create: (_) => SqliteGoalRepository(),
+        ),
+        RepositoryProvider<GoalProgressService>(
+          create: (context) => GoalProgressService(
+              context.read<GoalRepository>(), context.read<TaskRepository>()),
         ),
         // FocusRepository luôn được cung cấp cho toàn app (local-first). Lớp sync
         // Firestore chỉ bật khi Firebase sẵn sàng; nếu không thì dùng NoOp (chạy

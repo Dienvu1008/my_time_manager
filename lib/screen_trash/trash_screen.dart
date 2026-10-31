@@ -45,6 +45,8 @@ class _TrashScreenState extends State<TrashScreen> {
         return Icons.check_circle_outline;
       case TrashedItemType.calendarEvent:
         return Icons.event_outlined;
+      case TrashedItemType.goal:
+        return Icons.flag_outlined;
     }
   }
 

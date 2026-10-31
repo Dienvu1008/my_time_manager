@@ -45,6 +45,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
         return Icons.check_circle_outline;
       case ArchivedItemType.calendarEvent:
         return Icons.event_outlined;
+      case ArchivedItemType.goal:
+        return Icons.flag_outlined;
     }
   }
 

@@ -177,6 +177,9 @@ class BackupService {
       'events': 'Sự kiện',
       'timeintervals': 'Khoảng thời gian đã lên lịch',
       'focus_sessions': 'Phiên tập trung',
+      'goals': 'Mục tiêu',
+      'milestones': 'Cột mốc',
+      'goal_links': 'Liên kết mục tiêu',
     };
 
     for (final table in DatabaseManager.allDataTables) {
