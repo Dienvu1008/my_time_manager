@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../screen_ai/ai_assistant_entry.dart';
 import '../../screen_ai/ai_settings_page.dart';
+import '../../screen_goals/goals_list_screen.dart';
 import '../../screen_learning/courses_list_screen.dart';
 import '../../screen_projects/projects_list_screen.dart';
 import '../../utils/constants.dart';
@@ -68,6 +69,19 @@ class MyAppDrawer extends StatelessWidget {
                   _selectedDrawerItemIndex == ScreenSelected.notesScreen.value,
               onTap: () =>
                   _onDrawerItemTapped(ScreenSelected.notesScreen.value)),
+          // Mục tiêu (Core Track C5 UI) — route đẩy giống Dự án.
+          ListTile(
+            leading: const Icon(Icons.flag_outlined),
+            title: Text(localizations.goals),
+            onTap: () {
+              Navigator.of(context).pop(); // đóng drawer
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const GoalsListScreen(),
+                ),
+              );
+            },
+          ),
           // Dự án (Core Track C6) — mở dạng route đẩy (giống AI Assistant) nên
           // không đụng tới bộ chuyển màn theo index của Home.
           ListTile(

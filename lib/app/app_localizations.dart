@@ -2230,6 +2230,560 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- Goals (UI) ---
+
+  String get goals {
+    return {
+      'en': 'Goals',
+      'vi': 'Mục tiêu',
+      'de': 'Ziele',
+      'cs': 'Cíle',
+      'es': 'Objetivos',
+      'fr': 'Objectifs',
+      'it': 'Obiettivi',
+      'ja': '目標',
+      'ko': '목표',
+      'no': 'Mål',
+      'ru': 'Цели',
+      'sv': 'Mål',
+      'zh': '目标',
+    }[locale.languageCode]!;
+  }
+
+  String get noGoalsYet {
+    return {
+      'en': 'No goals yet',
+      'vi': 'Chưa có mục tiêu nào',
+      'de': 'Noch keine Ziele',
+      'cs': 'Zatím žádné cíle',
+      'es': 'Aún no hay objetivos',
+      'fr': 'Aucun objectif pour l\'instant',
+      'it': 'Ancora nessun obiettivo',
+      'ja': '目標はまだありません',
+      'ko': '아직 목표가 없습니다',
+      'no': 'Ingen mål ennå',
+      'ru': 'Целей пока нет',
+      'sv': 'Inga mål ännu',
+      'zh': '暂无目标',
+    }[locale.languageCode]!;
+  }
+
+  String get noGoalsHint {
+    return {
+      'en': 'Tap + to create your first goal.',
+      'vi': 'Nhấn + để tạo mục tiêu đầu tiên.',
+      'de': 'Tippe auf +, um dein erstes Ziel zu erstellen.',
+      'cs': 'Klepnutím na + vytvoříte svůj první cíl.',
+      'es': 'Toca + para crear tu primer objetivo.',
+      'fr': 'Appuyez sur + pour créer votre premier objectif.',
+      'it': 'Tocca + per creare il tuo primo obiettivo.',
+      'ja': '+ をタップして最初の目標を作成します。',
+      'ko': '+를 눌러 첫 목표를 만드세요.',
+      'no': 'Trykk på + for å opprette ditt første mål.',
+      'ru': 'Нажмите +, чтобы создать первую цель.',
+      'sv': 'Tryck på + för att skapa ditt första mål.',
+      'zh': '点击 + 创建第一个目标。',
+    }[locale.languageCode]!;
+  }
+
+  String get noGoalsForFilter {
+    return {
+      'en': 'No goals with this status',
+      'vi': 'Không có mục tiêu nào ở trạng thái này',
+      'de': 'Keine Ziele mit diesem Status',
+      'cs': 'Žádné cíle s tímto stavem',
+      'es': 'No hay objetivos con este estado',
+      'fr': 'Aucun objectif avec ce statut',
+      'it': 'Nessun obiettivo con questo stato',
+      'ja': 'このステータスの目標はありません',
+      'ko': '이 상태의 목표가 없습니다',
+      'no': 'Ingen mål med denne statusen',
+      'ru': 'Нет целей с этим статусом',
+      'sv': 'Inga mål med denna status',
+      'zh': '没有此状态的目标',
+    }[locale.languageCode]!;
+  }
+
+  String get newGoal {
+    return {
+      'en': 'New goal',
+      'vi': 'Mục tiêu mới',
+      'de': 'Neues Ziel',
+      'cs': 'Nový cíl',
+      'es': 'Nuevo objetivo',
+      'fr': 'Nouvel objectif',
+      'it': 'Nuovo obiettivo',
+      'ja': '新しい目標',
+      'ko': '새 목표',
+      'no': 'Nytt mål',
+      'ru': 'Новая цель',
+      'sv': 'Nytt mål',
+      'zh': '新建目标',
+    }[locale.languageCode]!;
+  }
+
+  String get editGoal {
+    return {
+      'en': 'Edit goal',
+      'vi': 'Sửa mục tiêu',
+      'de': 'Ziel bearbeiten',
+      'cs': 'Upravit cíl',
+      'es': 'Editar objetivo',
+      'fr': 'Modifier l\'objectif',
+      'it': 'Modifica obiettivo',
+      'ja': '目標を編集',
+      'ko': '목표 편집',
+      'no': 'Rediger mål',
+      'ru': 'Изменить цель',
+      'sv': 'Redigera mål',
+      'zh': '编辑目标',
+    }[locale.languageCode]!;
+  }
+
+  String get goalNotFound {
+    return {
+      'en': 'Goal not found',
+      'vi': 'Không tìm thấy mục tiêu',
+      'de': 'Ziel nicht gefunden',
+      'cs': 'Cíl nenalezen',
+      'es': 'Objetivo no encontrado',
+      'fr': 'Objectif introuvable',
+      'it': 'Obiettivo non trovato',
+      'ja': '目標が見つかりません',
+      'ko': '목표를 찾을 수 없습니다',
+      'no': 'Fant ikke målet',
+      'ru': 'Цель не найдена',
+      'sv': 'Målet hittades inte',
+      'zh': '未找到目标',
+    }[locale.languageCode]!;
+  }
+
+  String get goalStatus {
+    return {
+      'en': 'Status',
+      'vi': 'Trạng thái',
+      'de': 'Status',
+      'cs': 'Stav',
+      'es': 'Estado',
+      'fr': 'Statut',
+      'it': 'Stato',
+      'ja': 'ステータス',
+      'ko': '상태',
+      'no': 'Status',
+      'ru': 'Статус',
+      'sv': 'Status',
+      'zh': '状态',
+    }[locale.languageCode]!;
+  }
+
+  String get goalStatusActive {
+    return {
+      'en': 'Active',
+      'vi': 'Đang thực hiện',
+      'de': 'Aktiv',
+      'cs': 'Aktivní',
+      'es': 'Activo',
+      'fr': 'Actif',
+      'it': 'Attivo',
+      'ja': '進行中',
+      'ko': '진행 중',
+      'no': 'Aktiv',
+      'ru': 'Активна',
+      'sv': 'Aktiv',
+      'zh': '进行中',
+    }[locale.languageCode]!;
+  }
+
+  String get goalStatusPaused {
+    return {
+      'en': 'Paused',
+      'vi': 'Tạm dừng',
+      'de': 'Pausiert',
+      'cs': 'Pozastaveno',
+      'es': 'En pausa',
+      'fr': 'En pause',
+      'it': 'In pausa',
+      'ja': '一時停止',
+      'ko': '일시 중지',
+      'no': 'Satt på pause',
+      'ru': 'Приостановлена',
+      'sv': 'Pausad',
+      'zh': '已暂停',
+    }[locale.languageCode]!;
+  }
+
+  String get goalStatusCompleted {
+    return {
+      'en': 'Completed',
+      'vi': 'Đã hoàn thành',
+      'de': 'Abgeschlossen',
+      'cs': 'Dokončeno',
+      'es': 'Completado',
+      'fr': 'Terminé',
+      'it': 'Completato',
+      'ja': '完了',
+      'ko': '완료',
+      'no': 'Fullført',
+      'ru': 'Выполнена',
+      'sv': 'Slutförd',
+      'zh': '已完成',
+    }[locale.languageCode]!;
+  }
+
+  String get goalStatusAbandoned {
+    return {
+      'en': 'Abandoned',
+      'vi': 'Đã bỏ',
+      'de': 'Aufgegeben',
+      'cs': 'Opuštěno',
+      'es': 'Abandonado',
+      'fr': 'Abandonné',
+      'it': 'Abbandonato',
+      'ja': '断念',
+      'ko': '포기함',
+      'no': 'Forlatt',
+      'ru': 'Заброшена',
+      'sv': 'Övergiven',
+      'zh': '已放弃',
+    }[locale.languageCode]!;
+  }
+
+  String get goalTargetDate {
+    return {
+      'en': 'Target date',
+      'vi': 'Ngày mục tiêu',
+      'de': 'Zieldatum',
+      'cs': 'Cílové datum',
+      'es': 'Fecha objetivo',
+      'fr': 'Date cible',
+      'it': 'Data obiettivo',
+      'ja': '目標日',
+      'ko': '목표 날짜',
+      'no': 'Måldato',
+      'ru': 'Целевая дата',
+      'sv': 'Måldatum',
+      'zh': '目标日期',
+    }[locale.languageCode]!;
+  }
+
+  String get goalFilterAll {
+    return {
+      'en': 'All',
+      'vi': 'Tất cả',
+      'de': 'Alle',
+      'cs': 'Vše',
+      'es': 'Todos',
+      'fr': 'Tous',
+      'it': 'Tutti',
+      'ja': 'すべて',
+      'ko': '전체',
+      'no': 'Alle',
+      'ru': 'Все',
+      'sv': 'Alla',
+      'zh': '全部',
+    }[locale.languageCode]!;
+  }
+
+  String get goalMilestones {
+    return {
+      'en': 'Milestones',
+      'vi': 'Cột mốc',
+      'de': 'Meilensteine',
+      'cs': 'Milníky',
+      'es': 'Hitos',
+      'fr': 'Jalons',
+      'it': 'Traguardi',
+      'ja': 'マイルストーン',
+      'ko': '마일스톤',
+      'no': 'Milepæler',
+      'ru': 'Этапы',
+      'sv': 'Milstolpar',
+      'zh': '里程碑',
+    }[locale.languageCode]!;
+  }
+
+  String get noMilestonesYet {
+    return {
+      'en': 'No milestones yet',
+      'vi': 'Chưa có cột mốc nào',
+      'de': 'Noch keine Meilensteine',
+      'cs': 'Zatím žádné milníky',
+      'es': 'Aún no hay hitos',
+      'fr': 'Aucun jalon pour l\'instant',
+      'it': 'Ancora nessun traguardo',
+      'ja': 'マイルストーンはまだありません',
+      'ko': '아직 마일스톤이 없습니다',
+      'no': 'Ingen milepæler ennå',
+      'ru': 'Этапов пока нет',
+      'sv': 'Inga milstolpar ännu',
+      'zh': '暂无里程碑',
+    }[locale.languageCode]!;
+  }
+
+  String get addMilestone {
+    return {
+      'en': 'Add milestone',
+      'vi': 'Thêm cột mốc',
+      'de': 'Meilenstein hinzufügen',
+      'cs': 'Přidat milník',
+      'es': 'Añadir hito',
+      'fr': 'Ajouter un jalon',
+      'it': 'Aggiungi traguardo',
+      'ja': 'マイルストーンを追加',
+      'ko': '마일스톤 추가',
+      'no': 'Legg til milepæl',
+      'ru': 'Добавить этап',
+      'sv': 'Lägg till milstolpe',
+      'zh': '添加里程碑',
+    }[locale.languageCode]!;
+  }
+
+  String get newMilestone {
+    return {
+      'en': 'New milestone',
+      'vi': 'Cột mốc mới',
+      'de': 'Neuer Meilenstein',
+      'cs': 'Nový milník',
+      'es': 'Nuevo hito',
+      'fr': 'Nouveau jalon',
+      'it': 'Nuovo traguardo',
+      'ja': '新しいマイルストーン',
+      'ko': '새 마일스톤',
+      'no': 'Ny milepæl',
+      'ru': 'Новый этап',
+      'sv': 'Ny milstolpe',
+      'zh': '新建里程碑',
+    }[locale.languageCode]!;
+  }
+
+  String get editMilestone {
+    return {
+      'en': 'Edit milestone',
+      'vi': 'Sửa cột mốc',
+      'de': 'Meilenstein bearbeiten',
+      'cs': 'Upravit milník',
+      'es': 'Editar hito',
+      'fr': 'Modifier le jalon',
+      'it': 'Modifica traguardo',
+      'ja': 'マイルストーンを編集',
+      'ko': '마일스톤 편집',
+      'no': 'Rediger milepæl',
+      'ru': 'Изменить этап',
+      'sv': 'Redigera milstolpe',
+      'zh': '编辑里程碑',
+    }[locale.languageCode]!;
+  }
+
+  String get milestoneDueDate {
+    return {
+      'en': 'Due',
+      'vi': 'Hạn',
+      'de': 'Fällig',
+      'cs': 'Termín',
+      'es': 'Vence',
+      'fr': 'Échéance',
+      'it': 'Scadenza',
+      'ja': '期限',
+      'ko': '마감',
+      'no': 'Frist',
+      'ru': 'Срок',
+      'sv': 'Förfaller',
+      'zh': '截止',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmDeleteMilestone {
+    return {
+      'en':
+          'Delete this milestone? Its linked items stay linked directly to the goal.',
+      'vi':
+          'Xóa cột mốc này? Các mục đã gắn vẫn được gắn trực tiếp với mục tiêu.',
+      'de':
+          'Diesen Meilenstein löschen? Verknüpfte Elemente bleiben direkt mit dem Ziel verknüpft.',
+      'cs':
+          'Smazat tento milník? Propojené položky zůstanou propojené přímo s cílem.',
+      'es':
+          '¿Eliminar este hito? Sus elementos vinculados seguirán vinculados directamente al objetivo.',
+      'fr':
+          'Supprimer ce jalon ? Ses éléments liés resteront liés directement à l\'objectif.',
+      'it':
+          'Eliminare questo traguardo? Gli elementi collegati resteranno collegati direttamente all\'obiettivo.',
+      'ja': 'このマイルストーンを削除しますか？リンクされた項目は目標に直接リンクされたままになります。',
+      'ko': '이 마일스톤을 삭제할까요? 연결된 항목은 목표에 직접 연결된 상태로 유지됩니다.',
+      'no':
+          'Slette denne milepælen? Koblede elementer forblir koblet direkte til målet.',
+      'ru':
+          'Удалить этот этап? Связанные элементы останутся связанными напрямую с целью.',
+      'sv':
+          'Ta bort denna milstolpe? Länkade objekt förblir länkade direkt till målet.',
+      'zh': '删除此里程碑？其关联项将保持直接关联到目标。',
+    }[locale.languageCode]!;
+  }
+
+  String get goalMilestonesDone {
+    return {
+      'en': 'Milestones done',
+      'vi': 'Cột mốc đã xong',
+      'de': 'Erledigte Meilensteine',
+      'cs': 'Dokončené milníky',
+      'es': 'Hitos completados',
+      'fr': 'Jalons terminés',
+      'it': 'Traguardi completati',
+      'ja': '完了したマイルストーン',
+      'ko': '완료된 마일스톤',
+      'no': 'Fullførte milepæler',
+      'ru': 'Выполнено этапов',
+      'sv': 'Klara milstolpar',
+      'zh': '已完成里程碑',
+    }[locale.languageCode]!;
+  }
+
+  String get goalLinkTask {
+    return {
+      'en': 'Link task',
+      'vi': 'Gắn công việc',
+      'de': 'Aufgabe verknüpfen',
+      'cs': 'Propojit úkol',
+      'es': 'Vincular tarea',
+      'fr': 'Lier une tâche',
+      'it': 'Collega attività',
+      'ja': 'タスクをリンク',
+      'ko': '작업 연결',
+      'no': 'Koble oppgave',
+      'ru': 'Связать задачу',
+      'sv': 'Länka uppgift',
+      'zh': '关联任务',
+    }[locale.languageCode]!;
+  }
+
+  String get goalLinkCourse {
+    return {
+      'en': 'Link course',
+      'vi': 'Gắn khóa học',
+      'de': 'Kurs verknüpfen',
+      'cs': 'Propojit kurz',
+      'es': 'Vincular curso',
+      'fr': 'Lier un cours',
+      'it': 'Collega corso',
+      'ja': 'コースをリンク',
+      'ko': '강좌 연결',
+      'no': 'Koble kurs',
+      'ru': 'Связать курс',
+      'sv': 'Länka kurs',
+      'zh': '关联课程',
+    }[locale.languageCode]!;
+  }
+
+  String get goalLinkTarget {
+    return {
+      'en': 'Link to',
+      'vi': 'Gắn vào',
+      'de': 'Verknüpfen mit',
+      'cs': 'Propojit s',
+      'es': 'Vincular a',
+      'fr': 'Lier à',
+      'it': 'Collega a',
+      'ja': 'リンク先',
+      'ko': '연결 대상',
+      'no': 'Koble til',
+      'ru': 'Связать с',
+      'sv': 'Länka till',
+      'zh': '关联到',
+    }[locale.languageCode]!;
+  }
+
+  String get goalLinkDirect {
+    return {
+      'en': 'Directly to the goal',
+      'vi': 'Trực tiếp với mục tiêu',
+      'de': 'Direkt mit dem Ziel',
+      'cs': 'Přímo s cílem',
+      'es': 'Directamente al objetivo',
+      'fr': 'Directement à l\'objectif',
+      'it': 'Direttamente all\'obiettivo',
+      'ja': '目標に直接',
+      'ko': '목표에 직접',
+      'no': 'Direkte til målet',
+      'ru': 'Напрямую к цели',
+      'sv': 'Direkt till målet',
+      'zh': '直接关联到目标',
+    }[locale.languageCode]!;
+  }
+
+  String get goalUnlink {
+    return {
+      'en': 'Unlink',
+      'vi': 'Bỏ gắn',
+      'de': 'Verknüpfung lösen',
+      'cs': 'Zrušit propojení',
+      'es': 'Desvincular',
+      'fr': 'Délier',
+      'it': 'Scollega',
+      'ja': 'リンク解除',
+      'ko': '연결 해제',
+      'no': 'Fjern kobling',
+      'ru': 'Отвязать',
+      'sv': 'Ta bort länk',
+      'zh': '取消关联',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmUnlink {
+    return {
+      'en': 'Remove this link? The item itself is not deleted.',
+      'vi': 'Bỏ liên kết này? Bản thân mục đó không bị xóa.',
+      'de':
+          'Diese Verknüpfung entfernen? Das Element selbst wird nicht gelöscht.',
+      'cs': 'Odebrat toto propojení? Samotná položka nebude smazána.',
+      'es': '¿Quitar este vínculo? El elemento en sí no se elimina.',
+      'fr': 'Supprimer ce lien ? L\'élément lui-même n\'est pas supprimé.',
+      'it':
+          'Rimuovere questo collegamento? L\'elemento stesso non viene eliminato.',
+      'ja': 'このリンクを解除しますか？項目自体は削除されません。',
+      'ko': '이 연결을 제거할까요? 항목 자체는 삭제되지 않습니다.',
+      'no': 'Fjerne denne koblingen? Selve elementet slettes ikke.',
+      'ru': 'Удалить эту связь? Сам элемент не удаляется.',
+      'sv': 'Ta bort denna länk? Själva objektet tas inte bort.',
+      'zh': '移除此关联？项目本身不会被删除。',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmArchiveGoal {
+    return {
+      'en': 'Archive this goal?',
+      'vi': 'Lưu trữ mục tiêu này?',
+      'de': 'Dieses Ziel archivieren?',
+      'cs': 'Archivovat tento cíl?',
+      'es': '¿Archivar este objetivo?',
+      'fr': 'Archiver cet objectif ?',
+      'it': 'Archiviare questo obiettivo?',
+      'ja': 'この目標をアーカイブしますか？',
+      'ko': '이 목표를 보관할까요?',
+      'no': 'Arkivere dette målet?',
+      'ru': 'Архивировать эту цель?',
+      'sv': 'Arkivera detta mål?',
+      'zh': '归档此目标？',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmTrashGoal {
+    return {
+      'en': 'Move this goal to trash?',
+      'vi': 'Chuyển mục tiêu này vào thùng rác?',
+      'de': 'Dieses Ziel in den Papierkorb verschieben?',
+      'cs': 'Přesunout tento cíl do koše?',
+      'es': '¿Mover este objetivo a la papelera?',
+      'fr': 'Mettre cet objectif à la corbeille ?',
+      'it': 'Spostare questo obiettivo nel cestino?',
+      'ja': 'この目標をゴミ箱に移動しますか？',
+      'ko': '이 목표를 휴지통으로 이동할까요?',
+      'no': 'Flytte dette målet til papirkurven?',
+      'ru': 'Переместить эту цель в корзину?',
+      'sv': 'Flytta detta mål till papperskorgen?',
+      'zh': '将此目标移到回收站？',
+    }[locale.languageCode]!;
+  }
+
   String get brightness {
     return {
       'en': 'Brightness',
