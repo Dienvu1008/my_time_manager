@@ -16,13 +16,17 @@ class ProjectEntityType {
   static const String goal = 'goal';
   static const String calendarEvent = 'calendarEvent';
 
-  /// Các loại được hỗ trợ ở C6.
+  /// Khóa học (C7).
+  static const String course = 'course';
+
+  /// Các loại được hỗ trợ (C6 + 'course' từ C7).
   static const List<String> supported = [
     taskList,
     task,
     note,
     goal,
     calendarEvent,
+    course,
   ];
 }
 

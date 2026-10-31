@@ -2,6 +2,7 @@ import '../../domain/repositories/trash_repository.dart';
 import '../../screen_trash/model_trashed_item.dart';
 import '../database/daos/calendar_event_dao.dart';
 import '../database/daos/goal_dao.dart';
+import '../database/daos/learning_dao.dart';
 import '../database/daos/project_dao.dart';
 import '../database/daos/task_dao.dart';
 import '../database/daos/task_list_dao.dart';
@@ -22,7 +23,8 @@ class SqliteTrashRepository implements TrashRepository {
         _tasks = TaskDao(() => db.database),
         _calendarEvents = CalendarEventDao(() => db.database),
         _goals = GoalDao(() => db.database),
-        _projects = ProjectDao(() => db.database);
+        _projects = ProjectDao(() => db.database),
+        _learning = LearningDao(() => db.database);
 
   final DatabaseManager _db;
   final TaskListDao _taskLists;
@@ -30,6 +32,7 @@ class SqliteTrashRepository implements TrashRepository {
   final CalendarEventDao _calendarEvents;
   final GoalDao _goals;
   final ProjectDao _projects;
+  final LearningDao _learning;
 
   @override
   Future<List<TrashedItem>> getTrashedItems() => _db.trashedItems();
@@ -47,6 +50,8 @@ class SqliteTrashRepository implements TrashRepository {
         return _goals.restore(item.id);
       case TrashedItemType.project:
         return _projects.restore(item.id);
+      case TrashedItemType.course:
+        return _learning.restore(item.id);
     }
   }
 
@@ -63,6 +68,8 @@ class SqliteTrashRepository implements TrashRepository {
         return _goals.permanentlyDelete(item.id);
       case TrashedItemType.project:
         return _projects.permanentlyDelete(item.id);
+      case TrashedItemType.course:
+        return _learning.permanentlyDelete(item.id);
     }
   }
 

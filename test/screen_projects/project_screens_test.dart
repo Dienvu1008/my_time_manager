@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/domain/models/model_calendar_event.dart';
+import 'package:my_time_manager/domain/models/model_course.dart';
 import 'package:my_time_manager/domain/models/model_goal.dart';
 import 'package:my_time_manager/domain/models/model_list.dart';
 import 'package:my_time_manager/domain/models/model_note.dart';
@@ -11,6 +12,7 @@ import 'package:my_time_manager/domain/models/model_project.dart';
 import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/domain/repositories/project_repository.dart';
 import 'package:my_time_manager/domain/services/goal_progress_service.dart';
+import 'package:my_time_manager/domain/services/learning_progress_service.dart';
 import 'package:my_time_manager/domain/services/project_workspace_service.dart';
 import 'package:my_time_manager/screen_projects/project_workspace_screen.dart';
 import 'package:my_time_manager/screen_projects/projects_list_screen.dart';
@@ -125,6 +127,22 @@ void main() {
             ),
           ),
         ],
+        courses: [
+          WorkspaceCourse(
+            course: Course(id: 'c', title: 'Flutter course'),
+            progress: const CourseProgress(
+              courseId: 'c',
+              totalLessons: 4,
+              completedLessons: 1,
+              inProgressLessons: 0,
+              totalModules: 1,
+              doneModules: 0,
+              ratio: 0.25,
+              isDone: false,
+              modules: [],
+            ),
+          ),
+        ],
         calendarEvents: [
           CalendarEvent(
             id: 'e',
@@ -163,13 +181,16 @@ void main() {
       await see('Goals');
       await see('Launch goal');
       await see('50%');
+      await see('Courses');
+      await see('Flutter course');
+      await see('25%');
       await see('Calendar events');
       await see('Kickoff');
       await see('01/05/2026');
       expect(find.text('Nothing linked yet'), findsNothing);
     });
 
-    testWidgets('empty project shows the empty text in all 5 sections',
+    testWidgets('empty project shows the empty text in all 6 sections',
         (tester) async {
       // Use a tall surface so every section is built.
       await tester.binding.setSurfaceSize(const Size(800, 2000));
@@ -179,7 +200,7 @@ void main() {
         workspace: ProjectWorkspace(project: Project(id: 'p', title: 'P')),
       ));
       await tester.pumpAndSettle();
-      expect(find.text('Nothing linked yet'), findsNWidgets(5));
+      expect(find.text('Nothing linked yet'), findsNWidgets(6));
       expect(find.text('Tasks completed: 0/0'), findsOneWidget);
     });
 

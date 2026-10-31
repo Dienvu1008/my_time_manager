@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../domain/models/model_note.dart';
 import '../domain/repositories/note_repository.dart';
+import '../shared/appflowy_content_editor.dart';
 
 /// Màn soạn thảo một ghi chú bằng trình soạn thảo block appflowy_editor.
 ///
@@ -126,18 +127,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         ],
       ),
       body: SafeArea(
-        child: AppFlowyEditor(
-          editorState: _editorState,
-          editorStyle: EditorStyle.desktop(
-            cursorColor: Theme.of(context).colorScheme.primary,
-            selectionColor:
-                Theme.of(context).colorScheme.primary.withOpacity(0.2),
-            textStyleConfiguration: TextStyleConfiguration(
-              text: Theme.of(context).textTheme.bodyMedium ??
-                  const TextStyle(fontSize: 16),
-            ),
-          ),
-        ),
+        child: AppFlowyContentEditor(editorState: _editorState),
       ),
     );
   }

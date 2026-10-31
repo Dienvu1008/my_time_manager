@@ -70,6 +70,12 @@ class _FakeGoalRepository implements GoalRepository {
   Future<void> unlink(String linkId) async {}
   @override
   Future<void> unlinkTask(String goalId, String taskId) async {}
+  @override
+  Future<GoalLink> linkCourse(String goalId, String courseId,
+          {String? milestoneId}) =>
+      throw UnimplementedError();
+  @override
+  Future<void> unlinkCourse(String goalId, String courseId) async {}
 }
 
 /// Fake [TaskRepository]: [getTasks] returns the "visible" (live) tasks.
@@ -304,6 +310,31 @@ void main() {
       expect(mp.milestoneId, 'm2');
       expect(mp.totalTasks, 1);
       expect(mp.completedTasks, 0);
+    });
+
+    test('course links (C7) do not count toward goal progress', () async {
+      final g = Goal(id: 'g', title: 'G');
+      final only = Goal(id: 'only', title: 'Only course');
+      goals.goals.addAll({g.id: g, only.id: only});
+      tasks.visible.add(Task(id: 't1', title: 'done', isCompleted: true));
+      GoalLink courseLink(String goalId) => GoalLink(
+          goalId: goalId,
+          entityType: GoalEntityType.course,
+          entityId: 'course1');
+      goals.links.addAll([
+        _taskLink('g', 't1'),
+        courseLink('g'),
+        courseLink('only'),
+      ]);
+
+      final p = (await service.progressOf('g'))!;
+      expect(p.ratio, 1.0);
+      expect(p.directTotalTasks, 1);
+      expect(p.directCompletedTasks, 1);
+
+      final o = (await service.progressOf('only'))!;
+      expect(o.ratio, 0.0);
+      expect(o.directTotalTasks, 0);
     });
   });
 }

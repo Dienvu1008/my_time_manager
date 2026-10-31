@@ -34,6 +34,9 @@ import 'package:my_time_manager/domain/services/goal_progress_service.dart';
 import 'package:my_time_manager/data/repositories/sqlite_project_repository.dart';
 import 'package:my_time_manager/domain/repositories/project_repository.dart';
 import 'package:my_time_manager/domain/services/project_workspace_service.dart';
+import 'package:my_time_manager/data/repositories/sqlite_learning_repository.dart';
+import 'package:my_time_manager/domain/repositories/learning_repository.dart';
+import 'package:my_time_manager/domain/services/learning_progress_service.dart';
 import 'package:my_time_manager/domain/services/task_completion_service.dart';
 import 'package:my_time_manager/domain/services/recurrence_service.dart';
 import 'package:my_time_manager/domain/services/time_interval_progress_service.dart';
@@ -126,6 +129,14 @@ class App extends StatelessWidget {
         RepositoryProvider<ProjectRepository>(
           create: (_) => SqliteProjectRepository(),
         ),
+        // Học tập (Core Track C7). Tiến độ chương/khóa học là giá trị suy ra (không lưu).
+        RepositoryProvider<LearningRepository>(
+          create: (_) => SqliteLearningRepository(),
+        ),
+        RepositoryProvider<LearningProgressService>(
+          create: (context) =>
+              LearningProgressService(context.read<LearningRepository>()),
+        ),
         RepositoryProvider<ProjectWorkspaceService>(
           create: (context) => ProjectWorkspaceService(
             projects: context.read<ProjectRepository>(),
@@ -135,6 +146,8 @@ class App extends StatelessWidget {
             calendar: context.read<CalendarRepository>(),
             goals: context.read<GoalRepository>(),
             goalProgress: context.read<GoalProgressService>(),
+            learning: context.read<LearningRepository>(),
+            learningProgress: context.read<LearningProgressService>(),
           ),
         ),
         // FocusRepository luôn được cung cấp cho toàn app (local-first). Lớp sync

@@ -49,6 +49,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
         return Icons.flag_outlined;
       case ArchivedItemType.project:
         return Icons.workspaces_outlined;
+      case ArchivedItemType.course:
+        return Icons.school_outlined;
     }
   }
 

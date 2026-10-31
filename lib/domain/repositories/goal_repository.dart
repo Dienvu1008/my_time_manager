@@ -89,4 +89,14 @@ abstract class GoalRepository {
 
   /// Remove the link between a goal and a task.
   Future<void> unlinkTask(String goalId, String taskId);
+
+  /// Link a course (Core Track C7) to a goal, optionally under one of its
+  /// milestones. Same upsert / validation rules as [linkTask]. Course progress
+  /// does NOT count toward goal progress (GoalProgressService only counts task
+  /// links); the link is informational.
+  Future<GoalLink> linkCourse(String goalId, String courseId,
+      {String? milestoneId});
+
+  /// Remove the link between a goal and a course.
+  Future<void> unlinkCourse(String goalId, String courseId);
 }

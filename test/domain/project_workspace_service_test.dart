@@ -1,5 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_time_manager/domain/models/model_calendar_event.dart';
+import 'package:my_time_manager/domain/models/model_course.dart';
+import 'package:my_time_manager/domain/models/model_course_module.dart';
+import 'package:my_time_manager/domain/models/model_lesson.dart';
+import 'package:my_time_manager/domain/models/model_lesson_progress.dart';
 import 'package:my_time_manager/domain/models/model_goal.dart';
 import 'package:my_time_manager/domain/models/model_goal_link.dart';
 import 'package:my_time_manager/domain/models/model_list.dart';
@@ -10,11 +14,13 @@ import 'package:my_time_manager/domain/models/model_project_item.dart';
 import 'package:my_time_manager/domain/models/model_task.dart';
 import 'package:my_time_manager/domain/repositories/calendar_repository.dart';
 import 'package:my_time_manager/domain/repositories/goal_repository.dart';
+import 'package:my_time_manager/domain/repositories/learning_repository.dart';
 import 'package:my_time_manager/domain/repositories/note_repository.dart';
 import 'package:my_time_manager/domain/repositories/project_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_list_repository.dart';
 import 'package:my_time_manager/domain/repositories/task_repository.dart';
 import 'package:my_time_manager/domain/services/goal_progress_service.dart';
+import 'package:my_time_manager/domain/services/learning_progress_service.dart';
 import 'package:my_time_manager/domain/services/project_workspace_service.dart';
 
 // In-memory fakes: only the read members used by ProjectWorkspaceService /
@@ -92,6 +98,27 @@ class _FakeGoals implements GoalRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// [all] = every course (any state); [hidden] ids = trashed / archived.
+class _FakeLearning implements LearningRepository {
+  final Map<String, Course> all = {};
+  final Set<String> hidden = {};
+
+  @override
+  Future<List<Course>> getCourses() async =>
+      all.values.where((c) => !hidden.contains(c.id)).toList();
+  @override
+  Future<Course?> getCourse(String id) async => all[id];
+  @override
+  Future<List<CourseModule>> getModules(String courseId) async => const [];
+  @override
+  Future<List<Lesson>> getLessonsOfCourse(String courseId) async => const [];
+  @override
+  Future<List<LessonProgress>> getProgressForCourse(String courseId) async =>
+      const [];
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   late _FakeProjects projects;
   late _FakeTaskLists lists;
@@ -99,6 +126,7 @@ void main() {
   late _FakeNotes notes;
   late _FakeCalendar calendar;
   late _FakeGoals goals;
+  late _FakeLearning learning;
   late ProjectWorkspaceService service;
   late Project project;
   var order = 0;
@@ -110,6 +138,7 @@ void main() {
     notes = _FakeNotes();
     calendar = _FakeCalendar();
     goals = _FakeGoals();
+    learning = _FakeLearning();
     service = ProjectWorkspaceService(
       projects: projects,
       taskLists: lists,
@@ -118,6 +147,8 @@ void main() {
       calendar: calendar,
       goals: goals,
       goalProgress: GoalProgressService(goals, tasks),
+      learning: learning,
+      learningProgress: LearningProgressService(learning),
     );
     project = Project(id: 'p', title: 'P');
     projects.projects[project.id] = project;
@@ -283,6 +314,33 @@ void main() {
     expect(ws.notes.map((n) => n.id), ['n2', 'n1']);
     expect(ws.calendarEvents.map((e) => e.id), ['e2', 'e1']);
     expect(ws.ignoredItemCount, 0);
+  });
+
+  test('live linked course (C7) is listed with derived progress', () async {
+    learning.all['c'] = Course(id: 'c', title: 'Course');
+    link(ProjectEntityType.course, 'c');
+
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.isEmpty, isFalse);
+    expect(ws.courses.map((wc) => wc.course.id), ['c']);
+    expect(ws.courses.single.progress, isNotNull);
+    expect(ws.courses.single.progress!.ratio, 0.0);
+    expect(ws.ignoredItemCount, 0);
+    // Courses do not affect task counts.
+    expect(ws.totalTasks, 0);
+  });
+
+  test('trashed / archived / missing course is ignored and counted',
+      () async {
+    learning.all['hidden'] = Course(id: 'hidden', title: 'Hidden');
+    learning.hidden.add('hidden');
+    link(ProjectEntityType.course, 'hidden');
+    link(ProjectEntityType.course, 'missing');
+
+    final ws = (await service.workspaceOf(project.id))!;
+    expect(ws.courses, isEmpty);
+    expect(ws.isEmpty, isTrue);
+    expect(ws.ignoredItemCount, 2);
   });
 
   test('compute is pure: duplicate items count once', () {

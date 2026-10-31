@@ -1,4 +1,5 @@
 import '../models/model_calendar_event.dart';
+import '../models/model_course.dart';
 import '../models/model_goal.dart';
 import '../models/model_list.dart';
 import '../models/model_note.dart';
@@ -7,11 +8,13 @@ import '../models/model_project_item.dart';
 import '../models/model_task.dart';
 import '../repositories/calendar_repository.dart';
 import '../repositories/goal_repository.dart';
+import '../repositories/learning_repository.dart';
 import '../repositories/note_repository.dart';
 import '../repositories/project_repository.dart';
 import '../repositories/task_list_repository.dart';
 import '../repositories/task_repository.dart';
 import 'goal_progress_service.dart';
+import 'learning_progress_service.dart';
 
 /// A task in a project workspace, with where its membership comes from.
 class WorkspaceTask {
@@ -40,6 +43,14 @@ class WorkspaceGoal {
   final GoalProgress? progress;
 }
 
+/// A course in a project workspace with its DERIVED progress (C7 rules).
+class WorkspaceCourse {
+  const WorkspaceCourse({required this.course, this.progress});
+
+  final Course course;
+  final CourseProgress? progress;
+}
+
 /// Read model of one project (never stored).
 class ProjectWorkspace {
   const ProjectWorkspace({
@@ -49,6 +60,7 @@ class ProjectWorkspace {
     this.notes = const [],
     this.goals = const [],
     this.calendarEvents = const [],
+    this.courses = const [],
     this.ignoredItemCount = 0,
   });
 
@@ -58,6 +70,7 @@ class ProjectWorkspace {
   final List<Note> notes;
   final List<WorkspaceGoal> goals;
   final List<CalendarEvent> calendarEvents;
+  final List<WorkspaceCourse> courses;
 
   /// Items skipped because their entity is missing / trashed / archived or
   /// their entityType is unknown.
@@ -73,7 +86,8 @@ class ProjectWorkspace {
       tasks.isEmpty &&
       notes.isEmpty &&
       goals.isEmpty &&
-      calendarEvents.isEmpty;
+      calendarEvents.isEmpty &&
+      courses.isEmpty;
 }
 
 /// Pure, deterministic read model of a project (Core Track C6):
@@ -95,6 +109,9 @@ class ProjectWorkspace {
 ///   its list appears ONCE with both flags.
 /// - `'goal'` (live) → listed with its [GoalProgress] from
 ///   [GoalProgressService] (passthrough, not recomputed).
+/// - 'course' (live, C7: present in [LearningRepository.getCourses]) →
+///   listed with its [CourseProgress] from [LearningProgressService]
+///   (passthrough). Course progress does not affect the task counts.
 /// - Counts (total/completed tasks, ratio) are derived; nothing is written.
 class ProjectWorkspaceService {
   ProjectWorkspaceService({
@@ -105,13 +122,17 @@ class ProjectWorkspaceService {
     required CalendarRepository calendar,
     required GoalRepository goals,
     required GoalProgressService goalProgress,
+    required LearningRepository learning,
+    required LearningProgressService learningProgress,
   })  : _projects = projects,
         _taskLists = taskLists,
         _tasks = tasks,
         _notes = notes,
         _calendar = calendar,
         _goals = goals,
-        _goalProgress = goalProgress;
+        _goalProgress = goalProgress,
+        _learning = learning,
+        _learningProgress = learningProgress;
 
   final ProjectRepository _projects;
   final TaskListRepository _taskLists;
@@ -120,6 +141,8 @@ class ProjectWorkspaceService {
   final CalendarRepository _calendar;
   final GoalRepository _goals;
   final GoalProgressService _goalProgress;
+  final LearningRepository _learning;
+  final LearningProgressService _learningProgress;
 
   /// Workspace of a project (any state), or null if it does not exist.
   Future<ProjectWorkspace?> workspaceOf(String projectId) async {
@@ -131,6 +154,7 @@ class ProjectWorkspaceService {
     final liveNotes = await _notes.getNotes();
     final liveEvents = await _calendar.getCalendarEvents();
     final liveGoals = await _goals.getGoals();
+    final liveCourses = await _learning.getCourses();
 
     final liveGoalIds = {for (final g in liveGoals) g.id};
     final linkedGoalIds = <String>{
@@ -142,6 +166,17 @@ class ProjectWorkspaceService {
     final progress = <String, GoalProgress?>{
       for (final id in linkedGoalIds) id: await _goalProgress.progressOf(id),
     };
+    final liveCourseIds = {for (final c in liveCourses) c.id};
+    final linkedCourseIds = <String>{
+      for (final i in items)
+        if (i.entityType == ProjectEntityType.course &&
+            liveCourseIds.contains(i.entityId))
+          i.entityId,
+    };
+    final courseProgress = <String, CourseProgress?>{
+      for (final id in linkedCourseIds)
+        id: await _learningProgress.courseProgressOf(id),
+    };
 
     return compute(
       project: project,
@@ -152,6 +187,8 @@ class ProjectWorkspaceService {
       liveEvents: liveEvents,
       liveGoals: liveGoals,
       goalProgress: progress,
+      liveCourses: liveCourses,
+      courseProgress: courseProgress,
     );
   }
 
@@ -165,12 +202,15 @@ class ProjectWorkspaceService {
     required List<CalendarEvent> liveEvents,
     required List<Goal> liveGoals,
     Map<String, GoalProgress?> goalProgress = const {},
+    List<Course> liveCourses = const [],
+    Map<String, CourseProgress?> courseProgress = const {},
   }) {
     final listsById = {for (final l in liveTaskLists) l.id: l};
     final tasksById = {for (final t in liveTasks) t.id: t};
     final notesById = {for (final n in liveNotes) n.id: n};
     final eventsById = {for (final e in liveEvents) e.id: e};
     final goalsById = {for (final g in liveGoals) g.id: g};
+    final coursesById = {for (final c in liveCourses) c.id: c};
 
     final seen = <String>{};
     final taskLists = <TaskList>[];
@@ -179,6 +219,7 @@ class ProjectWorkspaceService {
     final notes = <Note>[];
     final goals = <WorkspaceGoal>[];
     final events = <CalendarEvent>[];
+    final courses = <WorkspaceCourse>[];
     var ignored = 0;
 
     for (final item in items) {
@@ -230,6 +271,15 @@ class ProjectWorkspaceService {
           }
           goals.add(WorkspaceGoal(goal: goal, progress: goalProgress[goal.id]));
           break;
+        case ProjectEntityType.course:
+          final course = coursesById[item.entityId];
+          if (course == null) {
+            ignored++;
+            break;
+          }
+          courses.add(WorkspaceCourse(
+              course: course, progress: courseProgress[course.id]));
+          break;
         default:
           ignored++;
       }
@@ -249,6 +299,7 @@ class ProjectWorkspaceService {
       notes: List.unmodifiable(notes),
       goals: List.unmodifiable(goals),
       calendarEvents: List.unmodifiable(events),
+      courses: List.unmodifiable(courses),
       ignoredItemCount: ignored,
     );
   }

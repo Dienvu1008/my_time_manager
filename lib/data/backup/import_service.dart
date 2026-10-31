@@ -73,6 +73,9 @@ class ImportService {
   /// project_items đặt CUỐI, sau mọi bảng thực thể được import (C6).
   /// `calendar_events` (FK taskListId → tasklists) đặt sau tasklists; `notes`
   /// không có FK. Cả hai không có bảng con qua FK nên giữ kiểu REPLACE.
+  /// Học tập (C7): courses → course_modules → lessons → lesson_progress (cha
+  /// trước), đặt sau `notes` và trước `goals`; cả 4 bảng ghi kiểu update-trước
+  /// (không REPLACE để không cascade xóa cây con cục bộ).
   static const List<String> _importOrder = [
     'tasklists',
     'tasks',
@@ -83,6 +86,10 @@ class ImportService {
     'calendar_events',
     'focus_sessions',
     'notes',
+    'courses',
+    'course_modules',
+    'lessons',
+    'lesson_progress',
     'goals',
     'milestones',
     'goal_links',

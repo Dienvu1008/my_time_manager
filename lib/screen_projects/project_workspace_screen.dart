@@ -155,6 +155,14 @@ class _WorkspaceView extends StatelessWidget {
             for (final g in ws.goals) _goalTile(context, g),
           ],
         ),
+        // Khóa học (Core Track C7) — tiến độ suy ra, chỉ đọc.
+        _Section(
+          title: l.courses,
+          emptyText: l.projectSectionEmpty,
+          children: [
+            for (final c in ws.courses) _courseTile(context, c),
+          ],
+        ),
         _Section(
           title: l.projectSectionEvents,
           emptyText: l.projectSectionEmpty,
@@ -184,6 +192,28 @@ class _WorkspaceView extends StatelessWidget {
             child: LinearProgressIndicator(
               value: ratio,
               semanticsLabel: l.projectGoalProgress,
+              semanticsValue: percent,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(percent, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+
+  Widget _courseTile(BuildContext context, WorkspaceCourse c) {
+    final ratio = c.progress?.ratio ?? 0.0;
+    final percent = '${(ratio * 100).round()}%';
+    return ListTile(
+      leading: const ExcludeSemantics(child: Icon(Icons.school_outlined)),
+      title: Text(_orUntitled(c.course.title)),
+      subtitle: Row(
+        children: [
+          Expanded(
+            child: LinearProgressIndicator(
+              value: ratio,
+              semanticsLabel: l.learningProgress,
               semanticsValue: percent,
             ),
           ),

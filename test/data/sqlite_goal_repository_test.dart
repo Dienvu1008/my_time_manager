@@ -266,6 +266,27 @@ void main() {
       expect(await goals.getLinks(g.id), isEmpty);
     });
 
+    test('linkCourse is an upsert; unlinkCourse removes it (C7)', () async {
+      final g = Goal(title: 'G');
+      await goals.createGoal(g);
+      final m = Milestone(goalId: g.id, title: 'M');
+      await goals.createMilestone(m);
+
+      final first = await goals.linkCourse(g.id, 'course1');
+      final second = await goals.linkCourse(g.id, 'course1', milestoneId: m.id);
+      expect(second.id, first.id);
+      final found =
+          await goals.getLinksForEntity(GoalEntityType.course, 'course1');
+      expect(found.single.entityType, 'course');
+      expect(found.single.milestoneId, m.id);
+      await expectLater(
+          goals.linkCourse(g.id, 'course1', milestoneId: 'missing'),
+          throwsArgumentError);
+
+      await goals.unlinkCourse(g.id, 'course1');
+      expect(await goals.getLinks(g.id), isEmpty);
+    });
+
     test('task hard delete removes its links (trigger)', () async {
       final g = Goal(title: 'G');
       await goals.createGoal(g);

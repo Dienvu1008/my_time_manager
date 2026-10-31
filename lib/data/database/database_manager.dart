@@ -14,6 +14,7 @@ import 'daos/note_dao.dart';
 import 'daos/conversation_dao.dart';
 import 'daos/goal_dao.dart';
 import 'daos/project_dao.dart';
+import 'daos/learning_dao.dart';
 import 'device_id_helper.dart' as device_id;
 
 class DatabaseManager {
@@ -84,7 +85,7 @@ class DatabaseManager {
 
   /// The current schema version. Kept in one place so the production opener and
   /// the test seam cannot drift apart.
-  static const int _schemaVersion = 14;
+  static const int _schemaVersion = 15;
 
   Future<Database> _initDatabase() async {
     final databasePath = await getDatabasesPath();
@@ -134,6 +135,10 @@ class DatabaseManager {
       //     index và 5 trigger delete_project_items_of_* (xóa cứng tasklist /
       //     task / note / calendar event / goal → xóa mục dự án). Hoàn toàn
       //     bổ sung: không đổi cột của bảng cũ nào.
+      // v15: thêm bảng courses + course_modules + lessons + lesson_progress
+      //     (Học tập: Khóa học / Chương / Bài học / Tiến độ bài), các index và
+      //     2 trigger delete_goal_links_of_course / delete_project_items_of_course.
+      //     Hoàn toàn bổ sung: không đổi cột của bảng cũ nào.
       version: _schemaVersion,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
@@ -146,11 +151,13 @@ class DatabaseManager {
     'calendar_events',
     'goals',
     'projects',
+    'courses',
   ];
 
   /// Tất cả các bảng dữ liệu (dùng cho export/import và cho migrate deviceId).
   /// Thứ tự tôn trọng khóa ngoại: cha trước, con sau (goals → milestones →
-  /// goal_links; projects → project_items, đặt sau mọi bảng thực thể).
+  /// goal_links; projects → project_items, đặt sau mọi bảng thực thể;
+  /// courses → course_modules → lessons → lesson_progress).
   static const List<String> allDataTables = [
     'tasklists',
     'tasks',
@@ -159,6 +166,10 @@ class DatabaseManager {
     'timeintervals',
     'focus_sessions',
     'notes',
+    'courses',
+    'course_modules',
+    'lessons',
+    'lesson_progress',
     'goals',
     'milestones',
     'goal_links',
@@ -302,6 +313,13 @@ class DatabaseManager {
       // calendar_events (v11), goals (v13), tasks (tạo lại ở v9).
       await ProjectDao.createSchema(db);
     }
+    if (oldVersion < 15) {
+      // Thêm 4 bảng học tập courses + course_modules + lessons +
+      // lesson_progress, các index và 2 trigger dọn liên kết khi xóa cứng khóa
+      // học. Không đụng tới bảng/cột cũ nào. goal_links (v13) và project_items
+      // (v14) được trigger tham chiếu đều đã tồn tại ở đây.
+      await LearningDao.createSchema(db);
+    }
   }
 
   /// Tạo các trigger đồng bộ/xóa timeintervals theo tasks (dùng cho cả onCreate
@@ -357,6 +375,9 @@ class DatabaseManager {
     // Dự án / mục dự án (v14). Phải sau Task/Note/CalendarEvent/Goal (trigger
     // trên các bảng đó).
     await ProjectDao.createSchema(db);
+    // Học tập (v15). Phải sau Goal/Project (trigger xóa goal_links /
+    // project_items).
+    await LearningDao.createSchema(db);
 
 
     // Run the CREATE {tasks} TABLE statement on the database.
@@ -522,6 +543,7 @@ class DatabaseManager {
     await collect(TrashedItemType.calendarEvent);
     await collect(TrashedItemType.goal);
     await collect(TrashedItemType.project);
+    await collect(TrashedItemType.course);
 
     result.sort((a, b) => b.deletedAt.compareTo(a.deletedAt));
     return result;
@@ -587,6 +609,7 @@ class DatabaseManager {
     await collect(ArchivedItemType.calendarEvent);
     await collect(ArchivedItemType.goal);
     await collect(ArchivedItemType.project);
+    await collect(ArchivedItemType.course);
 
     result.sort((a, b) => b.archivedAt.compareTo(a.archivedAt));
     return result;
@@ -636,12 +659,19 @@ class DatabaseManager {
   /// Android). Các bảng khác giữ nguyên REPLACE (không đổi hành vi).
   /// `projects` / `project_items` (C6) cũng vậy: ghi đè một dự án bằng REPLACE
   /// sẽ cascade xóa các mục của nó.
+  /// `courses` / `course_modules` / `lessons` / `lesson_progress` (C7) cũng
+  /// vậy: ghi đè một khóa học / chương / bài bằng REPLACE sẽ cascade xóa cây
+  /// con cục bộ của nó.
   static const Set<String> _updateFirstImportTables = {
     'goals',
     'milestones',
     'goal_links',
     'projects',
     'project_items',
+    'courses',
+    'course_modules',
+    'lessons',
+    'lesson_progress',
   };
 
   /// Ghi một hàng import đã lọc cột vào [table] qua [exec] (db hoặc txn).

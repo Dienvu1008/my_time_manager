@@ -74,7 +74,16 @@ class SqliteGoalRepository implements GoalRepository {
 
   @override
   Future<GoalLink> linkTask(String goalId, String taskId,
-      {String? milestoneId}) async {
+          {String? milestoneId}) =>
+      _linkEntity(goalId, GoalEntityType.task, taskId, milestoneId);
+
+  @override
+  Future<GoalLink> linkCourse(String goalId, String courseId,
+          {String? milestoneId}) =>
+      _linkEntity(goalId, GoalEntityType.course, courseId, milestoneId);
+
+  Future<GoalLink> _linkEntity(String goalId, String entityType,
+      String entityId, String? milestoneId) async {
     if (milestoneId != null) {
       final milestone = await _dao.getMilestone(milestoneId);
       if (milestone == null || milestone.goalId != goalId) {
@@ -84,8 +93,8 @@ class SqliteGoalRepository implements GoalRepository {
     }
     return _dao.link(
       goalId: goalId,
-      entityType: GoalEntityType.task,
-      entityId: taskId,
+      entityType: entityType,
+      entityId: entityId,
       milestoneId: milestoneId,
     );
   }
@@ -96,4 +105,8 @@ class SqliteGoalRepository implements GoalRepository {
   @override
   Future<void> unlinkTask(String goalId, String taskId) =>
       _dao.unlinkEntity(goalId, GoalEntityType.task, taskId);
+
+  @override
+  Future<void> unlinkCourse(String goalId, String courseId) =>
+      _dao.unlinkEntity(goalId, GoalEntityType.course, courseId);
 }

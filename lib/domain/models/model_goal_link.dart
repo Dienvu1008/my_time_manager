@@ -7,10 +7,14 @@ import 'package:uuid/uuid.dart';
 /// Dùng String (không phải enum Dart) để các bản ghi do phiên bản sau ghi ra
 /// (vd. 'calendarEvent', 'habit', 'note') không làm hỏng [GoalLink.fromMap]
 /// trên bản build cũ hơn.
+///
+/// 'course' (C7): liên kết khóa học chỉ mang tính thông tin — tiến độ khóa học
+/// KHÔNG tính vào tiến độ mục tiêu (GoalProgressService chỉ đếm 'task').
 class GoalEntityType {
   GoalEntityType._();
 
   static const String task = 'task';
+  static const String course = 'course';
 }
 
 /// Liên kết một thực thể ([entityType] + [entityId]) với một [Goal], tuỳ chọn

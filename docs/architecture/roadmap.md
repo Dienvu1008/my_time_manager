@@ -82,7 +82,7 @@ these features.
 | C4 | Persistence refactor (`DatabaseManager` → per-aggregate DAOs behind a façade) | **done** |
 | C5 | Goal / Plan / Milestone foundations | **done** — contract in §6 |
 | C6 | Project Workspace | **done** — contract in §6 |
-| C7 | Learning system (Course / Module / Lesson / Progress) | planned |
+| C7 | Learning system (Course / Module / Lesson / Progress) | **done** — contract in §6 |
 | C8 | AI foundation hardening (extends the built AI Track) | planned |
 | C9 | AI-assisted planning (overlay on the deterministic DR core) | planned |
 | C10 | Knowledge tools (dictionary / translate / pronounce / TTS / vocabulary) | planned |
@@ -382,6 +382,70 @@ open questions.
   and at the end of `ImportService._importOrder` (after every entity table).
   Both use **update-first-then-insert** (REPLACE would cascade-delete a
   project's items); `project_items` uses `createdAt` as its update timestamp.
+
+### Phase C7 — Learning system (contract, implemented)
+
+- **Scope delivered:** domain models (`Course` with `CourseStatus`
+  active/paused and `CourseSource` manual/aiGenerated, `CourseModule`,
+  `Lesson` + `LessonLink`, `LessonProgress` + `LessonStatus`
+  notStarted/inProgress/completed in `lib/domain/models/`), one aggregate
+  `LearningDao`, `LearningRepository` + `SqliteLearningRepository`, pure
+  `LearningProgressService`, DI in `app.dart`, Trash/Archive + backup/import
+  integration, goal/project integration, localized strings, and a course /
+  lesson UI: drawer entry "Courses" → `CoursesListScreen` →
+  `CourseDetailScreen` → `LessonScreen` (plus `CourseFormScreen`). No AI tools
+  yet, no linking UI (linking is repository-only).
+- **Schema v15 (strictly additive):** new tables `courses` (title,
+  description, color, `source` default `'manual'`, `status` default
+  `'active'`, `createdAt`, `updateTimeStamp`, soft-delete + archive columns,
+  `deviceId`), `course_modules` (`courseId` NOT NULL, title, description,
+  `sortOrder`), `lessons` (`moduleId` NOT NULL, title, `contentJson`
+  (AppFlowy doc), `links` JSON `[{title,url}]`, `noteIds` JSON, `sortOrder`),
+  `lesson_progress` (`lessonId` NOT NULL UNIQUE, `status` default
+  `'notStarted'`, `startedAt`, `completedAt`, `lastOpenedAt`); indexes
+  `idx_course_modules_courseId`, `idx_lessons_moduleId`; triggers
+  `delete_goal_links_of_course` / `delete_project_items_of_course` (AFTER
+  DELETE ON courses). `LearningDao.createSchema` is the single SQL source for
+  both `_onCreate` and the `_onUpgrade` `oldVersion < 15` branch. No existing
+  table/column changed.
+- **FK rules:** `courses` → `course_modules` → `lessons` → `lesson_progress`,
+  each `ON DELETE CASCADE`. Lessons store only `moduleId` (course reached via
+  JOIN). DAO inserts never use REPLACE. Corrupt `links` / `noteIds` JSON reads
+  as `[]`; dangling note ids are ignored; the UI accepts only http/https URLs.
+- **Progress identity and transitions:** `lesson_progress.id == lessonId`
+  (one row per lesson, merges cleanly across devices). Open → `inProgress`
+  (`startedAt ??= now`, completed stays completed, `lastOpenedAt = now`);
+  mark complete → `completed` + `completedAt`; mark incomplete → back to
+  `inProgress`, `completedAt = null` (no row → nothing written).
+- **Progress is derived, never stored** (no manual override, no stored
+  "completed" course status):
+  - Lesson status = its progress row; no row → notStarted. Rows of lessons
+    outside the module / course are ignored.
+  - Module: completed / total lessons (0 → 0.0); done iff ≥1 lesson and all
+    completed.
+  - Course: completed / total lessons across all modules (weighted by lesson);
+    0 lessons → 0.0, not done. Done iff ≥1 lesson, all completed **and every
+    module is done** — an empty module keeps the course not done even if the
+    ratio reads 1.0. Done-module and in-progress counts are reported only.
+- **Goal integration:** `GoalEntityType.course`, `linkCourse` /
+  `unlinkCourse` on `GoalRepository`. Course progress does **not** count
+  toward goal progress (`GoalProgressService` still counts tasks only).
+- **Project integration:** `ProjectEntityType.course` (in `supported`);
+  `ProjectWorkspaceService` exposes `courses` (`WorkspaceCourse` with its
+  derived `CourseProgress`); trashed / archived / missing courses go to
+  `ignoredItemCount`. `ProjectWorkspaceScreen` shows a read-only "Courses"
+  section with the percent.
+- **Editor reuse:** the AppFlowy editor block was extracted to
+  `lib/shared/appflowy_content_editor.dart`; `NoteEditorPage` and
+  `LessonScreen` share it with identical config.
+- **Trash / Archive:** courses join `_softDeleteTables` and the
+  `TrashedItemType` / `ArchivedItemType` enums. Course soft-delete/archive do
+  **not** cascade; hard delete cascades via FK and triggers. Modules and
+  lessons have no trash (hard delete after confirm).
+- **Backup / import:** the 4 tables are in `allDataTables` and
+  `ImportService._importOrder` after `notes` and before `goals` (parents
+  first), all **update-first-then-insert**; keep-newest uses
+  `updateTimeStamp`.
 
 ---
 

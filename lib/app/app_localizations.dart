@@ -1380,6 +1380,764 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- Learning / courses (Core Track C7) ---
+
+  String get courses {
+    return {
+      'en': 'Courses',
+      'vi': 'Khóa học',
+      'de': 'Kurse',
+      'cs': 'Kurzy',
+      'es': 'Cursos',
+      'fr': 'Cours',
+      'it': 'Corsi',
+      'ja': 'コース',
+      'ko': '강좌',
+      'no': 'Kurs',
+      'ru': 'Курсы',
+      'sv': 'Kurser',
+      'zh': '课程',
+    }[locale.languageCode]!;
+  }
+
+  String get noCoursesYet {
+    return {
+      'en': 'No courses yet',
+      'vi': 'Chưa có khóa học nào',
+      'de': 'Noch keine Kurse',
+      'cs': 'Zatím žádné kurzy',
+      'es': 'Aún no hay cursos',
+      'fr': 'Aucun cours pour l\'instant',
+      'it': 'Nessun corso ancora',
+      'ja': 'まだコースがありません',
+      'ko': '아직 강좌가 없습니다',
+      'no': 'Ingen kurs ennå',
+      'ru': 'Пока нет курсов',
+      'sv': 'Inga kurser än',
+      'zh': '还没有课程',
+    }[locale.languageCode]!;
+  }
+
+  String get noCoursesHint {
+    return {
+      'en': 'Tap + to create your first course.',
+      'vi': 'Nhấn + để tạo khóa học đầu tiên.',
+      'de': 'Tippe auf +, um deinen ersten Kurs zu erstellen.',
+      'cs': 'Klepnutím na + vytvoříte svůj první kurz.',
+      'es': 'Toca + para crear tu primer curso.',
+      'fr': 'Appuyez sur + pour créer votre premier cours.',
+      'it': 'Tocca + per creare il tuo primo corso.',
+      'ja': '+ をタップして最初のコースを作成します。',
+      'ko': '+를 눌러 첫 강좌를 만드세요.',
+      'no': 'Trykk + for å lage ditt første kurs.',
+      'ru': 'Нажмите +, чтобы создать первый курс.',
+      'sv': 'Tryck på + för att skapa din första kurs.',
+      'zh': '点击 + 创建第一个课程。',
+    }[locale.languageCode]!;
+  }
+
+  String get newCourse {
+    return {
+      'en': 'New course',
+      'vi': 'Khóa học mới',
+      'de': 'Neuer Kurs',
+      'cs': 'Nový kurz',
+      'es': 'Nuevo curso',
+      'fr': 'Nouveau cours',
+      'it': 'Nuovo corso',
+      'ja': '新しいコース',
+      'ko': '새 강좌',
+      'no': 'Nytt kurs',
+      'ru': 'Новый курс',
+      'sv': 'Ny kurs',
+      'zh': '新建课程',
+    }[locale.languageCode]!;
+  }
+
+  String get editCourse {
+    return {
+      'en': 'Edit course',
+      'vi': 'Sửa khóa học',
+      'de': 'Kurs bearbeiten',
+      'cs': 'Upravit kurz',
+      'es': 'Editar curso',
+      'fr': 'Modifier le cours',
+      'it': 'Modifica corso',
+      'ja': 'コースを編集',
+      'ko': '강좌 편집',
+      'no': 'Rediger kurs',
+      'ru': 'Изменить курс',
+      'sv': 'Redigera kurs',
+      'zh': '编辑课程',
+    }[locale.languageCode]!;
+  }
+
+  String get courseNotFound {
+    return {
+      'en': 'Course not found',
+      'vi': 'Không tìm thấy khóa học',
+      'de': 'Kurs nicht gefunden',
+      'cs': 'Kurz nenalezen',
+      'es': 'Curso no encontrado',
+      'fr': 'Cours introuvable',
+      'it': 'Corso non trovato',
+      'ja': 'コースが見つかりません',
+      'ko': '강좌를 찾을 수 없습니다',
+      'no': 'Fant ikke kurset',
+      'ru': 'Курс не найден',
+      'sv': 'Kursen hittades inte',
+      'zh': '未找到课程',
+    }[locale.languageCode]!;
+  }
+
+  String get learningUntitled {
+    return {
+      'en': '(Untitled)',
+      'vi': '(Không tiêu đề)',
+      'de': '(Ohne Titel)',
+      'cs': '(Bez názvu)',
+      'es': '(Sin título)',
+      'fr': '(Sans titre)',
+      'it': '(Senza titolo)',
+      'ja': '(無題)',
+      'ko': '(제목 없음)',
+      'no': '(Uten tittel)',
+      'ru': '(Без названия)',
+      'sv': '(Namnlös)',
+      'zh': '(无标题)',
+    }[locale.languageCode]!;
+  }
+
+  String get titleRequired {
+    return {
+      'en': 'Title is required',
+      'vi': 'Vui lòng nhập tiêu đề',
+      'de': 'Titel ist erforderlich',
+      'cs': 'Název je povinný',
+      'es': 'El título es obligatorio',
+      'fr': 'Le titre est obligatoire',
+      'it': 'Il titolo è obbligatorio',
+      'ja': 'タイトルは必須です',
+      'ko': '제목을 입력하세요',
+      'no': 'Tittel er påkrevd',
+      'ru': 'Введите название',
+      'sv': 'Titel krävs',
+      'zh': '标题为必填项',
+    }[locale.languageCode]!;
+  }
+
+  String get courseStatus {
+    return {
+      'en': 'Status',
+      'vi': 'Trạng thái',
+      'de': 'Status',
+      'cs': 'Stav',
+      'es': 'Estado',
+      'fr': 'Statut',
+      'it': 'Stato',
+      'ja': 'ステータス',
+      'ko': '상태',
+      'no': 'Status',
+      'ru': 'Статус',
+      'sv': 'Status',
+      'zh': '状态',
+    }[locale.languageCode]!;
+  }
+
+  String get courseStatusActive {
+    return {
+      'en': 'Active',
+      'vi': 'Đang học',
+      'de': 'Aktiv',
+      'cs': 'Aktivní',
+      'es': 'Activo',
+      'fr': 'Actif',
+      'it': 'Attivo',
+      'ja': '受講中',
+      'ko': '진행 중',
+      'no': 'Aktiv',
+      'ru': 'Активен',
+      'sv': 'Aktiv',
+      'zh': '进行中',
+    }[locale.languageCode]!;
+  }
+
+  String get courseStatusPaused {
+    return {
+      'en': 'Paused',
+      'vi': 'Tạm dừng',
+      'de': 'Pausiert',
+      'cs': 'Pozastaveno',
+      'es': 'En pausa',
+      'fr': 'En pause',
+      'it': 'In pausa',
+      'ja': '一時停止',
+      'ko': '일시 중지',
+      'no': 'Satt på pause',
+      'ru': 'Приостановлен',
+      'sv': 'Pausad',
+      'zh': '已暂停',
+    }[locale.languageCode]!;
+  }
+
+  String get courseCompleted {
+    return {
+      'en': 'Completed',
+      'vi': 'Đã hoàn thành',
+      'de': 'Abgeschlossen',
+      'cs': 'Dokončeno',
+      'es': 'Completado',
+      'fr': 'Terminé',
+      'it': 'Completato',
+      'ja': '完了',
+      'ko': '완료됨',
+      'no': 'Fullført',
+      'ru': 'Завершён',
+      'sv': 'Slutförd',
+      'zh': '已完成',
+    }[locale.languageCode]!;
+  }
+
+  String get lessonsCompleted {
+    return {
+      'en': 'Lessons completed',
+      'vi': 'Bài học đã hoàn thành',
+      'de': 'Abgeschlossene Lektionen',
+      'cs': 'Dokončené lekce',
+      'es': 'Lecciones completadas',
+      'fr': 'Leçons terminées',
+      'it': 'Lezioni completate',
+      'ja': '完了したレッスン',
+      'ko': '완료한 강의',
+      'no': 'Fullførte leksjoner',
+      'ru': 'Пройдено уроков',
+      'sv': 'Avklarade lektioner',
+      'zh': '已完成课时',
+    }[locale.languageCode]!;
+  }
+
+  String get learningProgress {
+    return {
+      'en': 'Progress',
+      'vi': 'Tiến độ',
+      'de': 'Fortschritt',
+      'cs': 'Pokrok',
+      'es': 'Progreso',
+      'fr': 'Progression',
+      'it': 'Avanzamento',
+      'ja': '進捗',
+      'ko': '진행률',
+      'no': 'Fremdrift',
+      'ru': 'Прогресс',
+      'sv': 'Framsteg',
+      'zh': '进度',
+    }[locale.languageCode]!;
+  }
+
+  String get noModulesYet {
+    return {
+      'en': 'No modules yet',
+      'vi': 'Chưa có chương nào',
+      'de': 'Noch keine Module',
+      'cs': 'Zatím žádné moduly',
+      'es': 'Aún no hay módulos',
+      'fr': 'Aucun module pour l\'instant',
+      'it': 'Nessun modulo ancora',
+      'ja': 'まだモジュールがありません',
+      'ko': '아직 모듈이 없습니다',
+      'no': 'Ingen moduler ennå',
+      'ru': 'Пока нет модулей',
+      'sv': 'Inga moduler än',
+      'zh': '还没有章节',
+    }[locale.languageCode]!;
+  }
+
+  String get addModule {
+    return {
+      'en': 'Add module',
+      'vi': 'Thêm chương',
+      'de': 'Modul hinzufügen',
+      'cs': 'Přidat modul',
+      'es': 'Añadir módulo',
+      'fr': 'Ajouter un module',
+      'it': 'Aggiungi modulo',
+      'ja': 'モジュールを追加',
+      'ko': '모듈 추가',
+      'no': 'Legg til modul',
+      'ru': 'Добавить модуль',
+      'sv': 'Lägg till modul',
+      'zh': '添加章节',
+    }[locale.languageCode]!;
+  }
+
+  String get newModule {
+    return {
+      'en': 'New module',
+      'vi': 'Chương mới',
+      'de': 'Neues Modul',
+      'cs': 'Nový modul',
+      'es': 'Nuevo módulo',
+      'fr': 'Nouveau module',
+      'it': 'Nuovo modulo',
+      'ja': '新しいモジュール',
+      'ko': '새 모듈',
+      'no': 'Ny modul',
+      'ru': 'Новый модуль',
+      'sv': 'Ny modul',
+      'zh': '新建章节',
+    }[locale.languageCode]!;
+  }
+
+  String get editModule {
+    return {
+      'en': 'Edit module',
+      'vi': 'Sửa chương',
+      'de': 'Modul bearbeiten',
+      'cs': 'Upravit modul',
+      'es': 'Editar módulo',
+      'fr': 'Modifier le module',
+      'it': 'Modifica modulo',
+      'ja': 'モジュールを編集',
+      'ko': '모듈 편집',
+      'no': 'Rediger modul',
+      'ru': 'Изменить модуль',
+      'sv': 'Redigera modul',
+      'zh': '编辑章节',
+    }[locale.languageCode]!;
+  }
+
+  String get noLessonsYet {
+    return {
+      'en': 'No lessons yet',
+      'vi': 'Chưa có bài học',
+      'de': 'Noch keine Lektionen',
+      'cs': 'Zatím žádné lekce',
+      'es': 'Aún no hay lecciones',
+      'fr': 'Aucune leçon pour l\'instant',
+      'it': 'Nessuna lezione ancora',
+      'ja': 'まだレッスンがありません',
+      'ko': '아직 강의가 없습니다',
+      'no': 'Ingen leksjoner ennå',
+      'ru': 'Пока нет уроков',
+      'sv': 'Inga lektioner än',
+      'zh': '还没有课时',
+    }[locale.languageCode]!;
+  }
+
+  String get addLesson {
+    return {
+      'en': 'Add lesson',
+      'vi': 'Thêm bài học',
+      'de': 'Lektion hinzufügen',
+      'cs': 'Přidat lekci',
+      'es': 'Añadir lección',
+      'fr': 'Ajouter une leçon',
+      'it': 'Aggiungi lezione',
+      'ja': 'レッスンを追加',
+      'ko': '강의 추가',
+      'no': 'Legg til leksjon',
+      'ru': 'Добавить урок',
+      'sv': 'Lägg till lektion',
+      'zh': '添加课时',
+    }[locale.languageCode]!;
+  }
+
+  String get newLesson {
+    return {
+      'en': 'New lesson',
+      'vi': 'Bài học mới',
+      'de': 'Neue Lektion',
+      'cs': 'Nová lekce',
+      'es': 'Nueva lección',
+      'fr': 'Nouvelle leçon',
+      'it': 'Nuova lezione',
+      'ja': '新しいレッスン',
+      'ko': '새 강의',
+      'no': 'Ny leksjon',
+      'ru': 'Новый урок',
+      'sv': 'Ny lektion',
+      'zh': '新建课时',
+    }[locale.languageCode]!;
+  }
+
+  String get editLesson {
+    return {
+      'en': 'Edit lesson',
+      'vi': 'Sửa bài học',
+      'de': 'Lektion bearbeiten',
+      'cs': 'Upravit lekci',
+      'es': 'Editar lección',
+      'fr': 'Modifier la leçon',
+      'it': 'Modifica lezione',
+      'ja': 'レッスンを編集',
+      'ko': '강의 편집',
+      'no': 'Rediger leksjon',
+      'ru': 'Изменить урок',
+      'sv': 'Redigera lektion',
+      'zh': '编辑课时',
+    }[locale.languageCode]!;
+  }
+
+  String get lessonNotFound {
+    return {
+      'en': 'Lesson not found',
+      'vi': 'Không tìm thấy bài học',
+      'de': 'Lektion nicht gefunden',
+      'cs': 'Lekce nenalezena',
+      'es': 'Lección no encontrada',
+      'fr': 'Leçon introuvable',
+      'it': 'Lezione non trovata',
+      'ja': 'レッスンが見つかりません',
+      'ko': '강의를 찾을 수 없습니다',
+      'no': 'Fant ikke leksjonen',
+      'ru': 'Урок не найден',
+      'sv': 'Lektionen hittades inte',
+      'zh': '未找到课时',
+    }[locale.languageCode]!;
+  }
+
+  String get markComplete {
+    return {
+      'en': 'Mark complete',
+      'vi': 'Đánh dấu hoàn thành',
+      'de': 'Als erledigt markieren',
+      'cs': 'Označit jako dokončené',
+      'es': 'Marcar como completada',
+      'fr': 'Marquer comme terminée',
+      'it': 'Segna come completata',
+      'ja': '完了にする',
+      'ko': '완료로 표시',
+      'no': 'Merk som fullført',
+      'ru': 'Отметить как пройденный',
+      'sv': 'Markera som klar',
+      'zh': '标记为完成',
+    }[locale.languageCode]!;
+  }
+
+  String get markIncomplete {
+    return {
+      'en': 'Mark as not completed',
+      'vi': 'Đánh dấu chưa hoàn thành',
+      'de': 'Als nicht erledigt markieren',
+      'cs': 'Označit jako nedokončené',
+      'es': 'Marcar como no completada',
+      'fr': 'Marquer comme non terminée',
+      'it': 'Segna come non completata',
+      'ja': '未完了に戻す',
+      'ko': '미완료로 표시',
+      'no': 'Merk som ikke fullført',
+      'ru': 'Отметить как непройденный',
+      'sv': 'Markera som inte klar',
+      'zh': '标记为未完成',
+    }[locale.languageCode]!;
+  }
+
+  String get lessonStatusNotStarted {
+    return {
+      'en': 'Not started',
+      'vi': 'Chưa bắt đầu',
+      'de': 'Nicht begonnen',
+      'cs': 'Nezahájeno',
+      'es': 'Sin empezar',
+      'fr': 'Non commencée',
+      'it': 'Non iniziata',
+      'ja': '未開始',
+      'ko': '시작 전',
+      'no': 'Ikke startet',
+      'ru': 'Не начат',
+      'sv': 'Inte påbörjad',
+      'zh': '未开始',
+    }[locale.languageCode]!;
+  }
+
+  String get lessonStatusInProgress {
+    return {
+      'en': 'In progress',
+      'vi': 'Đang học',
+      'de': 'In Bearbeitung',
+      'cs': 'Probíhá',
+      'es': 'En curso',
+      'fr': 'En cours',
+      'it': 'In corso',
+      'ja': '学習中',
+      'ko': '학습 중',
+      'no': 'Pågår',
+      'ru': 'В процессе',
+      'sv': 'Pågår',
+      'zh': '学习中',
+    }[locale.languageCode]!;
+  }
+
+  String get lessonStatusCompleted {
+    return {
+      'en': 'Completed',
+      'vi': 'Đã hoàn thành',
+      'de': 'Abgeschlossen',
+      'cs': 'Dokončeno',
+      'es': 'Completada',
+      'fr': 'Terminée',
+      'it': 'Completata',
+      'ja': '完了',
+      'ko': '완료됨',
+      'no': 'Fullført',
+      'ru': 'Пройден',
+      'sv': 'Klar',
+      'zh': '已完成',
+    }[locale.languageCode]!;
+  }
+
+  String get lessonLinks {
+    return {
+      'en': 'Links',
+      'vi': 'Liên kết',
+      'de': 'Links',
+      'cs': 'Odkazy',
+      'es': 'Enlaces',
+      'fr': 'Liens',
+      'it': 'Link',
+      'ja': 'リンク',
+      'ko': '링크',
+      'no': 'Lenker',
+      'ru': 'Ссылки',
+      'sv': 'Länkar',
+      'zh': '链接',
+    }[locale.languageCode]!;
+  }
+
+  String get addLink {
+    return {
+      'en': 'Add link',
+      'vi': 'Thêm liên kết',
+      'de': 'Link hinzufügen',
+      'cs': 'Přidat odkaz',
+      'es': 'Añadir enlace',
+      'fr': 'Ajouter un lien',
+      'it': 'Aggiungi link',
+      'ja': 'リンクを追加',
+      'ko': '링크 추가',
+      'no': 'Legg til lenke',
+      'ru': 'Добавить ссылку',
+      'sv': 'Lägg till länk',
+      'zh': '添加链接',
+    }[locale.languageCode]!;
+  }
+
+  String get linkUrl {
+    return {
+      'en': 'URL',
+      'vi': 'Địa chỉ URL',
+      'de': 'URL',
+      'cs': 'URL',
+      'es': 'URL',
+      'fr': 'URL',
+      'it': 'URL',
+      'ja': 'URL',
+      'ko': 'URL',
+      'no': 'URL',
+      'ru': 'URL',
+      'sv': 'URL',
+      'zh': '网址',
+    }[locale.languageCode]!;
+  }
+
+  String get invalidUrl {
+    return {
+      'en': 'Enter a valid http(s) URL',
+      'vi': 'Nhập URL http(s) hợp lệ',
+      'de': 'Gib eine gültige http(s)-URL ein',
+      'cs': 'Zadejte platnou adresu http(s)',
+      'es': 'Introduce una URL http(s) válida',
+      'fr': 'Saisissez une URL http(s) valide',
+      'it': 'Inserisci un URL http(s) valido',
+      'ja': '有効な http(s) URL を入力してください',
+      'ko': '올바른 http(s) URL을 입력하세요',
+      'no': 'Skriv inn en gyldig http(s)-URL',
+      'ru': 'Введите корректный http(s) URL',
+      'sv': 'Ange en giltig http(s)-URL',
+      'zh': '请输入有效的 http(s) 网址',
+    }[locale.languageCode]!;
+  }
+
+  String get cannotOpenLink {
+    return {
+      'en': 'Could not open the link',
+      'vi': 'Không mở được liên kết',
+      'de': 'Link konnte nicht geöffnet werden',
+      'cs': 'Odkaz nelze otevřít',
+      'es': 'No se pudo abrir el enlace',
+      'fr': 'Impossible d\'ouvrir le lien',
+      'it': 'Impossibile aprire il link',
+      'ja': 'リンクを開けませんでした',
+      'ko': '링크를 열 수 없습니다',
+      'no': 'Kunne ikke åpne lenken',
+      'ru': 'Не удалось открыть ссылку',
+      'sv': 'Det gick inte att öppna länken',
+      'zh': '无法打开链接',
+    }[locale.languageCode]!;
+  }
+
+  String get linkedNotes {
+    return {
+      'en': 'Linked notes',
+      'vi': 'Ghi chú liên kết',
+      'de': 'Verknüpfte Notizen',
+      'cs': 'Propojené poznámky',
+      'es': 'Notas vinculadas',
+      'fr': 'Notes liées',
+      'it': 'Note collegate',
+      'ja': 'リンクされたメモ',
+      'ko': '연결된 메모',
+      'no': 'Koblede notater',
+      'ru': 'Связанные заметки',
+      'sv': 'Länkade anteckningar',
+      'zh': '关联笔记',
+    }[locale.languageCode]!;
+  }
+
+  String get attachNote {
+    return {
+      'en': 'Attach note',
+      'vi': 'Đính kèm ghi chú',
+      'de': 'Notiz anhängen',
+      'cs': 'Připojit poznámku',
+      'es': 'Adjuntar nota',
+      'fr': 'Joindre une note',
+      'it': 'Allega nota',
+      'ja': 'メモを添付',
+      'ko': '메모 첨부',
+      'no': 'Legg ved notat',
+      'ru': 'Прикрепить заметку',
+      'sv': 'Bifoga anteckning',
+      'zh': '附加笔记',
+    }[locale.languageCode]!;
+  }
+
+  String get removeItem {
+    return {
+      'en': 'Remove',
+      'vi': 'Gỡ bỏ',
+      'de': 'Entfernen',
+      'cs': 'Odebrat',
+      'es': 'Quitar',
+      'fr': 'Retirer',
+      'it': 'Rimuovi',
+      'ja': '削除',
+      'ko': '제거',
+      'no': 'Fjern',
+      'ru': 'Убрать',
+      'sv': 'Ta bort',
+      'zh': '移除',
+    }[locale.languageCode]!;
+  }
+
+  String get edit {
+    return {
+      'en': 'Edit',
+      'vi': 'Sửa',
+      'de': 'Bearbeiten',
+      'cs': 'Upravit',
+      'es': 'Editar',
+      'fr': 'Modifier',
+      'it': 'Modifica',
+      'ja': '編集',
+      'ko': '편집',
+      'no': 'Rediger',
+      'ru': 'Изменить',
+      'sv': 'Redigera',
+      'zh': '编辑',
+    }[locale.languageCode]!;
+  }
+
+  String get moveUp {
+    return {
+      'en': 'Move up',
+      'vi': 'Di chuyển lên',
+      'de': 'Nach oben',
+      'cs': 'Posunout nahoru',
+      'es': 'Subir',
+      'fr': 'Monter',
+      'it': 'Sposta su',
+      'ja': '上へ移動',
+      'ko': '위로 이동',
+      'no': 'Flytt opp',
+      'ru': 'Переместить вверх',
+      'sv': 'Flytta upp',
+      'zh': '上移',
+    }[locale.languageCode]!;
+  }
+
+  String get moveDown {
+    return {
+      'en': 'Move down',
+      'vi': 'Di chuyển xuống',
+      'de': 'Nach unten',
+      'cs': 'Posunout dolů',
+      'es': 'Bajar',
+      'fr': 'Descendre',
+      'it': 'Sposta giù',
+      'ja': '下へ移動',
+      'ko': '아래로 이동',
+      'no': 'Flytt ned',
+      'ru': 'Переместить вниз',
+      'sv': 'Flytta ned',
+      'zh': '下移',
+    }[locale.languageCode]!;
+  }
+
+  String get moveToTrash {
+    return {
+      'en': 'Move to trash',
+      'vi': 'Chuyển vào thùng rác',
+      'de': 'In den Papierkorb',
+      'cs': 'Přesunout do koše',
+      'es': 'Mover a la papelera',
+      'fr': 'Mettre à la corbeille',
+      'it': 'Sposta nel cestino',
+      'ja': 'ゴミ箱に移動',
+      'ko': '휴지통으로 이동',
+      'no': 'Flytt til papirkurven',
+      'ru': 'В корзину',
+      'sv': 'Flytta till papperskorgen',
+      'zh': '移至回收站',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmDeleteModule {
+    return {
+      'en': 'Delete this module and all its lessons?',
+      'vi': 'Xóa chương này và toàn bộ bài học?',
+      'de': 'Dieses Modul und alle seine Lektionen löschen?',
+      'cs': 'Smazat tento modul a všechny jeho lekce?',
+      'es': '¿Eliminar este módulo y todas sus lecciones?',
+      'fr': 'Supprimer ce module et toutes ses leçons ?',
+      'it': 'Eliminare questo modulo e tutte le sue lezioni?',
+      'ja': 'このモジュールとすべてのレッスンを削除しますか？',
+      'ko': '이 모듈과 모든 강의를 삭제할까요?',
+      'no': 'Slette denne modulen og alle leksjonene?',
+      'ru': 'Удалить этот модуль и все его уроки?',
+      'sv': 'Ta bort den här modulen och alla dess lektioner?',
+      'zh': '删除此章节及其所有课时？',
+    }[locale.languageCode]!;
+  }
+
+  String get confirmDeleteLesson {
+    return {
+      'en': 'Delete this lesson?',
+      'vi': 'Xóa bài học này?',
+      'de': 'Diese Lektion löschen?',
+      'cs': 'Smazat tuto lekci?',
+      'es': '¿Eliminar esta lección?',
+      'fr': 'Supprimer cette leçon ?',
+      'it': 'Eliminare questa lezione?',
+      'ja': 'このレッスンを削除しますか？',
+      'ko': '이 강의를 삭제할까요?',
+      'no': 'Slette denne leksjonen?',
+      'ru': 'Удалить этот урок?',
+      'sv': 'Ta bort den här lektionen?',
+      'zh': '删除此课时？',
+    }[locale.languageCode]!;
+  }
+
   String get brightness {
     return {
       'en': 'Brightness',

@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../screen_ai/ai_assistant_entry.dart';
 import '../../screen_ai/ai_settings_page.dart';
+import '../../screen_learning/courses_list_screen.dart';
 import '../../screen_projects/projects_list_screen.dart';
 import '../../utils/constants.dart';
 import '../../utils/utils.dart';
@@ -77,6 +78,19 @@ class MyAppDrawer extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => const ProjectsListScreen(),
+                ),
+              );
+            },
+          ),
+          // Khóa học (Core Track C7) — route đẩy giống Dự án.
+          ListTile(
+            leading: const Icon(Icons.school_outlined),
+            title: Text(localizations.courses),
+            onTap: () {
+              Navigator.of(context).pop(); // đóng drawer
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const CoursesListScreen(),
                 ),
               );
             },
