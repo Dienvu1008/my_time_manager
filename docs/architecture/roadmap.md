@@ -327,8 +327,10 @@ open questions.
   these 3 tables is **update-first-then-insert** (not `INSERT OR REPLACE`,
   which would DELETE + INSERT and fire the CASCADE / SET NULL on local
   children); other tables keep REPLACE.
-- **Known gap (pre-existing, out of scope):** `ImportService._importOrder`
-  still lacks `calendar_events` / `notes`.
+- **Known gap (pre-existing) — fixed:** `ImportService._importOrder` now
+  includes `calendar_events` (after `events`, FK to `tasklists`) and `notes`
+  (after `focus_sessions`), both before `goals`. Neither has FK children, so
+  both keep REPLACE semantics; keep-newest compares `updated` / `updatedAt`.
 
 ### Phase C6 — Project Workspace (contract, implemented)
 

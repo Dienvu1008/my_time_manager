@@ -71,6 +71,8 @@ class ImportService {
 
   /// Thứ tự import tôn trọng khóa ngoại: cha trước, con sau. projects →
   /// project_items đặt CUỐI, sau mọi bảng thực thể được import (C6).
+  /// `calendar_events` (FK taskListId → tasklists) đặt sau tasklists; `notes`
+  /// không có FK. Cả hai không có bảng con qua FK nên giữ kiểu REPLACE.
   static const List<String> _importOrder = [
     'tasklists',
     'tasks',
@@ -78,7 +80,9 @@ class ImportService {
     'taskswithsubtasks',
     'timeintervals',
     'events',
+    'calendar_events',
     'focus_sessions',
+    'notes',
     'goals',
     'milestones',
     'goal_links',
@@ -240,9 +244,12 @@ class ImportService {
   /// - focus_sessions không có updateTimeStamp -> dùng endTime.
   /// - goal_links không có updateTimeStamp -> dùng createdAt.
   /// - project_items không có updateTimeStamp -> dùng createdAt.
+  /// - notes dùng updatedAt; calendar_events dùng updated.
   DateTime? _updatedAt(String table, Map<String, dynamic> row) {
     final raw = switch (table) {
       'focus_sessions' => row['endTime'],
+      'notes' => row['updatedAt'],
+      'calendar_events' => row['updated'],
       'goal_links' => row['createdAt'],
       'project_items' => row['createdAt'],
       _ => row['updateTimeStamp'],
