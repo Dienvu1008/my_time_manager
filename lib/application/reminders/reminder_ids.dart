@@ -91,3 +91,13 @@ Set<int> calendarCandidateIds(CalendarEvent event) {
 
 /// Id (không lặp) của một rule tường minh.
 Set<int> ruleCandidateIds(ReminderRule rule) => {stableReminderId(ruleKey(rule.id))};
+
+/// Deterministic key for the daily-review notification on [date] (local date).
+/// Format: `dailyReview@YYYYMMDD`. One notification per day, regardless of the
+/// exact time (time changes → old id cancelled by the incremental snapshot diff).
+String dailyReviewReminderKey(DateTime date) {
+  final y = date.year.toString().padLeft(4, '0');
+  final m = _two(date.month);
+  final d = _two(date.day);
+  return '${ReminderEntityType.dailyReview}@$y$m$d';
+}

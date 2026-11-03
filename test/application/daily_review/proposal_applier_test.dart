@@ -214,6 +214,60 @@ void main() {
     expect(r.itemById('o1'), isNull, reason: 'moved to tomorrow, not due');
     expect(env.intervals.store.length, 2, reason: 'no duplicated rows');
   });
+
+  // DR2 applier fix: an item proposed into a slot vacated by another member
+  // of the same accepted batch must not be falsely rejected because that
+  // member has not been applied yet.
+  test('batch: two items swapping slots both apply', () async {
+    final swap = Env();
+    swap.intervals.put(timed('s1', at(11, 10, 30), at(11, 11)));
+    swap.intervals.put(timed('s2', at(11, 14), at(11, 14, 30)));
+    final p = await swap.plan([
+      ReviewSelection('s1', RescheduleAction.reschedule,
+          at: at(11, 14), duration: const Duration(minutes: 30)),
+      ReviewSelection('s2', RescheduleAction.reschedule,
+          at: at(11, 10, 30), duration: const Duration(minutes: 30)),
+    ]);
+    expect(p.items.map((i) => i.status),
+        everyElement(ProposalItemStatus.ready));
+
+    final r =
+        await swap.applier.apply(p, {'s1', 's2'}, confirm: approveAll, now: kNow);
+    expect(r.outcomeOf('s1'), ApplyOutcome.applied);
+    expect(r.outcomeOf('s2'), ApplyOutcome.applied);
+    expect(timedRangeOf(swap.intervals.store['s1']!),
+        TimeRange(at(11, 14), at(11, 14, 30)));
+    expect(timedRangeOf(swap.intervals.store['s2']!),
+        TimeRange(at(11, 10, 30), at(11, 11)));
+  });
+
+  test('batch: an already-applied member still blocks its NEW slot', () async {
+    final e = Env();
+    e.intervals.put(timed('b1', at(11, 10, 30), at(11, 11)));
+    e.intervals.put(timed('b2', at(11, 15), at(11, 15, 30)));
+    // Both planned into 14:00 would be caught by the planner, so build the
+    // proposal from two independent plans to simulate a stale overlap.
+    final p1 = await e.plan([
+      ReviewSelection('b1', RescheduleAction.reschedule,
+          at: at(11, 14), duration: const Duration(minutes: 30)),
+    ]);
+    final p2 = await e.plan([
+      ReviewSelection('b2', RescheduleAction.reschedule,
+          at: at(11, 14), duration: const Duration(minutes: 30)),
+    ]);
+    final merged = RescheduleProposal(
+      createdAt: kNow,
+      source: ProposalSource.deterministic,
+      items: [...p1.items, ...p2.items],
+    );
+    final r = await e.applier
+        .apply(merged, {'b1', 'b2'}, confirm: approveAll, now: kNow);
+    expect(r.outcomeOf('b1'), ApplyOutcome.applied);
+    expect(r.outcomeOf('b2'), ApplyOutcome.rejectedConflict,
+        reason: 'b1 already occupies 14:00 after being applied');
+    expect(timedRangeOf(e.intervals.store['b2']!),
+        TimeRange(at(11, 15), at(11, 15, 30)));
+  });
 }
 
 Future<bool> approveAll(ReviewConfirmationRequest _) async => true;

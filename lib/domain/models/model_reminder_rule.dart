@@ -81,6 +81,9 @@ class ReminderEntityType {
   /// Thói quen (Phase H3). Không có rule tường minh: nhắc được suy ra từ
   /// `Habit.reminderTime` + lịch lặp (xem ReminderPlanner).
   static const String habit = 'habit';
+
+  /// Daily Review (Phase DR2). Nhắc mỗi ngày vào giờ tổng kết cấu hình được.
+  static const String dailyReview = 'dailyReview';
 }
 
 /// Kiểu rule: lệch so với mốc của thực thể ([offset]) hoặc thời điểm tuyệt

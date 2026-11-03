@@ -12,6 +12,9 @@ enum ReminderSource {
 
   /// Suy ra từ `Habit.reminderTime` cho các ngày được lên lịch (Phase H3).
   habit,
+
+  /// Daily Review notification (Phase DR2): one per day at the review time.
+  dailyReview,
 }
 
 /// Mốc nhắc mong muốn do planner sinh ra.

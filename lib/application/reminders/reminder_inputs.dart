@@ -30,6 +30,9 @@ class ReminderInputs {
   /// đã ghi (completed / partial / skipped / missed) không còn được nhắc.
   final List<HabitOccurrence> habitOccurrences;
 
+  /// Daily Review notification settings (Phase DR2). Null = disabled.
+  final DailyReviewNotificationInputs? dailyReviewNotification;
+
   const ReminderInputs({
     this.intervals = const [],
     this.events = const [],
@@ -37,6 +40,26 @@ class ReminderInputs {
     this.rules = const [],
     this.habits = const [],
     this.habitOccurrences = const [],
+    this.dailyReviewNotification,
+  });
+}
+
+/// Parameters for the daily-review notification (Phase DR2).
+class DailyReviewNotificationInputs {
+  /// Minutes since midnight (local) when the notification should fire.
+  final int reviewTimeMinutes;
+
+  /// How many days ahead (including today) to schedule notifications.
+  final int horizonDays;
+
+  final String title;
+  final String body;
+
+  const DailyReviewNotificationInputs({
+    required this.reviewTimeMinutes,
+    required this.horizonDays,
+    required this.title,
+    required this.body,
   });
 }
 
@@ -58,6 +81,10 @@ class RepositoryReminderInputSource implements ReminderInputSource {
   /// Đồng hồ (test). Mặc định [DateTime.now].
   final DateTime Function()? now;
 
+  /// Cài đặt thông báo Daily Review hiện tại (Phase DR2); đọc lại mỗi lần
+  /// nạp. Null / trả null → không có thông báo tổng kết.
+  final DailyReviewNotificationInputs? Function()? dailyReview;
+
   const RepositoryReminderInputSource({
     required this.timeIntervals,
     required this.calendar,
@@ -65,6 +92,7 @@ class RepositoryReminderInputSource implements ReminderInputSource {
     required this.rules,
     this.habits,
     this.now,
+    this.dailyReview,
   });
 
   @override
@@ -96,6 +124,7 @@ class RepositoryReminderInputSource implements ReminderInputSource {
       rules: results[3].cast<ReminderRule>(),
       habits: habitList,
       habitOccurrences: occurrences,
+      dailyReviewNotification: dailyReview?.call(),
     );
   }
 }

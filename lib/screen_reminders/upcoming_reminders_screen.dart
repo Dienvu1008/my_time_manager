@@ -197,7 +197,9 @@ class _UpcomingTile extends StatelessWidget {
           ? Icon(Icons.priority_high, semanticLabel: l.reminderHighPriority)
           : p.entityType == ReminderEntityType.habit
               ? Icon(Icons.repeat, semanticLabel: l.habitReminderLabel)
-              : const ExcludeSemantics(child: Icon(Icons.alarm_outlined)),
+              : p.entityType == ReminderEntityType.dailyReview
+                  ? Icon(Icons.fact_check_outlined, semanticLabel: l.dailyReview)
+                  : const ExcludeSemantics(child: Icon(Icons.alarm_outlined)),
       title: Text(p.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

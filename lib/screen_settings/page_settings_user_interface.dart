@@ -5,6 +5,7 @@ import 'package:my_time_manager/app/app_localizations.dart';
 import 'package:my_time_manager/utils/constants.dart';
 
 import 'calendar_sync_settings_card.dart';
+import 'daily_review_settings_card.dart';
 import 'reminder_settings_card.dart';
 import '../home/component_widgets/button_color_image.dart';
 import '../home/component_widgets/button_color_seed.dart';
@@ -376,6 +377,8 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               // --- Cài đặt nhắc (thông báo) ---
               const ReminderSettingsCard(),
+              // --- Tổng kết ngày (Phase DR2) ---
+              const DailyReviewSettingsCard(),
               // --- Đồng bộ Google Calendar ---
               const CalendarSyncSettingsCard(),
             ],

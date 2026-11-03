@@ -48,16 +48,45 @@ class ReminderModule {
   String habitReminderBody() =>
       AppLocalizations(Locale(_languageCode)).habitReminderBody;
 
+  bool _dailyReviewEnabled = false;
+  int _dailyReviewTimeMinutes = 1200;
+
+  /// Daily Review notification settings (Phase DR2), pushed from AppState by
+  /// MyApp. A change requests an incremental reconcile (no-op in legacy mode
+  /// / reminders off), which schedules or cancels the per-day notifications.
+  void setDailyReview({required bool enabled, required int timeMinutes}) {
+    if (enabled == _dailyReviewEnabled &&
+        timeMinutes == _dailyReviewTimeMinutes) {
+      return;
+    }
+    _dailyReviewEnabled = enabled;
+    _dailyReviewTimeMinutes = timeMinutes;
+    unawaited(bridge.requestReconcile());
+  }
+
+  /// Current daily-review notification input, or null when disabled.
+  DailyReviewNotificationInputs? dailyReviewInputs() {
+    if (!_dailyReviewEnabled) return null;
+    final l = AppLocalizations(Locale(_languageCode));
+    return DailyReviewNotificationInputs(
+      reviewTimeMinutes: _dailyReviewTimeMinutes,
+      horizonDays: 7,
+      title: l.dailyReviewNotificationTitle,
+      body: l.dailyReviewNotificationBody,
+    );
+  }
+
   factory ReminderModule.production() {
     final intervals = SqliteTimeIntervalRepository();
+    late final ReminderModule module;
     final inputs = RepositoryReminderInputSource(
       timeIntervals: intervals,
       calendar: SqliteCalendarRepository(),
       tasks: SqliteTaskRepository(),
       rules: SqliteReminderRuleRepository(),
       habits: SqliteHabitRepository(),
+      dailyReview: () => module.dailyReviewInputs(),
     );
-    late final ReminderModule module;
     final coordinator = ReminderCoordinator(
       inputs: inputs,
       scheduler: const LocalNotificationScheduler(),

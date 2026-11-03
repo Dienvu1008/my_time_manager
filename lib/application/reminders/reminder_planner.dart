@@ -170,6 +170,9 @@ class ReminderPlanner {
     // --- Habit (Phase H3): reminderTime trên các ngày được lên lịch ---
     _planHabits(inputs, nowUtc, horizon, add);
 
+    // --- Daily Review (Phase DR2): one notification per day at review time ---
+    _planDailyReview(inputs, nowUtc, horizon, add);
+
     // Khử trùng cùng fireAt trong một lần xuất hiện, áp giờ yên lặng, lọc.
     final out = <PlannedReminder>[];
     for (final list in groups.values) {
@@ -246,6 +249,48 @@ class ReminderPlanner {
           ),
         );
       }
+    }
+  }
+
+  /// Daily Review notification (Phase DR2): one per day at the review time,
+  /// within `[today, today + horizon]` (days in [location]). Deterministic id
+  /// per calendar day: `stableReminderId(dailyReviewReminderKey(date))`.
+  /// Time changes → old id cancelled by the incremental snapshot diff.
+  void _planDailyReview(
+    ReminderInputs inputs,
+    DateTime nowUtc,
+    Duration horizon,
+    void Function(String group, PlannedReminder p) add,
+  ) {
+    final dr = inputs.dailyReviewNotification;
+    if (dr == null) return;
+    final todayWall = wallClockOf(nowUtc, location);
+    final today = DateTime(todayWall.year, todayWall.month, todayWall.day);
+    final last = DateTime(today.year, today.month, today.day + dr.horizonDays);
+    var day = today;
+    while (!day.isAfter(last)) {
+      final hour = dr.reviewTimeMinutes ~/ 60;
+      final minute = dr.reviewTimeMinutes % 60;
+      final wall = WallClock(day.year, day.month, day.day, hour, minute);
+      final fireAt = resolveWallClock(location, wall);
+      if (fireAt.isAfter(nowUtc)) {
+        final key = dailyReviewReminderKey(day);
+        final dayTag = '${day.year}${day.month.toString().padLeft(2, '0')}${day.day.toString().padLeft(2, '0')}';
+        add(
+          '${ReminderEntityType.dailyReview}@$dayTag',
+          PlannedReminder(
+            id: stableReminderId(key),
+            key: key,
+            entityType: ReminderEntityType.dailyReview,
+            entityId: 'daily',
+            fireAt: fireAt,
+            title: dr.title,
+            body: dr.body,
+            source: ReminderSource.dailyReview,
+          ),
+        );
+      }
+      day = DateTime(day.year, day.month, day.day + 1);
     }
   }
 

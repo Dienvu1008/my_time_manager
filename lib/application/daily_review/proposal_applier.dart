@@ -194,8 +194,21 @@ class ProposalApplier {
     final current = {for (final i in snapshot.intervals) i.id: i};
     final calc = AvailabilityCalculator(const Availability(), expander: _expander);
 
+    // Ids of all accepted applicable items — used to exclude the OLD (vacated)
+    // slots of other batch members from the commit-time conflict check: an item
+    // proposed into a slot freed by another item of the same accepted batch must
+    // not be falsely rejectedConflict because the freeing item hasn't been
+    // applied yet. We still check against their PROPOSED ranges (via the
+    // updated `current` map which we mutate as items succeed). (Applier fix)
+    // Only batch members NOT YET processed still sit in their old (soon
+    // vacated) slot. Already-applied members are in `current` with their NEW
+    // range and must keep blocking, so they are removed from this set.
+    final pendingBatchIds = {for (final i in applicable) i.intervalId};
+
     for (final item in applicable) {
-      results.add(await _applyOne(item, snapshot, current, calc, now));
+      results.add(
+          await _applyOne(item, snapshot, current, calc, now, pendingBatchIds));
+      pendingBatchIds.remove(item.intervalId);
     }
     return ApplyResult(confirmed: true, results: results);
   }
@@ -206,6 +219,7 @@ class ProposalApplier {
     Map<String, TimeInterval> current,
     AvailabilityCalculator calc,
     DateTime now,
+    Set<String> pendingBatchIds,
   ) async {
     final id = item.intervalId;
     TimeInterval fresh;
@@ -222,6 +236,11 @@ class ProposalApplier {
     }
 
     // Re-check proposed slots against CURRENT authoritative state.
+    // Exclude the OLD slots of accepted batch members not applied yet: they
+    // move/delete in this same batch, so those slots are being vacated and
+    // must not block this item (e.g. two items swapping slots). Members
+    // already applied are in `current` with their NEW range and still block.
+    final otherBatchIds = pendingBatchIds.difference({id});
     final conflicts = <ProposalConflict>[];
     for (final c in item.changes) {
       final r = c.proposed;
@@ -233,7 +252,7 @@ class ProposalApplier {
         window: r,
         events: snapshot.events,
         intervals: current.values.where(snapshot.isLive),
-        excludeIntervalIds: {id},
+        excludeIntervalIds: {id, ...otherBatchIds},
       );
       for (final b in calc.conflictsWith(r, busy)) {
         conflicts.add(ProposalConflict(ProposalConflict.kindOf(b.source),

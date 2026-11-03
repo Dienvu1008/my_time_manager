@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../app/app.dart';
 import '../../screen_ai/ai_action_log_screen.dart';
+import '../../screen_daily_review/daily_review_screen.dart';
 import '../../screen_ai/ai_assistant_entry.dart';
 import '../../screen_ai/ai_settings_page.dart';
 import '../../screen_goals/goals_list_screen.dart';
@@ -135,6 +138,33 @@ class MyAppDrawer extends StatelessWidget {
                 MaterialPageRoute<void>(
                   builder: (_) => const UpcomingRemindersScreen(),
                 ),
+              );
+            },
+          ),
+          // Tổng kết ngày (Phase DR2) — ẩn khi tắt trong Cài đặt.
+          BlocBuilder<AppBloc, AppState>(
+            buildWhen: (a, b) => a.dailyReviewEnabled != b.dailyReviewEnabled,
+            builder: (context, state) {
+              if (!state.dailyReviewEnabled) return const SizedBox.shrink();
+              return ListTile(
+                leading: const Icon(Icons.fact_check_outlined),
+                title: Text(localizations.dailyReview),
+                onTap: () {
+                  final s = context.read<AppBloc>().state;
+                  Navigator.of(context).pop(); // đóng drawer
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => DailyReviewScreen(
+                        availability: availabilityFromSettings(
+                          workStartMinutes: s.dailyReviewWorkStartMinutes,
+                          workEndMinutes: s.dailyReviewWorkEndMinutes,
+                          workDayBits: s.dailyReviewWorkDayBits,
+                          bufferMinutes: s.dailyReviewBufferMinutes,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),

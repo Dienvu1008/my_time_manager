@@ -2270,6 +2270,931 @@ class AppLocalizations {
     }[locale.languageCode]!;
   }
 
+  // --- Daily Review (Phase DR2) ---
+
+  /// Drawer / AppBar label for the Daily Review screen.
+  String get dailyReview {
+    return {
+      'en': 'Daily review',
+      'vi': 'Tổng kết ngày',
+      'de': 'Tagesrückblick',
+      'cs': 'Denní přehled',
+      'es': 'Revisión diaria',
+      'fr': 'Revue quotidienne',
+      'it': 'Revisione giornaliera',
+      'ja': '日次レビュー',
+      'ko': '일일 검토',
+      'no': 'Daglig gjennomgang',
+      'ru': 'Ежедневный обзор',
+      'sv': 'Daglig genomgång',
+      'zh': '每日回顾',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewEmpty {
+    return {
+      'en': 'All clear! Nothing unresolved today.',
+      'vi': 'Tất cả đã hoàn thành! Không còn gì chưa giải quyết hôm nay.',
+      'de': 'Alles erledigt! Nichts Offenes heute.',
+      'cs': 'Vše vyřízeno! Dnes nic nevyřešeného.',
+      'es': '¡Todo listo! Nada pendiente hoy.',
+      'fr': 'Tout est fait ! Rien en suspens aujourd\'hui.',
+      'it': 'Tutto a posto! Niente in sospeso oggi.',
+      'ja': '全て完了！今日は未解決のものはありません。',
+      'ko': '모두 완료! 오늘은 미처리 항목이 없습니다.',
+      'no': 'Alt klart! Ingenting uløst i dag.',
+      'ru': 'Всё готово! Ничего нерешённого сегодня.',
+      'sv': 'Allt klart! Inget olöst idag.',
+      'zh': '一切就绪！今天没有未解决的事项。',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewSectionOverdue {
+    return {
+      'en': 'Overdue',
+      'vi': 'Quá hạn',
+      'de': 'Überfällig',
+      'cs': 'Po termínu',
+      'es': 'Vencido',
+      'fr': 'En retard',
+      'it': 'Scaduto',
+      'ja': '期限切れ',
+      'ko': '기한 초과',
+      'no': 'Forfalt',
+      'ru': 'Просрочено',
+      'sv': 'Försenat',
+      'zh': '已逾期',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewSectionStarted {
+    return {
+      'en': 'Started but incomplete',
+      'vi': 'Đã bắt đầu nhưng chưa xong',
+      'de': 'Begonnen, aber unvollständig',
+      'cs': 'Zahájeno, ale nedokončeno',
+      'es': 'Iniciado pero incompleto',
+      'fr': 'Commencé mais incomplet',
+      'it': 'Iniziato ma incompleto',
+      'ja': '開始済みだが未完了',
+      'ko': '시작했지만 미완료',
+      'no': 'Startet men ufullstendig',
+      'ru': 'Начато, но не завершено',
+      'sv': 'Påbörjat men ofullständigt',
+      'zh': '已开始但未完成',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewSectionDueToday {
+    return {
+      'en': 'Due today',
+      'vi': 'Đến hạn hôm nay',
+      'de': 'Heute fällig',
+      'cs': 'Splatné dnes',
+      'es': 'Vence hoy',
+      'fr': 'À faire aujourd\'hui',
+      'it': 'Scade oggi',
+      'ja': '本日締め切り',
+      'ko': '오늘 마감',
+      'no': 'Forfaller i dag',
+      'ru': 'Срок сегодня',
+      'sv': 'Förfaller idag',
+      'zh': '今天到期',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewSectionHabits {
+    return {
+      'en': 'Habits',
+      'vi': 'Thói quen',
+      'de': 'Gewohnheiten',
+      'cs': 'Návyky',
+      'es': 'Hábitos',
+      'fr': 'Habitudes',
+      'it': 'Abitudini',
+      'ja': '習慣',
+      'ko': '습관',
+      'no': 'Vaner',
+      'ru': 'Привычки',
+      'sv': 'Vanor',
+      'zh': '习惯',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewSectionUnscheduled {
+    return {
+      'en': 'Unscheduled tasks',
+      'vi': 'Công việc chưa lên lịch',
+      'de': 'Nicht eingeplante Aufgaben',
+      'cs': 'Nenaplánované úkoly',
+      'es': 'Tareas no programadas',
+      'fr': 'Tâches non planifiées',
+      'it': 'Attività non pianificate',
+      'ja': '未スケジュールのタスク',
+      'ko': '미예약 작업',
+      'no': 'Uskjedulerte oppgaver',
+      'ru': 'Не запланированные задачи',
+      'sv': 'Oplanerade uppgifter',
+      'zh': '未安排的任务',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewFreeTime {
+    return {
+      'en': 'Free time today',
+      'vi': 'Thời gian rảnh hôm nay',
+      'de': 'Freie Zeit heute',
+      'cs': 'Volný čas dnes',
+      'es': 'Tiempo libre hoy',
+      'fr': 'Temps libre aujourd\'hui',
+      'it': 'Tempo libero oggi',
+      'ja': '今日の空き時間',
+      'ko': '오늘 여유 시간',
+      'no': 'Ledig tid i dag',
+      'ru': 'Свободное время сегодня',
+      'sv': 'Fri tid idag',
+      'zh': '今天空闲时间',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewActionDoNow {
+    return {
+      'en': 'Do now',
+      'vi': 'Làm ngay',
+      'de': 'Jetzt erledigen',
+      'cs': 'Udělat nyní',
+      'es': 'Hacer ahora',
+      'fr': 'Faire maintenant',
+      'it': 'Fai ora',
+      'ja': '今すぐ実行',
+      'ko': '지금 하기',
+      'no': 'Gjør nå',
+      'ru': 'Сделать сейчас',
+      'sv': 'Gör nu',
+      'zh': '立即执行',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewActionReschedule {
+    return {
+      'en': 'Reschedule',
+      'vi': 'Lên lịch lại',
+      'de': 'Neu planen',
+      'cs': 'Přeplánovat',
+      'es': 'Reprogramar',
+      'fr': 'Reprogrammer',
+      'it': 'Ripianifica',
+      'ja': '再スケジュール',
+      'ko': '일정 변경',
+      'no': 'Flytt tidspunkt',
+      'ru': 'Перенести',
+      'sv': 'Schemalägg om',
+      'zh': '重新安排',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewActionSplit {
+    return {
+      'en': 'Split',
+      'vi': 'Chia đôi',
+      'de': 'Aufteilen',
+      'cs': 'Rozdělit',
+      'es': 'Dividir',
+      'fr': 'Diviser',
+      'it': 'Dividi',
+      'ja': '分割',
+      'ko': '분할',
+      'no': 'Del opp',
+      'ru': 'Разделить',
+      'sv': 'Dela upp',
+      'zh': '拆分',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewActionKeepPending {
+    return {
+      'en': 'Keep pending',
+      'vi': 'Giữ nguyên',
+      'de': 'Offen lassen',
+      'cs': 'Nechat čekat',
+      'es': 'Mantener pendiente',
+      'fr': 'Garder en attente',
+      'it': 'Mantieni in sospeso',
+      'ja': '保留のまま',
+      'ko': '보류 유지',
+      'no': 'Behold ventende',
+      'ru': 'Оставить ожидающим',
+      'sv': 'Behåll väntande',
+      'zh': '保持待处理',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewActionCancel {
+    return {
+      'en': 'Cancel this occurrence',
+      'vi': 'Hủy lần này',
+      'de': 'Dieses Vorkommen abbrechen',
+      'cs': 'Zrušit tuto instanci',
+      'es': 'Cancelar esta ocurrencia',
+      'fr': 'Annuler cette occurrence',
+      'it': 'Annulla questa occorrenza',
+      'ja': 'この発生をキャンセル',
+      'ko': '이 항목 취소',
+      'no': 'Avbryt denne forekomsten',
+      'ru': 'Отменить это вхождение',
+      'sv': 'Avbryt detta tillfälle',
+      'zh': '取消此次发生',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewPreview {
+    return {
+      'en': 'Preview changes',
+      'vi': 'Xem trước thay đổi',
+      'de': 'Vorschau der Änderungen',
+      'cs': 'Náhled změn',
+      'es': 'Vista previa de cambios',
+      'fr': 'Aperçu des modifications',
+      'it': 'Anteprima modifiche',
+      'ja': '変更のプレビュー',
+      'ko': '변경 사항 미리보기',
+      'no': 'Forhåndsvis endringer',
+      'ru': 'Предварительный просмотр изменений',
+      'sv': 'Förhandsgranska ändringar',
+      'zh': '预览更改',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewApply {
+    return {
+      'en': 'Apply',
+      'vi': 'Áp dụng',
+      'de': 'Anwenden',
+      'cs': 'Použít',
+      'es': 'Aplicar',
+      'fr': 'Appliquer',
+      'it': 'Applica',
+      'ja': '適用',
+      'ko': '적용',
+      'no': 'Bruk',
+      'ru': 'Применить',
+      'sv': 'Tillämpa',
+      'zh': '应用',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewConfirmTitle {
+    return {
+      'en': 'Confirm changes',
+      'vi': 'Xác nhận thay đổi',
+      'de': 'Änderungen bestätigen',
+      'cs': 'Potvrdit změny',
+      'es': 'Confirmar cambios',
+      'fr': 'Confirmer les modifications',
+      'it': 'Conferma modifiche',
+      'ja': '変更を確認',
+      'ko': '변경 확인',
+      'no': 'Bekreft endringer',
+      'ru': 'Подтвердить изменения',
+      'sv': 'Bekräfta ändringar',
+      'zh': '确认更改',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewNothingToApply {
+    return {
+      'en': 'Nothing to apply',
+      'vi': 'Không có gì để áp dụng',
+      'de': 'Nichts anzuwenden',
+      'cs': 'Nic k použití',
+      'es': 'Nada que aplicar',
+      'fr': 'Rien à appliquer',
+      'it': 'Niente da applicare',
+      'ja': '適用するものはありません',
+      'ko': '적용할 항목 없음',
+      'no': 'Ingenting å bruke',
+      'ru': 'Нечего применять',
+      'sv': 'Inget att tillämpa',
+      'zh': '没有可应用的内容',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewPartialResult {
+    return {
+      'en': 'Partial result: some items could not be applied.',
+      'vi': 'Kết quả một phần: một số mục không thể áp dụng.',
+      'de': 'Teilergebnis: Einige Elemente konnten nicht angewendet werden.',
+      'cs': 'Částečný výsledek: některé položky nebylo možné použít.',
+      'es': 'Resultado parcial: algunos elementos no se pudieron aplicar.',
+      'fr': 'Résultat partiel : certains éléments n\'ont pas pu être appliqués.',
+      'it': 'Risultato parziale: alcuni elementi non hanno potuto essere applicati.',
+      'ja': '部分的な結果：一部のアイテムを適用できませんでした。',
+      'ko': '부분 결과: 일부 항목을 적용할 수 없었습니다.',
+      'no': 'Delvis resultat: noen elementer kunne ikke brukes.',
+      'ru': 'Частичный результат: некоторые элементы не удалось применить.',
+      'sv': 'Partiellt resultat: vissa objekt kunde inte tillämpas.',
+      'zh': '部分结果：某些项目无法应用。',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewDurationHint {
+    return {
+      'en': 'Duration (minutes)',
+      'vi': 'Thời lượng (phút)',
+      'de': 'Dauer (Minuten)',
+      'cs': 'Trvání (minuty)',
+      'es': 'Duración (minutos)',
+      'fr': 'Durée (minutes)',
+      'it': 'Durata (minuti)',
+      'ja': '所要時間（分）',
+      'ko': '소요 시간(분)',
+      'no': 'Varighet (minutter)',
+      'ru': 'Продолжительность (мин)',
+      'sv': 'Varaktighet (minuter)',
+      'zh': '时长（分钟）',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewDeadlineBadge {
+    return {
+      'en': 'Deadline',
+      'vi': 'Deadline',
+      'de': 'Frist',
+      'cs': 'Termín',
+      'es': 'Fecha límite',
+      'fr': 'Échéance',
+      'it': 'Scadenza',
+      'ja': '締め切り',
+      'ko': '마감일',
+      'no': 'Frist',
+      'ru': 'Дедлайн',
+      'sv': 'Deadline',
+      'zh': '截止日期',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewStatusApplied {
+    return {
+      'en': 'Applied',
+      'vi': 'Đã áp dụng',
+      'de': 'Angewendet',
+      'cs': 'Použito',
+      'es': 'Aplicado',
+      'fr': 'Appliqué',
+      'it': 'Applicato',
+      'ja': '適用済み',
+      'ko': '적용됨',
+      'no': 'Brukt',
+      'ru': 'Применено',
+      'sv': 'Tillämpad',
+      'zh': '已应用',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewStatusStale {
+    return {
+      'en': 'Outdated — skipped',
+      'vi': 'Dữ liệu cũ — bỏ qua',
+      'de': 'Veraltet – übersprungen',
+      'cs': 'Zastaralé – přeskočeno',
+      'es': 'Desactualizado — omitido',
+      'fr': 'Obsolète — ignoré',
+      'it': 'Obsoleto — saltato',
+      'ja': '古いデータ — スキップ',
+      'ko': '오래된 데이터 — 건너뜀',
+      'no': 'Utdatert — hoppet over',
+      'ru': 'Устарело — пропущено',
+      'sv': 'Inaktuell — hoppade över',
+      'zh': '已过期 — 已跳过',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewStatusConflict {
+    return {
+      'en': 'Conflict — skipped',
+      'vi': 'Xung đột — bỏ qua',
+      'de': 'Konflikt – übersprungen',
+      'cs': 'Konflikt – přeskočeno',
+      'es': 'Conflicto — omitido',
+      'fr': 'Conflit — ignoré',
+      'it': 'Conflitto — saltato',
+      'ja': '競合 — スキップ',
+      'ko': '충돌 — 건너뜀',
+      'no': 'Konflikt — hoppet over',
+      'ru': 'Конфликт — пропущено',
+      'sv': 'Konflikt — hoppade över',
+      'zh': '冲突 — 已跳过',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewStatusFailed {
+    return {
+      'en': 'Failed',
+      'vi': 'Thất bại',
+      'de': 'Fehlgeschlagen',
+      'cs': 'Selhalo',
+      'es': 'Fallido',
+      'fr': 'Échoué',
+      'it': 'Fallito',
+      'ja': '失敗',
+      'ko': '실패',
+      'no': 'Mislyktes',
+      'ru': 'Ошибка',
+      'sv': 'Misslyckades',
+      'zh': '失败',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewDeadlineWillMove {
+    return {
+      'en': 'Deadline will be moved',
+      'vi': 'Deadline sẽ bị dời',
+      'de': 'Frist wird verschoben',
+      'cs': 'Termín bude posunut',
+      'es': 'La fecha límite se moverá',
+      'fr': 'L\'échéance sera déplacée',
+      'it': 'La scadenza sarà spostata',
+      'ja': '締め切りが移動されます',
+      'ko': '마감일이 변경됩니다',
+      'no': 'Fristen flyttes',
+      'ru': 'Дедлайн будет перенесён',
+      'sv': 'Deadline kommer att flyttas',
+      'zh': '截止日期将被移动',
+    }[locale.languageCode]!;
+  }
+
+  /// Title of the daily review notification (no argument needed — always "today").
+  String get dailyReviewNotificationTitle {
+    return {
+      'en': 'Daily review',
+      'vi': 'Tổng kết ngày',
+      'de': 'Tagesrückblick',
+      'cs': 'Denní přehled',
+      'es': 'Revisión diaria',
+      'fr': 'Revue quotidienne',
+      'it': 'Revisione giornaliera',
+      'ja': '日次レビュー',
+      'ko': '일일 검토',
+      'no': 'Daglig gjennomgang',
+      'ru': 'Ежедневный обзор',
+      'sv': 'Daglig genomgång',
+      'zh': '每日回顾',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewNotificationBody {
+    return {
+      'en': 'Tap to review today\'s unresolved work.',
+      'vi': 'Nhấn để xem lại công việc chưa giải quyết hôm nay.',
+      'de': 'Tippen, um heutige offene Aufgaben zu prüfen.',
+      'cs': 'Klepnutím zobrazíte dnešní nevyřízené úkoly.',
+      'es': 'Toca para revisar el trabajo pendiente de hoy.',
+      'fr': 'Tapez pour examiner le travail non résolu aujourd\'hui.',
+      'it': 'Tocca per rivedere il lavoro non risolto oggi.',
+      'ja': '今日の未解決の作業を確認するにはタップしてください。',
+      'ko': '오늘의 미처리 작업을 검토하려면 탭하세요.',
+      'no': 'Trykk for å se dagens uløste arbeid.',
+      'ru': 'Нажмите, чтобы просмотреть нерешённые задачи на сегодня.',
+      'sv': 'Tryck för att granska dagens olösta arbete.',
+      'zh': '点击以查看今天未解决的工作。',
+    }[locale.languageCode]!;
+  }
+
+  // Settings card strings
+  String get dailyReviewSettings {
+    return {
+      'en': 'Daily review',
+      'vi': 'Tổng kết ngày',
+      'de': 'Tagesrückblick',
+      'cs': 'Denní přehled',
+      'es': 'Revisión diaria',
+      'fr': 'Revue quotidienne',
+      'it': 'Revisione giornaliera',
+      'ja': '日次レビュー',
+      'ko': '일일 검토',
+      'no': 'Daglig gjennomgang',
+      'ru': 'Ежедневный обзор',
+      'sv': 'Daglig genomgång',
+      'zh': '每日回顾',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewEnable {
+    return {
+      'en': 'Enable daily review',
+      'vi': 'Bật tổng kết ngày',
+      'de': 'Tagesrückblick aktivieren',
+      'cs': 'Povolit denní přehled',
+      'es': 'Activar revisión diaria',
+      'fr': 'Activer la revue quotidienne',
+      'it': 'Abilita revisione giornaliera',
+      'ja': '日次レビューを有効にする',
+      'ko': '일일 검토 활성화',
+      'no': 'Aktiver daglig gjennomgang',
+      'ru': 'Включить ежедневный обзор',
+      'sv': 'Aktivera daglig genomgång',
+      'zh': '启用每日回顾',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewTime {
+    return {
+      'en': 'Review time',
+      'vi': 'Giờ tổng kết',
+      'de': 'Rückblickzeit',
+      'cs': 'Čas přehledu',
+      'es': 'Hora de revisión',
+      'fr': 'Heure de revue',
+      'it': 'Ora di revisione',
+      'ja': 'レビュー時間',
+      'ko': '검토 시간',
+      'no': 'Gjennomganstid',
+      'ru': 'Время обзора',
+      'sv': 'Genomgångstid',
+      'zh': '回顾时间',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewWorkingHoursStart {
+    return {
+      'en': 'Work day starts',
+      'vi': 'Ngày làm việc bắt đầu',
+      'de': 'Arbeitstag beginnt',
+      'cs': 'Pracovní den začíná',
+      'es': 'Jornada laboral comienza',
+      'fr': 'Journée de travail commence',
+      'it': 'La giornata lavorativa inizia',
+      'ja': '勤務開始',
+      'ko': '근무 시작',
+      'no': 'Arbeidsdagen starter',
+      'ru': 'Рабочий день начинается',
+      'sv': 'Arbetsdagen börjar',
+      'zh': '工作日开始',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewWorkingHoursEnd {
+    return {
+      'en': 'Work day ends',
+      'vi': 'Ngày làm việc kết thúc',
+      'de': 'Arbeitstag endet',
+      'cs': 'Pracovní den končí',
+      'es': 'Jornada laboral termina',
+      'fr': 'Journée de travail se termine',
+      'it': 'La giornata lavorativa termina',
+      'ja': '勤務終了',
+      'ko': '근무 종료',
+      'no': 'Arbeidsdagen slutter',
+      'ru': 'Рабочий день заканчивается',
+      'sv': 'Arbetsdagen slutar',
+      'zh': '工作日结束',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewBufferMinutes {
+    return {
+      'en': 'Buffer between tasks (min)',
+      'vi': 'Thời gian đệm giữa công việc (phút)',
+      'de': 'Puffer zwischen Aufgaben (Min)',
+      'cs': 'Mezera mezi úkoly (min)',
+      'es': 'Margen entre tareas (min)',
+      'fr': 'Tampon entre tâches (min)',
+      'it': 'Pausa tra attività (min)',
+      'ja': 'タスク間のバッファ（分）',
+      'ko': '작업 간 버퍼(분)',
+      'no': 'Buffer mellom oppgaver (min)',
+      'ru': 'Буфер между задачами (мин)',
+      'sv': 'Buffert mellan uppgifter (min)',
+      'zh': '任务间缓冲时间（分钟）',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewWorkingDays {
+    return {
+      'en': 'Working days',
+      'vi': 'Ngày làm việc',
+      'de': 'Arbeitstage',
+      'cs': 'Pracovní dny',
+      'es': 'Días laborables',
+      'fr': 'Jours ouvrables',
+      'it': 'Giorni lavorativi',
+      'ja': '稼働日',
+      'ko': '근무일',
+      'no': 'Arbeidsdager',
+      'ru': 'Рабочие дни',
+      'sv': 'Arbetsdagar',
+      'zh': '工作日',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewHabitOpenDetail {
+    return {
+      'en': 'Open habit',
+      'vi': 'Mở thói quen',
+      'de': 'Gewohnheit öffnen',
+      'cs': 'Otevřít návyk',
+      'es': 'Abrir hábito',
+      'fr': 'Ouvrir l\'habitude',
+      'it': 'Apri abitudine',
+      'ja': '習慣を開く',
+      'ko': '습관 열기',
+      'no': 'Åpne vane',
+      'ru': 'Открыть привычку',
+      'sv': 'Öppna vana',
+      'zh': '打开习惯',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewNoTime {
+    return {
+      'en': 'No time set',
+      'vi': 'Chưa đặt giờ',
+      'de': 'Keine Zeit gesetzt',
+      'cs': 'Čas není nastaven',
+      'es': 'Sin hora establecida',
+      'fr': 'Aucune heure définie',
+      'it': 'Nessun orario impostato',
+      'ja': '時間未設定',
+      'ko': '시간 미설정',
+      'no': 'Ingen tid angitt',
+      'ru': 'Время не задано',
+      'sv': 'Ingen tid angiven',
+      'zh': '未设置时间',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewWorkload {
+    return {
+      'en': 'Known workload',
+      'vi': 'Khối lượng công việc đã biết',
+      'de': 'Bekannte Arbeitslast',
+      'cs': 'Známá pracovní zátěž',
+      'es': 'Carga de trabajo conocida',
+      'fr': 'Charge de travail connue',
+      'it': 'Carico di lavoro noto',
+      'ja': '既知の作業量',
+      'ko': '알려진 작업량',
+      'no': 'Kjent arbeidsbelastning',
+      'ru': 'Известная нагрузка',
+      'sv': 'Känd arbetsbelastning',
+      'zh': '已知工作量',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewTargetDay {
+    return {
+      'en': 'Target day',
+      'vi': 'Ngày đích',
+      'de': 'Zieltag',
+      'cs': 'Cílový den',
+      'es': 'Día objetivo',
+      'fr': 'Jour cible',
+      'it': 'Giorno target',
+      'ja': '目標日',
+      'ko': '목표일',
+      'no': 'Måldag',
+      'ru': 'Целевой день',
+      'sv': 'Måldag',
+      'zh': '目标日',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewFirstPart {
+    return {
+      'en': 'First part (min)',
+      'vi': 'Phần đầu (phút)',
+      'de': 'Erster Teil (Min)',
+      'cs': 'První část (min)',
+      'es': 'Primera parte (min)',
+      'fr': 'Première partie (min)',
+      'it': 'Prima parte (min)',
+      'ja': '前半（分）',
+      'ko': '첫 번째 부분(분)',
+      'no': 'Første del (min)',
+      'ru': 'Первая часть (мин)',
+      'sv': 'Första delen (min)',
+      'zh': '第一部分（分钟）',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewSecondPart {
+    return {
+      'en': 'Second part (min)',
+      'vi': 'Phần sau (phút)',
+      'de': 'Zweiter Teil (Min)',
+      'cs': 'Druhá část (min)',
+      'es': 'Segunda parte (min)',
+      'fr': 'Deuxième partie (min)',
+      'it': 'Seconda parte (min)',
+      'ja': '後半（分）',
+      'ko': '두 번째 부분(분)',
+      'no': 'Andre del (min)',
+      'ru': 'Вторая часть (мин)',
+      'sv': 'Andra delen (min)',
+      'zh': '第二部分（分钟）',
+    }[locale.languageCode]!;
+  }
+
+  /// Action picker: no action chosen for this item yet.
+  String get dailyReviewNoAction {
+    return {
+      'en': 'No action',
+      'vi': 'Chưa xử lý',
+      'de': 'Keine Aktion',
+      'cs': 'Bez akce',
+      'es': 'Sin acción',
+      'fr': 'Aucune action',
+      'it': 'Nessuna azione',
+      'ja': '操作なし',
+      'ko': '작업 없음',
+      'no': 'Ingen handling',
+      'ru': 'Без действия',
+      'sv': 'Ingen åtgärd',
+      'zh': '不处理',
+    }[locale.languageCode]!;
+  }
+
+  /// Confirm dialog summary. Placeholders: {moves}, {creates}, {deletes}.
+  String get dailyReviewConfirmSummary {
+    return {
+      'en': 'Moved: {moves} · New: {creates} · Deleted: {deletes}',
+      'vi': 'Dời: {moves} · Tạo mới: {creates} · Xóa: {deletes}',
+      'de': 'Verschoben: {moves} · Neu: {creates} · Gelöscht: {deletes}',
+      'cs': 'Přesunuto: {moves} · Nové: {creates} · Smazáno: {deletes}',
+      'es': 'Movidos: {moves} · Nuevos: {creates} · Eliminados: {deletes}',
+      'fr': 'Déplacés : {moves} · Nouveaux : {creates} · Supprimés : {deletes}',
+      'it': 'Spostati: {moves} · Nuovi: {creates} · Eliminati: {deletes}',
+      'ja': '移動: {moves} · 新規: {creates} · 削除: {deletes}',
+      'ko': '이동: {moves} · 새로 만듦: {creates} · 삭제: {deletes}',
+      'no': 'Flyttet: {moves} · Nye: {creates} · Slettet: {deletes}',
+      'ru': 'Перенесено: {moves} · Новых: {creates} · Удалено: {deletes}',
+      'sv': 'Flyttade: {moves} · Nya: {creates} · Borttagna: {deletes}',
+      'zh': '移动：{moves} · 新建：{creates} · 删除：{deletes}',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewDeleteWarning {
+    return {
+      'en': 'Only this occurrence will be deleted. This cannot be undone.',
+      'vi': 'Chỉ lần này bị xóa. Không thể hoàn tác.',
+      'de': 'Nur dieser Termin wird gelöscht. Das kann nicht rückgängig gemacht werden.',
+      'cs': 'Smaže se jen tento výskyt. Nelze vrátit zpět.',
+      'es': 'Solo se eliminará esta ocurrencia. No se puede deshacer.',
+      'fr': 'Seule cette occurrence sera supprimée. Action irréversible.',
+      'it': 'Verrà eliminata solo questa occorrenza. Operazione irreversibile.',
+      'ja': 'この回だけが削除されます。元に戻せません。',
+      'ko': '이번 항목만 삭제됩니다. 되돌릴 수 없습니다.',
+      'no': 'Bare denne forekomsten slettes. Kan ikke angres.',
+      'ru': 'Будет удалено только это повторение. Отменить нельзя.',
+      'sv': 'Endast denna förekomst tas bort. Kan inte ångras.',
+      'zh': '只会删除这一次。此操作无法撤销。',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewStatusNoChange {
+    return {
+      'en': 'No change',
+      'vi': 'Không thay đổi',
+      'de': 'Keine Änderung',
+      'cs': 'Beze změny',
+      'es': 'Sin cambios',
+      'fr': 'Aucun changement',
+      'it': 'Nessuna modifica',
+      'ja': '変更なし',
+      'ko': '변경 없음',
+      'no': 'Ingen endring',
+      'ru': 'Без изменений',
+      'sv': 'Ingen ändring',
+      'zh': '无变化',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewStatusNeedsDuration {
+    return {
+      'en': 'Needs a duration',
+      'vi': 'Cần nhập thời lượng',
+      'de': 'Dauer erforderlich',
+      'cs': 'Chybí délka',
+      'es': 'Falta la duración',
+      'fr': 'Durée requise',
+      'it': 'Serve una durata',
+      'ja': '所要時間が必要です',
+      'ko': '소요 시간이 필요합니다',
+      'no': 'Trenger varighet',
+      'ru': 'Нужна длительность',
+      'sv': 'Behöver en längd',
+      'zh': '需要时长',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewStatusNoCapacity {
+    return {
+      'en': 'No free slot — kept pending',
+      'vi': 'Không còn chỗ trống — giữ nguyên',
+      'de': 'Kein freier Platz — bleibt offen',
+      'cs': 'Žádný volný čas — ponecháno',
+      'es': 'Sin hueco libre — se mantiene pendiente',
+      'fr': 'Aucun créneau libre — laissé en attente',
+      'it': 'Nessuno spazio libero — resta in sospeso',
+      'ja': '空き時間なし — 保留のまま',
+      'ko': '빈 시간 없음 — 보류 유지',
+      'no': 'Ingen ledig tid — beholdes',
+      'ru': 'Нет свободного времени — оставлено',
+      'sv': 'Ingen ledig tid — behålls',
+      'zh': '没有空闲时段 — 保持待办',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewStatusUnresolvable {
+    return {
+      'en': 'Deadline with no free slot — unchanged',
+      'vi': 'Hạn chót không còn chỗ trống — giữ nguyên',
+      'de': 'Frist ohne freien Platz — unverändert',
+      'cs': 'Termín bez volného času — beze změny',
+      'es': 'Fecha límite sin hueco libre — sin cambios',
+      'fr': 'Échéance sans créneau libre — inchangée',
+      'it': 'Scadenza senza spazio libero — invariata',
+      'ja': '期限内に空き時間なし — 変更なし',
+      'ko': '마감 내 빈 시간 없음 — 변경 없음',
+      'no': 'Frist uten ledig tid — uendret',
+      'ru': 'Срок без свободного времени — без изменений',
+      'sv': 'Deadline utan ledig tid — oförändrad',
+      'zh': '截止前无空闲时段 — 未更改',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewStatusNotApplicable {
+    return {
+      'en': 'Cannot be applied',
+      'vi': 'Không thể áp dụng',
+      'de': 'Nicht anwendbar',
+      'cs': 'Nelze použít',
+      'es': 'No se puede aplicar',
+      'fr': 'Impossible à appliquer',
+      'it': 'Non applicabile',
+      'ja': '適用できません',
+      'ko': '적용할 수 없음',
+      'no': 'Kan ikke brukes',
+      'ru': 'Нельзя применить',
+      'sv': 'Kan inte tillämpas',
+      'zh': '无法应用',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewImportantBadge {
+    return {
+      'en': 'Important',
+      'vi': 'Quan trọng',
+      'de': 'Wichtig',
+      'cs': 'Důležité',
+      'es': 'Importante',
+      'fr': 'Important',
+      'it': 'Importante',
+      'ja': '重要',
+      'ko': '중요',
+      'no': 'Viktig',
+      'ru': 'Важно',
+      'sv': 'Viktig',
+      'zh': '重要',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewExactTime {
+    return {
+      'en': 'Exact time (optional)',
+      'vi': 'Giờ cụ thể (tùy chọn)',
+      'de': 'Genaue Uhrzeit (optional)',
+      'cs': 'Přesný čas (volitelné)',
+      'es': 'Hora exacta (opcional)',
+      'fr': 'Heure précise (facultatif)',
+      'it': 'Ora esatta (facoltativa)',
+      'ja': '時刻を指定（任意）',
+      'ko': '정확한 시간 (선택)',
+      'no': 'Nøyaktig tid (valgfritt)',
+      'ru': 'Точное время (необязательно)',
+      'sv': 'Exakt tid (valfritt)',
+      'zh': '具体时间（可选）',
+    }[locale.languageCode]!;
+  }
+
+  String get dailyReviewResults {
+    return {
+      'en': 'Results',
+      'vi': 'Kết quả',
+      'de': 'Ergebnisse',
+      'cs': 'Výsledky',
+      'es': 'Resultados',
+      'fr': 'Résultats',
+      'it': 'Risultati',
+      'ja': '結果',
+      'ko': '결과',
+      'no': 'Resultater',
+      'ru': 'Результаты',
+      'sv': 'Resultat',
+      'zh': '结果',
+    }[locale.languageCode]!;
+  }
+
   // --- Learning / courses (Core Track C7) ---
 
   String get courses {

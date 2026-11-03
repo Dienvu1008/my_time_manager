@@ -287,6 +287,10 @@ class App extends StatelessWidget {
     ][state.language.index];
     // Nội dung nhắc thói quen (H3) theo ngôn ngữ app; đổi ngôn ngữ → reconcile.
     context.read<ReminderModule>().languageCode = languageCode;
+    // Daily Review notification (DR2): enabled + time from settings.
+    context.read<ReminderModule>().setDailyReview(
+        enabled: state.dailyReviewEnabled,
+        timeMinutes: state.dailyReviewTimeMinutes);
     return MaterialApp(
             // Cho phép cửa sổ nổi Pomodoro (nằm ngoài Navigator) hiện dialog.
             navigatorKey: PomodoroOverlayController.instance.navigatorKey,
@@ -447,6 +451,13 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   static const quietHoursEnabledKey = 'quietHoursEnabled';
   static const quietHoursStartKey = 'quietHoursStart';
   static const quietHoursEndKey = 'quietHoursEnd';
+  // Daily Review settings keys (Phase DR2).
+  static const dailyReviewEnabledKey = 'dailyReviewEnabled';
+  static const dailyReviewTimeKey = 'dailyReviewTimeMinutes';
+  static const dailyReviewWorkStartKey = 'dailyReviewWorkStart';
+  static const dailyReviewWorkEndKey = 'dailyReviewWorkEnd';
+  static const dailyReviewWorkDaysKey = 'dailyReviewWorkDays';
+  static const dailyReviewBufferKey = 'dailyReviewBufferMinutes';
 
   late SharedPreferences sharedPreferences;
 
@@ -563,6 +574,16 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         quietEnabled: sharedPreferences.getBool(quietHoursEnabledKey) ?? false,
         quietStart: sharedPreferences.getInt(quietHoursStartKey) ?? 1320,
         quietEnd: sharedPreferences.getInt(quietHoursEndKey) ?? 420,
+      ));
+
+      // Nạp cài đặt Daily Review (Phase DR2).
+      add(LoadDailyReviewSettings(
+        enabled: sharedPreferences.getBool(dailyReviewEnabledKey) ?? true,
+        reviewTimeMinutes: sharedPreferences.getInt(dailyReviewTimeKey) ?? 1200,
+        workStartMinutes: sharedPreferences.getInt(dailyReviewWorkStartKey) ?? 540,
+        workEndMinutes: sharedPreferences.getInt(dailyReviewWorkEndKey) ?? 1080,
+        workDayBits: sharedPreferences.getInt(dailyReviewWorkDaysKey) ?? 0x1F,
+        bufferMinutes: sharedPreferences.getInt(dailyReviewBufferKey) ?? 0,
       ));
 
       // Nạp cài đặt bottom bar trong suốt (mặc định false).
@@ -751,6 +772,36 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       sharedPreferences.setInt(taskCardStyleKey, event.style.index);
       emit(state.copyWith(taskCardStyle: event.style));
     });
+
+    on<LoadDailyReviewSettings>((event, emit) {
+      emit(state.copyWith(
+        dailyReviewEnabled: event.enabled,
+        dailyReviewTimeMinutes: event.reviewTimeMinutes,
+        dailyReviewWorkStartMinutes: event.workStartMinutes,
+        dailyReviewWorkEndMinutes: event.workEndMinutes,
+        dailyReviewWorkDayBits: event.workDayBits,
+        dailyReviewBufferMinutes: event.bufferMinutes,
+      ));
+      // The notification is (re)scheduled by ReminderModule.dailyReview,
+      // which MyApp updates from this state and which reconciles on change.
+    });
+
+    on<ChangeDailyReviewSettings>((event, emit) {
+      sharedPreferences.setBool(dailyReviewEnabledKey, event.enabled);
+      sharedPreferences.setInt(dailyReviewTimeKey, event.reviewTimeMinutes);
+      sharedPreferences.setInt(dailyReviewWorkStartKey, event.workStartMinutes);
+      sharedPreferences.setInt(dailyReviewWorkEndKey, event.workEndMinutes);
+      sharedPreferences.setInt(dailyReviewWorkDaysKey, event.workDayBits);
+      sharedPreferences.setInt(dailyReviewBufferKey, event.bufferMinutes);
+      emit(state.copyWith(
+        dailyReviewEnabled: event.enabled,
+        dailyReviewTimeMinutes: event.reviewTimeMinutes,
+        dailyReviewWorkStartMinutes: event.workStartMinutes,
+        dailyReviewWorkEndMinutes: event.workEndMinutes,
+        dailyReviewWorkDayBits: event.workDayBits,
+        dailyReviewBufferMinutes: event.bufferMinutes,
+      ));
+    });
   }
 }
 
@@ -912,6 +963,44 @@ class ChangeTaskCardStyle extends AppEvent {
   ChangeTaskCardStyle(this.style);
 }
 
+/// Nạp toàn bộ cài đặt Daily Review lúc khởi động (Phase DR2).
+class LoadDailyReviewSettings extends AppEvent {
+  final bool enabled;
+  final int reviewTimeMinutes;
+  final int workStartMinutes;
+  final int workEndMinutes;
+  final int workDayBits;
+  final int bufferMinutes;
+
+  LoadDailyReviewSettings({
+    required this.enabled,
+    required this.reviewTimeMinutes,
+    required this.workStartMinutes,
+    required this.workEndMinutes,
+    required this.workDayBits,
+    required this.bufferMinutes,
+  });
+}
+
+/// Thay đổi cài đặt Daily Review từ màn Settings (Phase DR2).
+class ChangeDailyReviewSettings extends AppEvent {
+  final bool enabled;
+  final int reviewTimeMinutes;
+  final int workStartMinutes;
+  final int workEndMinutes;
+  final int workDayBits;
+  final int bufferMinutes;
+
+  ChangeDailyReviewSettings({
+    required this.enabled,
+    required this.reviewTimeMinutes,
+    required this.workStartMinutes,
+    required this.workEndMinutes,
+    required this.workDayBits,
+    required this.bufferMinutes,
+  });
+}
+
 
 
 ////////////////////////////////////////////////////////////////
@@ -965,6 +1054,23 @@ class AppState {
   /// Kiểu hiển thị thẻ task ở màn Overview (nền đầy màu hoặc dải màu bên trái).
   final TaskCardStyle taskCardStyle;
 
+  // Daily Review settings (Phase DR2).
+  /// Feature flag: false → hide drawer entry + no notification.
+  final bool dailyReviewEnabled;
+
+  /// Minutes since midnight (local) when the review notification fires. Default 20:00 = 1200.
+  final int dailyReviewTimeMinutes;
+
+  /// Working hours start/end in minutes since midnight. Defaults 09:00/18:00.
+  final int dailyReviewWorkStartMinutes;
+  final int dailyReviewWorkEndMinutes;
+
+  /// Bitmask of working days (Mon=bit0, Tue=bit1, ..., Sun=bit6). Default Mon-Fri = 0x1F.
+  final int dailyReviewWorkDayBits;
+
+  /// Buffer in minutes to keep free around busy blocks. Default 0.
+  final int dailyReviewBufferMinutes;
+
   final bool showBrightnessButtonInAppBar;
   final bool showMaterialDesignButtonInAppBar;
   final bool showColorSeedButtonInAppBar;
@@ -1008,6 +1114,12 @@ class AppState {
     this.quietHoursEndMinutes = 420,
     this.transparentBottomBar = false,
     this.taskCardStyle = TaskCardStyle.filled,
+    this.dailyReviewEnabled = true,
+    this.dailyReviewTimeMinutes = 1200,
+    this.dailyReviewWorkStartMinutes = 540,
+    this.dailyReviewWorkEndMinutes = 1080,
+    this.dailyReviewWorkDayBits = 0x1F,
+    this.dailyReviewBufferMinutes = 0,
   });
 
   AppState copyWith({
@@ -1035,6 +1147,12 @@ class AppState {
     int? quietHoursEndMinutes,
     bool? transparentBottomBar,
     TaskCardStyle? taskCardStyle,
+    bool? dailyReviewEnabled,
+    int? dailyReviewTimeMinutes,
+    int? dailyReviewWorkStartMinutes,
+    int? dailyReviewWorkEndMinutes,
+    int? dailyReviewWorkDayBits,
+    int? dailyReviewBufferMinutes,
   }) {
     return AppState(
       useMaterial3: useMaterial3 ?? this.useMaterial3,
@@ -1070,6 +1188,12 @@ class AppState {
       quietHoursEndMinutes: quietHoursEndMinutes ?? this.quietHoursEndMinutes,
       transparentBottomBar: transparentBottomBar ?? this.transparentBottomBar,
       taskCardStyle: taskCardStyle ?? this.taskCardStyle,
+      dailyReviewEnabled: dailyReviewEnabled ?? this.dailyReviewEnabled,
+      dailyReviewTimeMinutes: dailyReviewTimeMinutes ?? this.dailyReviewTimeMinutes,
+      dailyReviewWorkStartMinutes: dailyReviewWorkStartMinutes ?? this.dailyReviewWorkStartMinutes,
+      dailyReviewWorkEndMinutes: dailyReviewWorkEndMinutes ?? this.dailyReviewWorkEndMinutes,
+      dailyReviewWorkDayBits: dailyReviewWorkDayBits ?? this.dailyReviewWorkDayBits,
+      dailyReviewBufferMinutes: dailyReviewBufferMinutes ?? this.dailyReviewBufferMinutes,
     );
   }
 }

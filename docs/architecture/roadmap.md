@@ -90,7 +90,7 @@ these features.
 | C12 | Analytics & planned-vs-actual (reuses AI-P11 deterministic metrics) | planned |
 | **R** | **Reminders & Alarms** (after C3) | **done** — contract in §6 |
 | **H** | **Habit Tracking** (after R) | **done** — contract in §6 |
-| **DR** | **Daily Review & Adaptive Rescheduling** (after H + C5) | **in progress** — DR1 done (deterministic core), DR2 (UI + review time/notification) planned — contract in §6 |
+| **DR** | **Daily Review & Adaptive Rescheduling** (after H + C5) | **done** — DR1 + DR2, contract in §6 |
 | C16 | Dashboard & user-facing UI | planned (visibility preserved) |
 | C17 | Integrations (Telegram, VS Code where applicable) | planned (visibility preserved) |
 | C18 | Benchmarking & dogfooding / observability | planned (visibility preserved) |
@@ -555,8 +555,42 @@ open questions.
   - Tests: `test/application/daily_review/` (categorization, availability,
     planner, applier incl. stale / conflict / partial failure / idempotency,
     SQLite in-memory end-to-end, layering).
-- **DR2 (planned):** review screen + actions, configurable review time and
-  notification, settings toggle, wiring of the recurring-event expander.
+- **DR2 delivered (UI, notification, settings; no schema change)**:
+  - **Screen** `lib/screen_daily_review/daily_review_screen.dart`: summary
+    (counts, free time, known workload), Overdue / Started / Due today with
+    deadline + important badges, habits (report-only, open HabitDetailScreen),
+    unscheduled tasks (collapsed), positive empty state. Per item: Do now /
+    Reschedule (target day + optional exact time) / Split (two parts, default
+    halves) / Keep pending / Cancel this occurrence; inline duration field
+    when the duration is unknown (Q-DR3). "Preview changes" runs the planner
+    and lists status, current → proposed, deadline / delete warnings and
+    accept checkboxes; "Apply" goes through `ProposalApplier` with a confirm
+    dialog (move / new / delete counts, deadline moves; destructive styling
+    when deleting). Per-item results (applied / outdated / conflict / failed)
+    and a partial-result notice; the review reloads afterwards. The app's
+    recurring-event expander is injected.
+  - **Entry point:** drawer "Daily review" (hidden when disabled), with the
+    `Availability` built from settings (`availabilityFromSettings`).
+    Notification-tap routing: the app has no notification-tap router yet, so
+    tapping the notification just opens the app (documented gap).
+  - **Settings** card `lib/screen_settings/daily_review_settings_card.dart`:
+    enable, review time (default 20:00), working hours start/end (09:00–18:00),
+    working days (bitmask, default Mon–Fri), buffer 0/5/10/15 min; persisted in
+    SharedPreferences via `AppBloc` (`LoadDailyReviewSettings` /
+    `ChangeDailyReviewSettings`).
+  - **Daily notification** through the R pipeline: `ReminderSource.dailyReview`
+    / `ReminderEntityType.dailyReview`, one per day for 7 days at the review
+    time, id `stableReminderId('dailyReview@YYYYMMDD')` (depends on the day,
+    not the time); DST / quiet hours / pending limit via R's shared helpers.
+    `ReminderModule.setDailyReview` (pushed from AppState by MyApp) requests a
+    reconcile on change; the input source reads it each reconcile. Disabled or
+    legacy mode → no notification. Localized title / body (13 locales).
+  - **Applier fix:** the commit-time conflict check ignores the OLD slots of
+    accepted batch members not applied yet (they are being vacated, e.g. two
+    items swapping slots), while members already applied keep blocking their
+    NEW slot.
+  - `showConfirmDialog` gained optional `title` / `destructive` (existing
+    callers unchanged).
 
 ### Phase C5 — Goal / Milestone foundations (contract, implemented)
 
